@@ -41,3 +41,34 @@ public static class CharLineup
         System.IO.File.WriteAllBytes(args[System.Array.IndexOf(args, "-out") + 1], tex.EncodeToPNG());
     }
 }
+public static class PrefabShot
+{
+    // Rangee de prefabs Casino, avec leurs dimensions dans le journal : -executeMethod PrefabShot.Run -out <png>
+    public static void Run()
+    {
+        ShaderUtil.allowAsyncCompilation = false;
+        UnityEditor.SceneManagement.EditorSceneManager.NewScene(UnityEditor.SceneManagement.NewSceneSetup.DefaultGameObjects);
+        string[] names = { "SM_Prop_Blackjack_Table_01", "SM_Prop_Chair_01", "SM_Prop_Chair_03", "SM_Prop_Bar_Stool_01", "SM_Prop_Slot_Machine_01", "SM_Prop_Roulette_Table_01", "SM_Prop_Chandelier_01", "SM_Prop_Chip_Holder_01", "SM_Chr_Dealer_Female_01" };
+        float x = -8;
+        foreach (var n in names)
+        {
+            var path = AssetDatabase.FindAssets(n + " t:Prefab", new[] { "Assets/PolygonCasino/Prefabs" }).Select(AssetDatabase.GUIDToAssetPath).First(p => System.IO.Path.GetFileNameWithoutExtension(p) == n);
+            var g = (GameObject)Object.Instantiate(AssetDatabase.LoadAssetAtPath<GameObject>(path));
+            var rs = g.GetComponentsInChildren<Renderer>();
+            var b = rs[0].bounds; foreach (var r in rs) b.Encapsulate(r.bounds);
+            Debug.Log($"TAILLE {n} {b.size.x:0.00}x{b.size.y:0.00}x{b.size.z:0.00} centre {b.center} min {b.min} renderers {rs.Length} " + string.Join(",", rs.Select(r => r.name)));
+            g.transform.position = new Vector3(x + b.size.x / 2 - b.center.x, 0, 0);
+            x += b.size.x + 0.4f;
+        }
+        var cam = Camera.main;
+        cam.transform.SetPositionAndRotation(new Vector3(x / 2 - 4, 4, -9), Quaternion.Euler(18, 0, 0));
+        cam.fieldOfView = 70;
+        var rt = new RenderTexture(1800, 700, 24);
+        cam.targetTexture = rt; cam.Render(); cam.Render();
+        RenderTexture.active = rt;
+        var tex = new Texture2D(1800, 700, TextureFormat.RGB24, false);
+        tex.ReadPixels(new Rect(0, 0, 1800, 700), 0, 0);
+        var args = System.Environment.GetCommandLineArgs();
+        System.IO.File.WriteAllBytes(args[System.Array.IndexOf(args, "-out") + 1], tex.EncodeToPNG());
+    }
+}

@@ -1,3 +1,4 @@
+using System.IO;
 using System.Linq;
 using UnityEditor;
 using UnityEngine;
@@ -8,12 +9,23 @@ public static class SyntySetup
 {
     const string Meadow = "Assets/PolygonNatureBiomes/PNB_Meadow_Forest/";
 
+    // Seulement ce que la salle de casino utilise : le reste du pack (ville, vehicules...) reste hors de la build.
+    static readonly string[] CasinoProps =
+    {
+        "SM_Prop_Blackjack_Table_01", "SM_Prop_Roulette_Table_01", "SM_Prop_Poker_Table_01", "SM_Prop_Chair_03", "SM_Prop_Slot_Machine_0",
+        "SM_Prop_Chandelier_01", "SM_Prop_Pillar_01", "SM_Prop_Pot_Plants_0", "SM_Prop_Wall_Art_0", "SM_Prop_Casino_Neon_0", "SM_Prop_Bar_Stool_01",
+    };
+
     [MenuItem("Pique-Nique/Registre Synty")]
     public static void Run()
     {
         var reg = ScriptableObject.CreateInstance<Synty>();
         reg.prefabs = AssetDatabase.FindAssets("t:Prefab", new[] { Meadow + "Prefabs", "Assets/PolygonNatureBiomes/PNB_Core/Prefabs" })
-            .Select(g => AssetDatabase.LoadAssetAtPath<GameObject>(AssetDatabase.GUIDToAssetPath(g))).ToArray();
+            .Select(g => AssetDatabase.LoadAssetAtPath<GameObject>(AssetDatabase.GUIDToAssetPath(g)))
+            .Concat(AssetDatabase.FindAssets("t:Prefab", new[] { "Assets/PolygonCasino/Prefabs" }).Select(AssetDatabase.GUIDToAssetPath)
+                .Where(p => CasinoProps.Any(n => Path.GetFileNameWithoutExtension(p).StartsWith(n)))
+                .Select(AssetDatabase.LoadAssetAtPath<GameObject>))
+            .ToArray();
         reg.sky = AssetDatabase.LoadAssetAtPath<Material>(Meadow + "Materials/Skybox_Meadows_Mat_01.mat");
         reg.ground = AssetDatabase.LoadAssetAtPath<Material>(Meadow + "Materials/Rock_Grass_Triplanar_Meadow_01.mat");
         reg.water = AssetDatabase.LoadAssetAtPath<Material>(Meadow + "Materials/Water_Lake_01.mat");
