@@ -282,10 +282,22 @@ public static class Setup
         Debug.Log("DIAG tree: " + (tree ? tree.GetComponentInChildren<Renderer>().bounds.size + " " + tree.GetComponentInChildren<Renderer>().sharedMaterial.shader.name : "null"));
     }
 
+    // Terrain Synty precalcule dans sa propre scene (hors depot) : chargement rapide et shaders de terrain gardes dans la build.
+    static void BakeWorld()
+    {
+        Directory.CreateDirectory("Assets/Synty");
+        var scene = UnityEditor.SceneManagement.EditorSceneManager.NewScene(UnityEditor.SceneManagement.NewSceneSetup.EmptyScene, UnityEditor.SceneManagement.NewSceneMode.Single);
+        var t = Nature.Build(null, Board.FreeSpot);
+        AssetDatabase.DeleteAsset("Assets/Synty/Monde_Terrain.asset");
+        AssetDatabase.CreateAsset(t.terrainData, "Assets/Synty/Monde_Terrain.asset");
+        UnityEditor.SceneManagement.EditorSceneManager.SaveScene(scene, "Assets/Synty/Monde.unity");
+    }
+
     public static void Build()
     {
         if (File.Exists("VERSION")) PlayerSettings.bundleVersion = File.ReadAllText("VERSION").Trim();
-        var r = BuildPipeline.BuildPlayer(new[] { "Assets/Scenes/Main.unity" }, "Build/PiqueNiqueGames.exe", BuildTarget.StandaloneWindows64, BuildOptions.None);
+        BakeWorld();
+        var r = BuildPipeline.BuildPlayer(new[] { "Assets/Scenes/Main.unity", "Assets/Synty/Monde.unity" }, "Build/PiqueNiqueGames.exe", BuildTarget.StandaloneWindows64, BuildOptions.None);
         if (r.summary.result != UnityEditor.Build.Reporting.BuildResult.Succeeded) throw new System.Exception("build: " + r.summary.result);
     }
 

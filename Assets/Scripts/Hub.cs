@@ -41,7 +41,9 @@ public class Hub : MonoBehaviour
 
     void Model(string name, Vector3 pos, float scale, float rot)
     {
-        var g = Instantiate(Resources.Load<GameObject>("Models/" + name), transform);
+        var prefab = Synty.Get(name) ?? Resources.Load<GameObject>("Models/" + name);
+        if (!prefab) { Debug.LogWarning("Modele introuvable : " + name); return; }
+        var g = Instantiate(prefab, transform);
         g.transform.localPosition = pos;
         g.transform.localRotation = Quaternion.Euler(0, rot, 0);
         g.transform.localScale = Vector3.one * scale;
@@ -76,12 +78,21 @@ public class Hub : MonoBehaviour
         back.SetTexture("_BaseMap", Resources.Load<Texture2D>("Cards/back_red"));
         var top = Prim(PrimitiveType.Quad, new Vector3(0.3f, 0.066f, 0.3f), new Vector3(0.2f, 0.28f, 1), back, new Vector3(90, 35, 0));
 
-        // Coin de verdure : souche, buche, champignons
-        Model("log", new Vector3(0, 0, 3.3f), 2.4f, 90);
-        Model("stump_round", new Vector3(-3, 0, 1.5f), 2.4f, 0);
-        Model("mushroom_redGroup", new Vector3(2.8f, 0, -1.8f), 2.2f, 40);
-        Model("flower_yellowA", new Vector3(-2.6f, 0, -2.3f), 2.4f, 0);
-        Model("flower_redB", new Vector3(3.1f, 0, 2.5f), 2.4f, 0);
+        // Coin de verdure : feu de camp eteint, rochers, champignons, fleurs sauvages et herbe basse.
+        Model("SM_Prop_Camp_Fireplace_Stones_01", new Vector3(-3.2f, 0, 2.2f), 1.2f, 0);
+        Model("SM_Prop_Camp_Fireplace_01", new Vector3(-3.2f, 0, 2.2f), 1.2f, 30);
+        Model("SM_Env_Rock_02", new Vector3(0.3f, 0, 4.2f), 0.9f, 80);
+        Model("SM_Env_Rock_01", new Vector3(3.8f, 0, 1.2f), 0.7f, 200);
+        Model("SM_Prop_Mushroom_Group_02", new Vector3(2.8f, 0, -1.8f), 2f, 40);
+        Model("SM_Prop_Mushroom_Group_03", new Vector3(-2.9f, 0, -1.2f), 2f, 150);
+        var rng = new System.Random(3);
+        for (int i = 0; i < 40; i++)
+        {
+            float a = (float)rng.NextDouble() * Mathf.PI * 2, r = 2.8f + (float)rng.NextDouble() * 4.5f;
+            var p = new Vector3(Mathf.Cos(a) * r, 0, Mathf.Sin(a) * r);
+            if (p.z < -2 && Mathf.Abs(p.x) < 3) continue; // champ de la camera degage
+            Model(i % 3 == 0 ? "SM_Env_Wildflowers_0" + (i / 3 % 3 + 1) : "SM_Env_Grass_Short_Clump_0" + (i % 3 + 1), p, 1f + (float)rng.NextDouble() * 0.5f, i * 47);
+        }
 
         foreach (var f in Friends)
         {

@@ -56,27 +56,29 @@ public class Game : MonoBehaviour
         cam.tag = "MainCamera";
         cam.clearFlags = CameraClearFlags.Skybox;
         cam.fieldOfView = 50;
-        cam.farClipPlane = 400;
+        cam.farClipPlane = 650;
         cam.gameObject.AddComponent<AudioListener>();
 
         sun = new GameObject("Soleil").AddComponent<Light>();
         sun.type = LightType.Directional;
-        // Soleil bas de fin d'apres-midi : lumiere doree, longues ombres douces.
-        sun.color = Board.Hex("ffd9a8");
-        sun.intensity = 1.9f;
-        sun.shadowStrength = 0.9f;
-        sun.transform.rotation = Quaternion.Euler(24, -58, 0);
+        // Plein soleil de fin de matinee facon Meadow Forest : lumiere chaude, ciel Synty, brume legere.
+        sun.color = Board.Hex("fff0d4");
+        sun.intensity = 2.2f;
+        sun.shadowStrength = 0.75f;
+        sun.transform.rotation = Quaternion.Euler(42, -58, 0);
         RenderSettings.sun = sun;
-        RenderSettings.skybox = Resources.Load<Material>("Sky");
+        var sky = new Material(Synty.I.sky);
+        sky.SetColor("_ColorTop", Board.Hex("3f86d6"));   // bleu franc au zenith, pas le bleu nuit d'origine
+        RenderSettings.skybox = sky;
         RenderSettings.ambientMode = AmbientMode.Trilight;
-        RenderSettings.ambientSkyColor = Board.Hex("7f9cc4");
-        RenderSettings.ambientEquatorColor = Board.Hex("7d8a6e");
-        RenderSettings.ambientGroundColor = Board.Hex("39402c");
-        // Brume atmospherique : donne la profondeur des captures d'Agrou.
+        RenderSettings.ambientSkyColor = Board.Hex("a9c8ef");
+        RenderSettings.ambientEquatorColor = Board.Hex("b3c49a");
+        RenderSettings.ambientGroundColor = Board.Hex("5a5a3c");
         RenderSettings.fog = true;
-        RenderSettings.fogMode = FogMode.ExponentialSquared;
-        RenderSettings.fogColor = Board.Hex("b9c9cf");
-        RenderSettings.fogDensity = 0.016f;
+        RenderSettings.fogMode = FogMode.Linear;   // net au premier plan, collines de l'horizon fondues dans le ciel
+        RenderSettings.fogColor = Board.Hex("d6e4ee");
+        RenderSettings.fogStartDistance = 60;
+        RenderSettings.fogEndDistance = 430;
 
         var vol = new GameObject("PostFX").AddComponent<Volume>();
         vol.isGlobal = true;
@@ -180,7 +182,10 @@ public class Game : MonoBehaviour
     IEnumerator AutoTest(string dir)
     {
         IEnumerator Shot(string n) { yield return new WaitForEndOfFrame(); var tex = ScreenCapture.CaptureScreenshotAsTexture(); System.IO.File.WriteAllBytes(System.IO.Path.Combine(dir, n + ".png"), tex.EncodeToPNG()); Destroy(tex); }
-        yield return new WaitForSeconds(6); yield return Shot("1-titre");
+        IEnumerator Fps(string n) { int f = Time.frameCount; float t = Time.realtimeSinceStartup; yield return new WaitForSecondsRealtime(3); System.IO.File.AppendAllText(System.IO.Path.Combine(dir, "fps.txt"), $"{n}: {(Time.frameCount - f) / (Time.realtimeSinceStartup - t):0} fps" + System.Environment.NewLine); }
+        yield return new WaitForSeconds(6); yield return Shot("1-titre"); yield return Fps("titre");
+        bool croqueOnly = Array.IndexOf(Environment.GetCommandLineArgs(), "-croque") >= 0;
+        if (!croqueOnly) {
         ui.OpenForTest("games"); yield return new WaitForSeconds(1); yield return Shot("2-jeux");
         SelectGame(GameId.Blackjack);
         ui.OpenForTest("setup"); yield return new WaitForSeconds(1); yield return Shot("3-setup");
@@ -202,10 +207,23 @@ public class Game : MonoBehaviour
         }
         while (busy) yield return null;
         yield return Shot("7-bj-fin-manche");
+        }
         SelectGame(GameId.Croque);
         StartGame();
         yield return new WaitForSeconds(3);
-        yield return Shot("8-croque");
+        yield return Shot("8-croque"); yield return Fps("croque");
+        // Diagnostic de performance : on coupe un element a la fois.
+        var ter = FindFirstObjectByType<Terrain>();
+        float td = ter.treeDistance, dd = ter.detailObjectDistance;
+        ter.treeDistance = 0; yield return Fps("sans arbres"); ter.treeDistance = td;
+        ter.detailObjectDistance = 0; yield return Fps("sans herbe"); ter.detailObjectDistance = dd;
+        sun.shadows = LightShadows.None; yield return Fps("sans ombres"); sun.shadows = LightShadows.Soft;
+        var urp = (UnityEngine.Rendering.Universal.UniversalRenderPipelineAsset)UnityEngine.Rendering.GraphicsSettings.currentRenderPipeline;
+        int msaa = urp.msaaSampleCount; urp.msaaSampleCount = 1; yield return Fps("sans msaa"); urp.msaaSampleCount = msaa;
+        urp.renderScale = 0.5f; yield return Fps("demi resolution"); urp.renderScale = 1;
+        float lb = QualitySettings.lodBias; QualitySettings.lodBias = 0.4f; yield return Fps("detail bas"); QualitySettings.lodBias = lb;
+        cam.GetComponent<UniversalAdditionalCameraData>().renderPostProcessing = false; yield return Fps("sans postfx"); cam.GetComponent<UniversalAdditionalCameraData>().renderPostProcessing = true;
+        System.IO.File.AppendAllText(System.IO.Path.Combine(dir, "fps.txt"), $"ombres {urp.shadowDistance} m, cascades {urp.shadowCascadeCount}, lodbias {QualitySettings.lodBias}, msaa {urp.msaaSampleCount}, arbres {ter.terrainData.treeInstanceCount}, ecran {Screen.width}x{Screen.height}" + System.Environment.NewLine);
         Pause(); yield return new WaitForSecondsRealtime(1); yield return Shot("9-pause");
         yield return new WaitForSecondsRealtime(1);
         Application.Quit();

@@ -34,6 +34,19 @@ GraphicsSettings:
   - {fileID: 10753, guid: 0000000000000000f000000000000000, type: 0}
   - {fileID: 10770, guid: 0000000000000000f000000000000000, type: 0}
   - {fileID: 10783, guid: 0000000000000000f000000000000000, type: 0}
+  - {fileID: 4800000, guid: e507fdfead5ca47e8b9a768b51c291a1, type: 3}
+  - {fileID: 4800000, guid: f6783ab646d374f94b199774402a5144, type: 3}
+  - {fileID: 4800000, guid: 29868e73b638e48ca99a19ea58c48d90, type: 3}
+  - {fileID: 4800000, guid: 69c1f799e772cb6438f56c23efccb782, type: 3}
+  - {fileID: 4800000, guid: 0a7e590f3cf1d4ee8a8fab5b6eff09ef, type: 3}
+  - {fileID: 10507, guid: 0000000000000000f000000000000000, type: 0}
+  - {fileID: 10513, guid: 0000000000000000f000000000000000, type: 0}
+  - {fileID: 10508, guid: 0000000000000000f000000000000000, type: 0}
+  - {fileID: 10626, guid: 0000000000000000f000000000000000, type: 0}
+  - {fileID: 18001, guid: 0000000000000000f000000000000000, type: 0}
+  - {fileID: 18002, guid: 0000000000000000f000000000000000, type: 0}
+  - {fileID: 18003, guid: 0000000000000000f000000000000000, type: 0}
+  - {fileID: 18005, guid: 0000000000000000f000000000000000, type: 0}
   m_PreloadedShaders: []
   m_PreloadShadersBatchTimeLimit: -1
   m_SpritesDefaultMaterial: {fileID: 10754, guid: 0000000000000000f000000000000000, type: 0}
@@ -44,7 +57,7 @@ GraphicsSettings:
   m_DefaultMobileRenderingPath: 1
   m_TierSettings: []
   m_LightmapStripping: 0
-  m_FogStripping: 0
+  m_FogStripping: 1
   m_InstancingStripping: 0
   m_BrgStripping: 0
   m_LightmapKeepPlain: 1
@@ -61,7 +74,7 @@ GraphicsSettings:
     UnityEngine.Rendering.Universal.UniversalRenderPipeline: {fileID: 11400000, guid: 7d1d5e62aa1485745a7bf7b8cb38e294, type: 2}
   m_ShaderBuildSettings:
     keywordDeclarationOverrides: []
-  m_LightsUseLinearIntensity: 0
+  m_LightsUseLinearIntensity: 1
   m_LightsUseColorTemperature: 1
   m_LogWhenShaderIsCompiled: 0
   m_LightProbeOutsideHullStrategy: 1

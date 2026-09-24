@@ -7,7 +7,7 @@ using UnityEngine;
 // Repere local : origine au milieu du bord plat (cote croupier), joueurs vers -z, tapis a 0.9 m.
 public class Table : MonoBehaviour
 {
-    public static readonly Vector3 Center = new Vector3(0, 0, 400);
+    public static readonly Vector3 Center = new Vector3(0, -300, 400); // sous la prairie : invisible depuis l'exterieur
     const float Top = 0.9f, R = 1.6f;
 
     public float speed = 1;
@@ -175,8 +175,12 @@ public class Table : MonoBehaviour
         Part(Cube(), new Vector3(0, Top + 0.025f, -0.1f), new Vector3(0.9f, 0.05f, 0.16f), Color("241815", 0.5f), t);
         int[] rack = { 5, 10, 50, 100, 500 };
         for (int k = 0; k < 5; k++)
+        {
             for (int j = 0; j < 6; j++)
                 Part(cyl, new Vector3(-0.34f + k * 0.17f, Top + 0.1f, -0.16f + j * 0.022f), new Vector3(0.085f, 0.01f, 0.085f), ChipSide(rack[k]), t, new Vector3(90, 0, 0));
+            // Face du premier jeton de chaque pile, tournee vers les joueurs : meme motif que leurs jetons.
+            Part(quad, new Vector3(-0.34f + k * 0.17f, Top + 0.1f, -0.1705f), Vector3.one * 0.085f, Tex("Casino/chip_" + rack[k], true), t);
+        }
         var s = Part(Cube(), new Vector3(1.05f, Top + 0.07f, -0.28f), new Vector3(0.2f, 0.14f, 0.3f), Color("15100e", 0.7f), t, new Vector3(0, -25, 0)).transform;
         Part(Cube(), new Vector3(1.05f, Top + 0.1f, -0.28f), new Vector3(0.14f, 0.1f, 0.26f), Tex("Cards/back_red"), t, new Vector3(0, -25, 0));
         if (main) shoe = s;

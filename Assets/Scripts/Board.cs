@@ -11,7 +11,6 @@ public class Board : MonoBehaviour
 
     const float HillR = 15f, HillH = 5.5f;
     static readonly Vector3 PenCenter = new Vector3(-18, 0, -12);
-    static readonly Vector3 Pond = new Vector3(15, 0, -15);
 
     public float speed = 1;
     public bool showNumbers = true, busy;
@@ -70,7 +69,9 @@ public class Board : MonoBehaviour
 
     GameObject Spawn(string model, Vector3 pos, float scale, float rotY, Transform parent)
     {
-        var g = Instantiate(Resources.Load<GameObject>("Models/" + model), pos, Quaternion.Euler(0, rotY, 0), parent);
+        var prefab = Synty.Get(model) ?? Resources.Load<GameObject>("Models/" + model);
+        if (!prefab) { Debug.LogWarning("Modele introuvable : " + model); return null; }
+        var g = Instantiate(prefab, pos, Quaternion.Euler(0, rotY, 0), parent);
         g.transform.localScale = Vector3.one * scale;
         return g;
     }
@@ -90,30 +91,41 @@ public class Board : MonoBehaviour
         return HillH * Mathf.Pow(1 - k * k, 1.4f);
     }
 
-    public static float Ground(float x, float z)
+    public static float Ground(float x, float z) => GroundBase(x, z) - Nature.RiverCarve(x, z);
+
+    // Relief sans le lit de la riviere : colline du plateau, bosses, etang, collines boisees a l'horizon.
+    public static float GroundBase(float x, float z)
     {
         float r = Mathf.Sqrt(x * x + z * z);
         float n = Mathf.PerlinNoise(x * 0.35f + 100, z * 0.35f + 100) - 0.5f;
         float far = Mathf.Clamp01((r - 28) / 30) * Mathf.PerlinNoise(x * 0.04f, z * 0.04f) * 7f;
-        float pond = Mathf.Clamp01(1 - (new Vector2(x - Pond.x, z - Pond.z).magnitude / 6f));
-        return HillY(r) + n * (r < HillR ? 0.12f : 0.3f) + far - pond * 0.8f;
+        float rim = Mathf.Pow(Mathf.InverseLerp(140, 340, r), 1.5f) * (18 + 30 * Mathf.PerlinNoise(x * 0.01f + 9, z * 0.01f + 4));
+        return HillY(r) + n * (r < HillR ? 0.12f : 0.3f) + far + rim;
+    }
+
+    // Hors du plateau, de l'enclos, de l'etang et du pique-nique.
+    public static bool FreeSpot(Vector3 p, float margin)
+    {
+        float r = new Vector2(p.x, p.z).magnitude;
+        return r > HillR + margin
+            && Vector3.Distance(new Vector3(p.x, 0, p.z), PenCenter) > 7.5f
+            && Vector3.Distance(new Vector3(p.x, 0, p.z), Hub.Center) > 9f;
     }
 
     // --- Monde fixe ---------------------------------------------------------------
     void BuildWorld()
     {
         var world = new GameObject("Monde").transform;
-        var terrain = new GameObject("Terrain");
-        terrain.transform.SetParent(world);
-        terrain.AddComponent<MeshFilter>().sharedMesh = TerrainMesh();
-        terrain.AddComponent<MeshRenderer>().sharedMaterial = Mat(Hex("5f9e3c"), 0.05f);
 
-        var water = Prim(PrimitiveType.Cylinder, Pond + Vector3.up * 0.02f, new Vector3(10, 0.02f, 10), Hex("4aa8dd"), world, 0.95f);
-        water.name = "Etang";
         var rng = new System.Random(11);
         float R(float a, float b) => a + (float)rng.NextDouble() * (b - a);
-        for (int i = 0; i < 5; i++)
-            Spawn(i % 2 == 0 ? "lily_large" : "lily_large", Pond + new Vector3(R(-3, 3), 0.05f, R(-3, 3)), 2.2f, R(0, 360), world);
+        // Nenuphars sur la riviere, pres du plateau.
+        for (int i = 0; i < 7; i++)
+        {
+            var p = Vector3.Lerp(new Vector3(52, 0, -29), new Vector3(20, 0, -18), i / 6f) + new Vector3(R(-1.5f, 1.5f), 0, R(-1.5f, 1.5f));
+            p.y = GroundBase(p.x, p.z) - 0.5f;
+            Spawn("SM_Env_Lillies_0" + (i % 3 + 1), p, 1f, R(0, 360), world);
+        }
 
         // Enclos de depart : terre battue + barriere
         Prim(PrimitiveType.Cylinder, PenCenter + Vector3.up * (Ground(PenCenter.x, PenCenter.z) + 0.02f), new Vector3(9.5f, 0.04f, 8), Hex("c9a26b"), world);
@@ -124,20 +136,13 @@ public class Board : MonoBehaviour
             var p = PenCenter + new Vector3(Mathf.Cos(a) * 5.2f, 0, Mathf.Sin(a) * 4.4f);
             p.y = Ground(p.x, p.z);
             var dir = new Vector3(-Mathf.Sin(a) * 5.2f, 0, Mathf.Cos(a) * 4.4f);
-            var f = Spawn("fence_simple", p, 2.2f, 0, world);
+            var f = Spawn("SM_Prop_Meadow_Fence_01", p, 0.7f, 0, world);
             f.transform.rotation = Quaternion.LookRotation(dir) * Quaternion.Euler(0, 90, 0);
         }
         var sign = PenCenter + new Vector3(5.5f, 0, 2.6f);
         Spawn("sign", sign + Vector3.up * Ground(sign.x, sign.z), 2.5f, 200, world);
 
-        bool Free(Vector3 p, float margin)
-        {
-            float r = new Vector2(p.x, p.z).magnitude;
-            return r > HillR + margin
-                && Vector3.Distance(new Vector3(p.x, 0, p.z), PenCenter) > 7.5f
-                && Vector3.Distance(new Vector3(p.x, 0, p.z), Pond) > 6.5f
-                && Vector3.Distance(new Vector3(p.x, 0, p.z), Hub.Center) > 7f;
-        }
+        bool Free(Vector3 p, float margin) => FreeSpot(p, margin);
         Vector3 RandomSpot(float rMin, float rMax, float margin)
         {
             for (int k = 0; k < 50; k++)
@@ -149,73 +154,14 @@ public class Board : MonoBehaviour
             return new Vector3(0, -100, 0);
         }
 
-        string[] trees = { "tree_default", "tree_oak", "tree_fat", "tree_detailed", "tree_tall", "tree_simple", "tree_cone", "tree_pineRoundA", "tree_pineRoundC", "tree_pineTallA_detailed", "tree_default_fall", "tree_oak_fall" };
-        for (int i = 0; i < 140; i++)
-        {
-            var p = RandomSpot(i < 40 ? 20 : 30, i < 40 ? 32 : 85, 4);
-            Spawn(trees[rng.Next(i < 40 ? 10 : trees.Length)], p, R(3.2f, 5.2f), R(0, 360), world);
-        }
-        string[] bushes = { "plant_bush", "plant_bushLarge", "plant_bushDetailed", "plant_bushSmall" };
-        for (int i = 0; i < 60; i++) Spawn(bushes[rng.Next(4)], RandomSpot(17, 45, 1.5f), R(2.5f, 3.8f), R(0, 360), world);
-        string[] rocks = { "rock_largeA", "rock_largeB", "rock_largeC", "rock_smallA", "rock_smallB", "rock_smallC", "rock_smallFlatA", "stone_tallA", "stone_largeB" };
-        for (int i = 0; i < 45; i++) Spawn(rocks[rng.Next(rocks.Length)], RandomSpot(16, 60, 1), R(2f, 4f), R(0, 360), world);
-        string[] flowers = { "flower_purpleA", "flower_purpleB", "flower_redA", "flower_redB", "flower_yellowA", "flower_yellowB" };
-        for (int c = 0; c < 35; c++)
-        {
-            var center = RandomSpot(16, 38, 1);
-            string kind = flowers[rng.Next(flowers.Length)];
-            for (int i = 0; i < 8; i++)
-            {
-                var p = center + new Vector3(R(-1.8f, 1.8f), 0, R(-1.8f, 1.8f));
-                if (!Free(p, 0.5f)) continue;
-                p.y = Ground(p.x, p.z);
-                Spawn(kind, p, R(2.2f, 3f), R(0, 360), world);
-            }
-        }
-        string[] grass = { "grass", "grass_large", "grass_leafs", "grass_leafsLarge" };
-        for (int i = 0; i < 380; i++) Spawn(grass[rng.Next(4)], RandomSpot(15.5f, 55, 0.5f), R(2.5f, 3.5f), R(0, 360), world);
-        string[] shrooms = { "mushroom_red", "mushroom_redGroup", "mushroom_tan", "mushroom_tanGroup" };
-        for (int i = 0; i < 30; i++) Spawn(shrooms[rng.Next(4)], RandomSpot(18, 40, 1), R(2.2f, 3.2f), R(0, 360), world);
-        string[] wood = { "log", "log_stack", "stump_old", "stump_round" };
-        for (int i = 0; i < 10; i++) Spawn(wood[rng.Next(4)], RandomSpot(20, 40, 2), R(2.5f, 3.2f), R(0, 360), world);
+        // Terrain precalcule dans la scene "Monde" (build) ; genere a la volee sinon.
+        if (Application.CanStreamedLevelBeLoaded("Monde")) UnityEngine.SceneManagement.SceneManager.LoadScene("Monde", UnityEngine.SceneManagement.LoadSceneMode.Additive);
+        else Nature.Build(world, FreeSpot);
+        Nature.Water(world, Synty.I.water);
+        Spawn("SM_Env_Cloud_Ring_01", new Vector3(0, 55, 0), 2.2f, 0, world);
+        Spawn("SM_Env_Cloud_Ring_02", new Vector3(0, 70, 0), 2.6f, 120, world);
+        for (int i = 0; i < 30; i++) Spawn("SM_Prop_Mushroom_Group_0" + rng.Next(2, 6), RandomSpot(18, 40, 1), R(1.5f, 2.5f), R(0, 360), world);
         for (int i = 0; i < 6; i++) Spawn(i % 2 == 0 ? "crop_pumpkin" : "crop_melon", PenCenter + new Vector3(-7 + i * 0.9f, Ground(-25f + i, -12f), 3 + (i % 3)), 2.8f, R(0, 360), world);
-    }
-
-    Mesh TerrainMesh()
-    {
-        const int rings = 56, seg = 84;
-        const float maxR = 130;
-        var pts = new Vector3[rings + 1, seg];
-        for (int i = 0; i <= rings; i++)
-            for (int j = 0; j < seg; j++)
-            {
-                float r = maxR * Mathf.Pow(i / (float)rings, 1.9f);
-                float a = (j + (i % 2) * 0.5f) * Mathf.PI * 2 / seg;
-                float x = Mathf.Cos(a) * r, z = Mathf.Sin(a) * r;
-                pts[i, j] = new Vector3(x, Ground(x, z), z);
-            }
-        var verts = new List<Vector3>();
-        var tris = new List<int>();
-        void Tri(Vector3 a, Vector3 b, Vector3 c)
-        {
-            if (Vector3.Cross(b - a, c - a).y < 0) (b, c) = (c, b);
-            tris.Add(verts.Count); verts.Add(a);
-            tris.Add(verts.Count); verts.Add(b);
-            tris.Add(verts.Count); verts.Add(c);
-        }
-        for (int i = 0; i < rings; i++)
-            for (int j = 0; j < seg; j++)
-            {
-                int k = (j + 1) % seg;
-                Tri(pts[i, j], pts[i, k], pts[i + 1, j]);
-                Tri(pts[i, k], pts[i + 1, k], pts[i + 1, j]);
-            }
-        var m = new Mesh { indexFormat = UnityEngine.Rendering.IndexFormat.UInt32 };
-        m.SetVertices(verts);
-        m.SetTriangles(tris, 0);
-        m.RecalculateNormals();
-        m.RecalculateBounds();
-        return m;
     }
 
     // --- Plateau d'une partie ---------------------------------------------------------

@@ -130,7 +130,7 @@ public class Ui : MonoBehaviour
         Btn(col, "Jouer", () => Go(games));
         Btn(col, "Paramètres", () => { SelectTab(tab); Go(settingsScreen); }, "green");
         Btn(col, "Quitter", Application.Quit, "ghost");
-        Text(title, $"v{Application.version}  ·  Modèles Kenney & Quaternius (CC0)  ·  Musiques : MMAudio, Geoff Harvey (Pixabay), « A Conversation with Saul » de Matthew Pablo (CC-BY 3.0)", "credits");
+        Text(title, $"v{Application.version}  ·  Décors Synty Studios · Modèles Kenney & Quaternius (CC0)  ·  Musiques : MMAudio, Geoff Harvey (Pixabay), « A Conversation with Saul » de Matthew Pablo (CC-BY 3.0)", "credits");
         updateCard = Div(title, "panel", "update-card");
         updateCard.style.display = DisplayStyle.None;
         updateText = Text(updateCard, "", "p");
@@ -324,6 +324,7 @@ public class Ui : MonoBehaviour
                 var fps = Drop("Images par seconde max.", new[] { "30", "60", "120", "144", "Illimité" }, s.fpsCap, v => s.fpsCap = v);
                 fps.SetEnabled(!s.vsync);
                 Drop("Ombres", new[] { "Désactivées", "Basses", "Hautes", "Ultra" }, s.shadows, v => { s.shadows = v; s.quality = 4; SelectTab(0); });
+                Drop("Détail du décor", new[] { "Bas", "Moyen", "Haut", "Ultra" }, s.detail, v => { s.detail = v; s.quality = 4; SelectTab(0); });
                 Drop("Anticrénelage", new[] { "Aucun", "MSAA 2x", "MSAA 4x", "MSAA 8x" }, s.aa, v => { s.aa = v; s.quality = 4; SelectTab(0); });
                 Check("Effets visuels (bloom, couleurs, flou)", s.post, v => { s.post = v; s.quality = 4; SelectTab(0); });
                 Range("Échelle de rendu", 0.5f, 1f, s.renderScale, v => { s.renderScale = v; s.quality = 4; }, v => Mathf.RoundToInt(v * 100) + " %");

@@ -12,7 +12,8 @@ public class Settings
     public bool vsync = true;
     public int fpsCap = 1;
     public int shadows = 2;
-    public int aa = 2;
+    public int aa = 1;
+    public int detail = 2;           // distance de detail des modeles (LOD)
     public bool post = true;
     public float renderScale = 1f;
     public float master = 0.8f, music = 0.5f, sfx = 0.8f, ui = 0.7f;
@@ -38,7 +39,8 @@ public class Settings
         quality = q;
         if (q > 3) return;
         shadows = q;
-        aa = q;
+        detail = q;
+        aa = new[] { 0, 1, 1, 2 }[q];
         post = q > 0;
         renderScale = new[] { 0.7f, 0.85f, 1f, 1f }[q];
     }
@@ -48,7 +50,9 @@ public class Settings
         var urp = (UniversalRenderPipelineAsset)GraphicsSettings.currentRenderPipeline;
         urp.msaaSampleCount = new[] { 1, 2, 4, 8 }[aa];
         urp.renderScale = renderScale;
+        QualitySettings.lodBias = new[] { 0.3f, 0.45f, 0.6f, 1f }[detail]; // au-dela, les arbres lointains restent en haute definition : tres couteux
         urp.shadowDistance = new[] { 0f, 45f, 70f, 110f }[shadows];
+        urp.shadowCascadeCount = shadows < 3 ? 2 : 4;
         urp.mainLightShadowmapResolution = new[] { 512, 1024, 2048, 4096 }[shadows];
         sun.shadows = shadows == 0 ? LightShadows.None : LightShadows.Soft;
         cam.GetUniversalAdditionalCameraData().renderPostProcessing = post;
