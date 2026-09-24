@@ -22,6 +22,7 @@ if (Test-Path $zip) { [IO.File]::Delete($zip) }
 Compress-Archive -Path "$root\Build\*" -DestinationPath $zip
 Write-Host ("Zip : {0:N0} Mo" -f ((Get-Item $zip).Length / 1MB))
 
-gh release create "v$Version" $zip --repo $repo --title "Pique-Nique's Games $Version" --notes $Notes
+$gh = (Get-Command gh -ErrorAction SilentlyContinue).Source; if (!$gh) { $gh = "C:\Program Files\GitHub CLI\gh.exe" }
+& $gh release create "v$Version" $zip --repo $repo --title "Pique-Nique's Games $Version" --notes $Notes
 if ($LASTEXITCODE -ne 0) { throw "Publication GitHub echouee" }
 Write-Host "Publie : https://github.com/$repo/releases/tag/v$Version"

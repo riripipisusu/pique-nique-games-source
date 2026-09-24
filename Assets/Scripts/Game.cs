@@ -103,7 +103,11 @@ public class Game : MonoBehaviour
         Sound.I.Music("music_menu");
         var args = Environment.GetCommandLineArgs();
         if (Array.IndexOf(args, "-autotest") < 0 && Array.IndexOf(args, "-nettest") < 0)
-            ui.StartCoroutine(Updater.Check(ui.ShowUpdate));
+            ui.StartCoroutine(Updater.Check(v =>
+            {
+                ui.ShowUpdate(v);
+                if (Array.IndexOf(args, "-autoupdate") >= 0) ui.StartCoroutine(Updater.Install(_ => { }, Debug.LogError));
+            }));
         int at = Array.IndexOf(args, "-autotest");
         if (at >= 0) ui.StartCoroutine(AutoTest(args[at + 1]));
         int nt = Array.IndexOf(args, "-nettest");

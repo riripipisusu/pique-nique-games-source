@@ -10,7 +10,7 @@ using UnityEngine.Networking;
 // telecharge le zip, puis un petit script remplace les fichiers une fois le jeu ferme.
 public static class Updater
 {
-    public const string Repo = "OWNER/pique-nique-games";   // proprietaire/depot des releases
+    public const string Repo = "riripipisusu/pique-nique-games";   // proprietaire/depot des releases
     const string Asset = "PiqueNiqueGames-Windows.zip";
 
     public static string Latest;
