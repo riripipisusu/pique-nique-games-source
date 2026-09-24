@@ -50,20 +50,62 @@ public static class Setup
             m.SetFloat("_SunSize", 0.05f);
         });
 
-        if (!File.Exists(Res + "Post.asset"))
+        // Etalonnage "cinema" : ACES, ombres froides / hautes lumieres chaudes, bloom, vignette, grain.
+        AssetDatabase.DeleteAsset(Res + "Post.asset");
         {
             var p = ScriptableObject.CreateInstance<VolumeProfile>();
             AssetDatabase.CreateAsset(p, Res + "Post.asset");
-            var tone = p.Add<Tonemapping>(true); tone.mode.Override(TonemappingMode.Neutral);
-            var col = p.Add<ColorAdjustments>(true); col.postExposure.Override(0f); col.contrast.Override(8); col.saturation.Override(4);
-            var wb = p.Add<WhiteBalance>(true); wb.temperature.Override(2);
-            var bloom = p.Add<Bloom>(true); bloom.threshold.Override(1f); bloom.intensity.Override(0.3f); bloom.scatter.Override(0.6f);
-            var vig = p.Add<Vignette>(true); vig.intensity.Override(0.24f); vig.smoothness.Override(0.5f);
+            var tone = p.Add<Tonemapping>(true); tone.mode.Override(TonemappingMode.ACES);
+            var col = p.Add<ColorAdjustments>(true); col.postExposure.Override(0.35f); col.contrast.Override(18); col.saturation.Override(12);
+            var wb = p.Add<WhiteBalance>(true); wb.temperature.Override(6); wb.tint.Override(-3);
+            var smh = p.Add<ShadowsMidtonesHighlights>(true);
+            smh.shadows.Override(new Vector4(0.92f, 0.98f, 1.1f, 0));
+            smh.highlights.Override(new Vector4(1.08f, 1.02f, 0.92f, 0));
+            var bloom = p.Add<Bloom>(true); bloom.threshold.Override(0.9f); bloom.intensity.Override(0.55f); bloom.scatter.Override(0.72f);
+            bloom.tint.Override(new Color(1f, 0.9f, 0.75f));
+            var vig = p.Add<Vignette>(true); vig.intensity.Override(0.3f); vig.smoothness.Override(0.45f);
+            var grain = p.Add<FilmGrain>(true); grain.type.Override(FilmGrainLookup.Thin1); grain.intensity.Override(0.12f);
             var dof = p.Add<DepthOfField>(true); dof.mode.Override(DepthOfFieldMode.Gaussian);
-            dof.gaussianStart.Override(18); dof.gaussianEnd.Override(55); dof.gaussianMaxRadius.Override(1.2f);
+            dof.gaussianStart.Override(10); dof.gaussianEnd.Override(40); dof.gaussianMaxRadius.Override(1.2f);
             foreach (var c in p.components) AssetDatabase.AddObjectToAsset(c, p);
             EditorUtility.SetDirty(p);
         }
+
+        // Ombres : 4 cascades, ombres douces de haute qualite, ombres des lumieres ponctuelles.
+        var urpSo = new SerializedObject(urp);
+        urpSo.FindProperty("m_ShadowCascadeCount").intValue = 4;
+        var soft = urpSo.FindProperty("m_SoftShadowQuality");
+        if (soft != null) soft.intValue = 3;
+        urpSo.FindProperty("m_AdditionalLightShadowsSupported").boolValue = true;
+        urpSo.FindProperty("m_AdditionalLightsShadowmapResolution").intValue = 2048;
+        urpSo.ApplyModifiedPropertiesWithoutUndo();
+
+        // Occlusion ambiante (SSAO) : la classe est interne a URP, on l'ajoute par son nom.
+        var rendererData = AssetDatabase.LoadAssetAtPath<UniversalRendererData>("Assets/Settings/Renderer.asset");
+        if (!rendererData.rendererFeatures.Any(f => f && f.GetType().Name == "ScreenSpaceAmbientOcclusion"))
+        {
+            var type = typeof(UniversalRendererData).Assembly.GetType("UnityEngine.Rendering.Universal.ScreenSpaceAmbientOcclusion");
+            var feature = (ScriptableRendererFeature)ScriptableObject.CreateInstance(type);
+            feature.name = "SSAO";
+            AssetDatabase.AddObjectToAsset(feature, rendererData);
+            rendererData.rendererFeatures.Add(feature);
+            AssetDatabase.TryGetGUIDAndLocalFileIdentifier(feature, out _, out long id);
+            var so = new SerializedObject(rendererData);
+            var map = so.FindProperty("m_RendererFeatureMap");
+            map.arraySize++;
+            map.GetArrayElementAtIndex(map.arraySize - 1).longValue = id;
+            so.ApplyModifiedPropertiesWithoutUndo();
+        }
+        foreach (var f in rendererData.rendererFeatures.Where(f => f && f.GetType().Name == "ScreenSpaceAmbientOcclusion"))
+        {
+            var fs = new SerializedObject(f);
+            fs.FindProperty("m_Settings.Intensity").floatValue = 1.6f;
+            fs.FindProperty("m_Settings.Radius").floatValue = 0.6f;
+            fs.FindProperty("m_Settings.DirectLightingStrength").floatValue = 0.35f;
+            fs.ApplyModifiedPropertiesWithoutUndo();
+            Debug.Log("DIAG SSAO ok");
+        }
+        EditorUtility.SetDirty(rendererData);
 
         if (!File.Exists(Res + "UI/Theme.tss"))
         {
@@ -91,6 +133,7 @@ public static class Setup
         PlayerSettings.companyName = "Anastasia";
         PlayerSettings.defaultIsNativeResolution = true;
         PlayerSettings.fullScreenMode = FullScreenMode.FullScreenWindow;
+        PlayerSettings.runInBackground = true;   // en ligne, un Alt+Tab ne doit pas figer la partie
         AssetDatabase.SaveAssets();
 
         RabbitController();

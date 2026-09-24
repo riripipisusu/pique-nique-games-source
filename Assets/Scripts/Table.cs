@@ -203,12 +203,12 @@ public class Table : MonoBehaviour
         foreach (var p in new[] { new Vector3(-4, 2.6f, 7.85f), new Vector3(0, 2.6f, 7.85f), new Vector3(4, 2.6f, 7.85f), new Vector3(-8.85f, 2.6f, 0), new Vector3(8.85f, 2.6f, 0), new Vector3(-8.85f, 2.6f, 4), new Vector3(8.85f, 2.6f, 4) })
         {
             Part(cyl, p, new Vector3(0.18f, 0.12f, 0.18f), Glow("ffcf7a"), t);
-            Light(p + Vector3.up * 0.1f, 4.5f, 1.2f, false);
+            Light(p + Vector3.up * 0.1f, 4f, 1.6f, false);
         }
         Part(cyl, new Vector3(0, 3.1f, -0.4f), new Vector3(1.4f, 0.05f, 0.8f), gold, t);
         Part(cyl, new Vector3(0, 3.04f, -0.4f), new Vector3(1.2f, 0.03f, 0.65f), Glow("ffe2a8"), t);
-        Light(new Vector3(0, 2.8f, -0.5f), 6, 3.2f, true);
-        Light(new Vector3(0, 2.4f, -1.8f), 5, 1.2f, false);
+        Light(new Vector3(0, 2.8f, -0.5f), 6, 4.5f, true);
+        Light(new Vector3(0, 2.4f, -1.8f), 5, 0.8f, false);
         foreach (var x in new[] { -5.2f, 5.2f }) Light(new Vector3(x, 2.6f, 3), 5, 1.6f, false);
     }
 

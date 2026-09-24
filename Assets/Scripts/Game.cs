@@ -48,6 +48,7 @@ public class Game : MonoBehaviour
 
     void Start()
     {
+        Application.runInBackground = true;
         settings = Settings.Load();
         myAvatar = PlayerPrefs.GetString("cc-avatar", "Casual_Male");
 
@@ -60,21 +61,22 @@ public class Game : MonoBehaviour
 
         sun = new GameObject("Soleil").AddComponent<Light>();
         sun.type = LightType.Directional;
-        sun.color = Board.Hex("fff0d4");
-        sun.intensity = 1.15f;
-        sun.shadowStrength = 0.75f;
-        sun.transform.rotation = Quaternion.Euler(42, -40, 0);
+        // Soleil bas de fin d'apres-midi : lumiere doree, longues ombres douces.
+        sun.color = Board.Hex("ffd9a8");
+        sun.intensity = 1.9f;
+        sun.shadowStrength = 0.9f;
+        sun.transform.rotation = Quaternion.Euler(24, -58, 0);
         RenderSettings.sun = sun;
         RenderSettings.skybox = Resources.Load<Material>("Sky");
         RenderSettings.ambientMode = AmbientMode.Trilight;
-        RenderSettings.ambientSkyColor = Board.Hex("b9d4f5");
-        RenderSettings.ambientEquatorColor = Board.Hex("b8c7a8");
-        RenderSettings.ambientGroundColor = Board.Hex("6e7f55");
+        RenderSettings.ambientSkyColor = Board.Hex("7f9cc4");
+        RenderSettings.ambientEquatorColor = Board.Hex("7d8a6e");
+        RenderSettings.ambientGroundColor = Board.Hex("39402c");
+        // Brume atmospherique : donne la profondeur des captures d'Agrou.
         RenderSettings.fog = true;
-        RenderSettings.fogMode = FogMode.Linear;
-        RenderSettings.fogColor = Board.Hex("cfe2f2");
-        RenderSettings.fogStartDistance = 70;
-        RenderSettings.fogEndDistance = 190;
+        RenderSettings.fogMode = FogMode.ExponentialSquared;
+        RenderSettings.fogColor = Board.Hex("b9c9cf");
+        RenderSettings.fogDensity = 0.016f;
 
         var vol = new GameObject("PostFX").AddComponent<Volume>();
         vol.isGlobal = true;
@@ -302,7 +304,7 @@ public class Game : MonoBehaviour
         sun.enabled = !on;
         RenderSettings.fog = !on;
         RenderSettings.ambientMode = on ? AmbientMode.Flat : AmbientMode.Trilight;
-        RenderSettings.ambientLight = Board.Hex("4a3a33");
+        RenderSettings.ambientLight = Board.Hex("2e2420");
     }
 
     // Action choisie par le joueur local : jouee tout de suite, ou envoyee a l'hote en ligne.
