@@ -131,19 +131,22 @@ public class Table : MonoBehaviour
     static Mesh Arc(float r, float thick, int seg, bool wall, float height = 0)
     {
         var v = new List<Vector3>();
+        var nrm = new List<Vector3>();
         var t = new List<int>();
-        const int ring = 10;
+        const int ring = 16;
         int n = wall ? 2 : ring;
         for (int i = 0; i <= seg; i++)
         {
             float a = Mathf.PI + Mathf.PI * i / seg;
             var dir = new Vector3(Mathf.Cos(a), 0, Mathf.Sin(a));
-            if (wall) { v.Add(dir * r); v.Add(dir * r - Vector3.up * height); }
+            if (wall) { v.Add(dir * r); v.Add(dir * r - Vector3.up * height); nrm.Add(dir); nrm.Add(dir); }
             else
                 for (int k = 0; k < ring; k++)
                 {
                     float b = k * Mathf.PI * 2 / ring;
-                    v.Add(dir * (r + Mathf.Cos(b) * thick) + Vector3.up * Mathf.Sin(b) * thick);
+                    var nk = dir * Mathf.Cos(b) + Vector3.up * Mathf.Sin(b);
+                    v.Add(dir * r + nk * thick);
+                    nrm.Add(nk);
                 }
         }
         for (int i = 0; i < seg; i++)
@@ -153,9 +156,9 @@ public class Table : MonoBehaviour
                 t.AddRange(new[] { a0, b0, a1, a1, b0, b1 });
                 t.AddRange(new[] { a0, a1, b0, a1, b1, b0 });   // double face : pas de trou vu de l'autre cote
             }
+        // Normales exactes : avec la double face, le calcul automatique s'annulait (facettes noires).
         var m = new Mesh();
-        m.SetVertices(v); m.SetTriangles(t, 0);
-        m.RecalculateNormals();
+        m.SetVertices(v); m.SetNormals(nrm); m.SetTriangles(t, 0);
         return m;
     }
 
