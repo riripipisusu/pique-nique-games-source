@@ -33,6 +33,100 @@ public class Ui : MonoBehaviour
         BuildHud();
         BuildPause();
         BuildVictory();
+        BuildOnline();
+        BuildLobby();
+    }
+
+    // --- En ligne -----------------------------------------------------------------------
+    VisualElement onlineScreen, lobbyScreen, lobbyList, lobbyModeC, lobbyModeA;
+    TextField onlineName, codeField;
+    Label onlineStatus, lobbyCode, lobbyStatus;
+    Button startBtn, replayBtn;
+
+    void BuildOnline()
+    {
+        onlineScreen = Screen();
+        var panel = Div(onlineScreen, "panel");
+        panel.style.width = 900;
+        Text(panel, "Jouer en ligne", "panel-title");
+        Text(panel, "Ton prénom", "h2");
+        onlineName = Add(panel, new TextField { value = PlayerPrefs.GetString("cc-name", "Joueur"), maxLength = 16 }, "name-field");
+        Text(panel, "Créer une partie", "h2");
+        Text(panel, "Tu recevras un code à donner à tes amis (jusqu'à 4 joueurs).", "p");
+        Btn(panel, "Héberger une partie", () => { SaveName(); game.net.Host(onlineName.value); }, "green");
+        Text(panel, "Rejoindre une partie", "h2");
+        var row = Div(panel, "row");
+        codeField = Add(row, new TextField { maxLength = 8 }, "name-field");
+        var join = Btn(row, "Rejoindre", () => { SaveName(); game.net.Join(codeField.value, onlineName.value); }, "small");
+        join.style.marginLeft = 12;
+        join.style.width = 240;
+        onlineStatus = Text(panel, "", "p", "status");
+        var back = Btn(panel, "Retour", Back, "ghost", "small");
+        back.style.width = 240;
+        back.style.alignSelf = Align.FlexStart;
+    }
+
+    void SaveName() => PlayerPrefs.SetString("cc-name", onlineName.value);
+
+    void BuildLobby()
+    {
+        lobbyScreen = Screen();
+        var panel = Div(lobbyScreen, "panel");
+        panel.style.width = 1000;
+        Text(panel, "Salon", "panel-title");
+        var cr = Div(panel, "row");
+        cr.style.justifyContent = Justify.Center;
+        Text(cr, "Code :", "h2");
+        lobbyCode = Text(cr, "", "code");
+        var cp = Btn(cr, "Copier", () => GUIUtility.systemCopyBuffer = game.net.Code, "ghost", "small");
+        cp.style.width = 180;
+        cp.style.marginLeft = 16;
+        Text(panel, "Joueurs", "h2");
+        lobbyList = Div(panel);
+        Text(panel, "Mode de jeu", "h2");
+        var modes = Div(panel, "row");
+        lobbyModeC = LobbyModeCard(modes, Mode.Classique, "Classique");
+        lobbyModeA = LobbyModeCard(modes, Mode.Ameliore, "Amélioré");
+        lobbyStatus = Text(panel, "", "p", "status");
+        var bottom = Div(panel, "row", "spread");
+        bottom.style.marginTop = 16;
+        Btn(bottom, "Quitter", Back, "ghost", "small").style.width = 240;
+        startBtn = Btn(bottom, "Lancer la partie !", () => game.net.StartMatch(), "green");
+        startBtn.style.width = 420;
+    }
+
+    VisualElement LobbyModeCard(VisualElement p, Mode m, string name)
+    {
+        var b = new Button(() => { Sound.I.UI("tick"); game.net.SetMode(m); });
+        b.AddToClassList("mode-card");
+        b.style.height = 90;
+        Text(b, name, "mode-name");
+        p.Add(b);
+        return b;
+    }
+
+    public void RefreshOnline()
+    {
+        var n = game.net;
+        onlineStatus.text = n.Status;
+        if (n.InGame) return;
+        if (n.Active && n.Lobby.Count > 0 && current == onlineScreen) Go(lobbyScreen);
+        if (!n.Active && current == lobbyScreen) Go(onlineScreen, false);
+        lobbyCode.text = n.Code;
+        lobbyStatus.text = n.IsHost ? (n.Lobby.Count < 2 ? "En attente d'au moins un autre joueur..." : "Tout le monde est là ? Lance la partie !") : "En attente de l'hôte...";
+        lobbyList.Clear();
+        for (int i = 0; i < n.Lobby.Count; i++)
+        {
+            var row = Div(lobbyList, "player-row");
+            Div(row, "chip").style.backgroundColor = Board.Colors[i];
+            Text(row, n.Lobby[i] + (i == game.mySeat ? "  (toi)" : "") + (i == 0 ? "  · hôte" : ""), "p").style.marginBottom = 0;
+        }
+        lobbyModeC.EnableInClassList("selected", n.LobbyMode == Mode.Classique);
+        lobbyModeA.EnableInClassList("selected", n.LobbyMode == Mode.Ameliore);
+        lobbyModeC.SetEnabled(n.IsHost);
+        lobbyModeA.SetEnabled(n.IsHost);
+        startBtn.style.display = n.IsHost ? DisplayStyle.Flex : DisplayStyle.None;
+        startBtn.SetEnabled(n.Lobby.Count >= 2);
     }
 
     // --- Outils ---------------------------------------------------------------------
@@ -87,6 +181,7 @@ public class Ui : MonoBehaviour
     {
         if (history.Count == 0) return;
         Sound.I.UI("back");
+        if (current == lobbyScreen) game.net.Leave();
         Go(history.Pop(), false);
         if (current == hud) game.Resume();
     }
@@ -102,7 +197,7 @@ public class Ui : MonoBehaviour
     public void ShowTitle()
     {
         history.Clear();
-        foreach (var s in new[] { newGame, settingsScreen, rulesScreen, hud, pause, victory }) Hide(s);
+        foreach (var s in new[] { newGame, settingsScreen, rulesScreen, hud, pause, victory, onlineScreen, lobbyScreen }) Hide(s);
         current = null;
         Go(title, false);
     }
@@ -114,7 +209,8 @@ public class Ui : MonoBehaviour
         var logo = Text(title, "Croque-Carotte", "logo");
         Text(title, "La course de lapins la plus traître de la montagne !", "tagline");
         var col = Div(title, "menu-col");
-        Btn(col, "Jouer", () => { RefreshPlayers(); Go(newGame); });
+        Btn(col, "Jouer sur ce PC", () => { RefreshPlayers(); Go(newGame); });
+        Btn(col, "Jouer en ligne", () => { RefreshOnline(); Go(onlineScreen); });
         Btn(col, "Règles", () => Go(rulesScreen), "green");
         Btn(col, "Paramètres", () => { SelectTab(tab); Go(settingsScreen); }, "green");
         Btn(col, "Quitter", Application.Quit, "ghost");
@@ -336,7 +432,7 @@ public class Ui : MonoBehaviour
     public void ShowHud()
     {
         history.Clear();
-        foreach (var s in new[] { title, newGame, settingsScreen, rulesScreen, pause, victory }) Hide(s);
+        foreach (var s in new[] { title, newGame, settingsScreen, rulesScreen, pause, victory, onlineScreen, lobbyScreen }) Hide(s);
         current = hud;
         Show(hud);
         card.AddToClassList("flip");
@@ -392,7 +488,7 @@ public class Ui : MonoBehaviour
             }
         }
 
-        bool mine = !game.busy && !r.Over;
+        bool mine = !game.busy && !r.Over && game.MyTurn;
         drawBtn.style.display = r.drawn == null && mine ? DisplayStyle.Flex : DisplayStyle.None;
         drawBtn.SetEnabled(mine);
         var name = $"<color={Hex(Board.Colors[r.Current.color])}>{r.Current.name}</color>";
@@ -456,7 +552,8 @@ public class Ui : MonoBehaviour
         var row = Div(panel, "row");
         row.style.marginTop = 20;
         Btn(row, "Menu principal", () => game.ToMenu(), "ghost").style.width = 360;
-        Btn(row, "Rejouer !", () => game.StartGame(), "green").style.width = 360;
+        replayBtn = Btn(row, "Rejouer !", () => game.Replay(), "green");
+        replayBtn.style.width = 360;
         row.Children().First().style.marginRight = 20;
     }
 
@@ -466,6 +563,7 @@ public class Ui : MonoBehaviour
         winTitle.text = $"{w.name} gagne !";
         winTitle.style.color = Board.Colors[w.color];
         winSub.text = "Ses trois lapins festoient au potager.";
+        replayBtn.style.display = !game.Online || game.net.IsHost ? DisplayStyle.Flex : DisplayStyle.None;
         current = null;
         Go(victory, false);
     }

@@ -77,8 +77,60 @@ public class Game : MonoBehaviour
         ApplySettings();
         ui.ShowTitle();
         Sound.I.Music("music_menu");
-        int at = Array.IndexOf(Environment.GetCommandLineArgs(), "-autotest");
-        if (at >= 0) ui.StartCoroutine(AutoTest(Environment.GetCommandLineArgs()[at + 1]));
+        net = Net.Create(this);
+        net.Changed += ui.RefreshOnline;
+        var args = Environment.GetCommandLineArgs();
+        int at = Array.IndexOf(args, "-autotest");
+        if (at >= 0) ui.StartCoroutine(AutoTest(args[at + 1]));
+        int nt = Array.IndexOf(args, "-nettest");
+        if (nt >= 0) ui.StartCoroutine(NetTest(args[nt + 1] == "host", args[nt + 2]));
+    }
+
+    public void Replay()
+    {
+        if (!Online) StartGame();
+        else if (net.IsHost) net.StartMatch();
+    }
+
+    int applied;
+
+    // Deux instances jouent l'une contre l'autre via Relay puis ecrivent leur journal, pour comparer.
+    IEnumerator NetTest(bool host, string dir)
+    {
+        string codeFile = System.IO.Path.Combine(dir, "code.txt");
+        yield return new WaitForSeconds(3);
+        if (host)
+        {
+            net.Host("Hôte");
+            while (net.Code == "") { if (net.Status.StartsWith("Impossible")) break; yield return null; }
+            System.IO.File.WriteAllText(codeFile, net.Code);
+            while (net.Lobby.Count < 2) yield return null;
+            yield return new WaitForSeconds(1);
+            net.StartMatch();
+        }
+        else
+        {
+            while (!System.IO.File.Exists(codeFile)) yield return new WaitForSeconds(0.5f);
+            net.Join(System.IO.File.ReadAllText(codeFile), "Invité");
+        }
+        while (!inGame) yield return null;
+        while (applied < 30 && !rules.Over)
+        {
+            if (MyTurn && CanAct)
+            {
+                if (rules.drawn == null) Draw();
+                else for (int k = 0; k < 3; k++) if (rules.CanMove(k)) { Move(k); break; }
+            }
+            yield return new WaitForSeconds(0.2f);
+        }
+        while (busy || (pending.Count > 0 && applied < 30)) yield return null;
+        yield return new WaitForEndOfFrame();
+        var tex = ScreenCapture.CaptureScreenshotAsTexture();
+        System.IO.File.WriteAllBytes(System.IO.Path.Combine(dir, (host ? "host" : "join") + ".png"), tex.EncodeToPNG());
+        System.IO.File.WriteAllText(System.IO.Path.Combine(dir, (host ? "host" : "join") + ".txt"),
+            $"status={net.Status}\nseat={mySeat}\napplied={applied}\n" + string.Join("\n", rules.log));
+        yield return new WaitForSeconds(3);
+        Application.Quit();
     }
 
     // Parcours automatique avec captures d'ecran, pour verifier une build sans interaction.
@@ -144,13 +196,27 @@ public class Game : MonoBehaviour
     }
 
     // --- Flux de partie ---------------------------------------------------------------
-    bool CanAct => inGame && !busy && !paused && rules != null && !rules.Over;
+    public int mySeat = -1;                       // -1 = partie locale
+    public Net net;
+    readonly Queue<string> pending = new Queue<string>();
+    float waitUntil;
+    public bool Online => net.Active && net.InGame;
+    public bool MyTurn => rules != null && (!Online || rules.turn == mySeat);
+    public bool Idle => inGame && !busy && pending.Count == 0;
+    bool CanAct => inGame && !busy && !paused && rules != null && !rules.Over && MyTurn && pending.Count == 0 && Time.time > waitUntil;
 
     public void StartGame()
     {
-        StopAllCoroutines();
         var n = names.Select((s, i) => string.IsNullOrWhiteSpace(s) ? "Joueur " + (i + 1) : s.Trim()).ToList();
-        rules = new Rules(mode, n, UnityEngine.Random.Range(0, int.MaxValue));
+        StartGame(mode, n, UnityEngine.Random.Range(0, int.MaxValue));
+    }
+
+    public void StartGame(Mode m, List<string> n, int seed)
+    {
+        StopAllCoroutines();
+        pending.Clear();
+        waitUntil = 0;
+        rules = new Rules(m, n, seed);
         board.Build(rules);
         busy = false;
         paused = false;
@@ -166,6 +232,23 @@ public class Game : MonoBehaviour
     public void Draw()
     {
         if (!CanAct || rules.drawn != null) return;
+        if (Online) { waitUntil = Time.time + 2; net.Act("draw"); return; }
+        DoDraw();
+    }
+
+    public void Move(int rabbit)
+    {
+        if (!CanAct || !rules.CanMove(rabbit)) return;
+        if (Online) { waitUntil = Time.time + 2; net.Act("move|" + rabbit); return; }
+        DoMove(rabbit);
+    }
+
+    public void Enqueue(string action) => pending.Enqueue(action);
+
+    public void PlayerLeft(int seat) => ui.Say($"{rules.players[seat].name} est parti : l'hôte joue pour lui.", 3.5f);
+
+    void DoDraw()
+    {
         string who = rules.Current.name;
         var res = rules.Draw();
         Sound.I.Play("card", 1, 0.05f);
@@ -188,10 +271,10 @@ public class Game : MonoBehaviour
         }));
     }
 
-    public void Move(int rabbit)
+    void DoMove(int rabbit)
     {
-        if (!CanAct || !rules.CanMove(rabbit)) return;
         var res = rules.Move(rabbit);
+        if (res == null) return;
         ui.HideCard();
         StartCoroutine(Run(board.AnimMove(res), () =>
         {
@@ -222,8 +305,11 @@ public class Game : MonoBehaviour
     {
         if (!inGame || paused || rules.Over) return;
         paused = true;
-        Time.timeScale = 0;
-        AudioListener.pause = true;
+        if (!Online)
+        {
+            Time.timeScale = 0;
+            AudioListener.pause = true;
+        }
         ui.ShowPause();
     }
 
@@ -238,6 +324,8 @@ public class Game : MonoBehaviour
     {
         StopAllCoroutines();
         Resume();
+        if (net.Active) net.Leave();
+        pending.Clear();
         inGame = false;
         busy = false;
         MenuBackdrop();
@@ -248,6 +336,14 @@ public class Game : MonoBehaviour
     // --- Boucle ---------------------------------------------------------------------------
     void Update()
     {
+        if (inGame && !busy && pending.Count > 0 && rules != null && !rules.Over)
+        {
+            var p = pending.Dequeue().Split('|');
+            waitUntil = 0;
+            applied++;
+            if (p[1] == "draw") DoDraw(); else DoMove(int.Parse(p[2]));
+            ui.Refresh();
+        }
         if (Input.GetKeyDown(KeyCode.Escape))
         {
             if (ui.InSubMenu) ui.Back();

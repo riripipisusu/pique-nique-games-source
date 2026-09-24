@@ -251,3 +251,6 @@ Toggle:checked .unity-toggle__checkmark { background-color: rgb(110, 190, 75); }
 }
 
 .win-title { font-size: 90px; }
+
+.code { font-size: 60px; -unity-font-style: bold; color: rgb(240, 138, 36); letter-spacing: 8px; margin-left: 14px; -unity-text-outline-width: 2px; -unity-text-outline-color: rgb(91, 58, 34); }
+.status { color: rgb(200, 90, 30); min-height: 34px; margin-top: 10px; }

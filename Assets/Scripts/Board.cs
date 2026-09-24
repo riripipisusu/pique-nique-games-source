@@ -630,7 +630,7 @@ public class Board : MonoBehaviour
         if (cam)
             foreach (var kv in labels)
             {
-                kv.Value.gameObject.SetActive(showNumbers);
+                kv.Value.gameObject.SetActive(showNumbers && !rules.open.Contains(kv.Key));
                 kv.Value.rotation = Quaternion.Euler(90, cam.transform.eulerAngles.y, 0);
             }
 

@@ -6,7 +6,7 @@ using UnityEngine;
 
 public static class PackageInstaller
 {
-    static readonly string[] PackagesToAdd = { "com.unity.render-pipelines.universal", "com.unity.cloud.gltfast" };
+    static readonly string[] PackagesToAdd = { "com.unity.render-pipelines.universal", "com.unity.cloud.gltfast", "com.unity.netcode.gameobjects", "com.unity.services.multiplayer" };
 
     static AddAndRemoveRequest _request;
     static double _deadline;
