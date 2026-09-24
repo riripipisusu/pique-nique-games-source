@@ -102,6 +102,8 @@ public class Game : MonoBehaviour
         ui.ShowTitle();
         Sound.I.Music("music_menu");
         var args = Environment.GetCommandLineArgs();
+        if (Array.IndexOf(args, "-autotest") < 0 && Array.IndexOf(args, "-nettest") < 0)
+            ui.StartCoroutine(Updater.Check(ui.ShowUpdate));
         int at = Array.IndexOf(args, "-autotest");
         if (at >= 0) ui.StartCoroutine(AutoTest(args[at + 1]));
         int nt = Array.IndexOf(args, "-nettest");

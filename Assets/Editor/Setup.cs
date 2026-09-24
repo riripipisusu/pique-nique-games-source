@@ -38,6 +38,9 @@ public static class Setup
 
         Mat("Lit", "Universal Render Pipeline/Lit", m => m.SetFloat("_Smoothness", 0.15f));
         Mat("Particle", "Universal Render Pipeline/Particles/Simple Lit", null);
+        // Variantes activees a l execution : un materiau qui les utilise les garde dans la build.
+        Mat("LitCutout", "Universal Render Pipeline/Lit", m => { m.SetFloat("_AlphaClip", 1); m.SetFloat("_Cutoff", 0.5f); m.EnableKeyword("_ALPHATEST_ON"); m.renderQueue = 2450; });
+        Mat("LitGlow", "Universal Render Pipeline/Lit", m => { m.EnableKeyword("_EMISSION"); m.SetColor("_EmissionColor", Color.white); m.globalIlluminationFlags = MaterialGlobalIlluminationFlags.None; });
         Mat("Sky", "Skybox/Procedural", m =>
         {
             m.SetColor("_SkyTint", new Color(0.45f, 0.62f, 0.95f));
@@ -238,6 +241,7 @@ public static class Setup
 
     public static void Build()
     {
+        if (File.Exists("VERSION")) PlayerSettings.bundleVersion = File.ReadAllText("VERSION").Trim();
         var r = BuildPipeline.BuildPlayer(new[] { "Assets/Scenes/Main.unity" }, "Build/PiqueNiqueGames.exe", BuildTarget.StandaloneWindows64, BuildOptions.None);
         if (r.summary.result != UnityEditor.Build.Reporting.BuildResult.Succeeded) throw new System.Exception("build: " + r.summary.result);
     }
@@ -283,6 +287,7 @@ public static class Setup
             if (!a.Finished) throw new System.Exception("blackjack sans fin");
             if (string.Join("|", a.log) != string.Join("|", b.log)) throw new System.Exception("blackjack non deterministe");
         }
+        if (!Updater.IsNewer("v2.1.0", "2.0.9") || Updater.IsNewer("v2.1.0", "2.1.0") || Updater.IsNewer("v1.9", "2.0")) throw new System.Exception("comparaison de versions");
         Debug.Log("SELFCHECK OK");
     }
 }

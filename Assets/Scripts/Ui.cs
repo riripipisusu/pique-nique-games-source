@@ -130,13 +130,31 @@ public class Ui : MonoBehaviour
         Btn(col, "Jouer", () => Go(games));
         Btn(col, "Paramètres", () => { SelectTab(tab); Go(settingsScreen); }, "green");
         Btn(col, "Quitter", Application.Quit, "ghost");
-        Text(title, "v2.0  ·  Modèles Kenney & Quaternius (CC0)  ·  Musiques CC0 et « A Conversation with Saul » de Matthew Pablo (CC-BY 3.0)", "credits");
+        Text(title, $"v{Application.version}  ·  Modèles Kenney & Quaternius (CC0)  ·  Musiques : MMAudio, Geoff Harvey (Pixabay), « A Conversation with Saul » de Matthew Pablo (CC-BY 3.0)", "credits");
+        updateCard = Div(title, "panel", "update-card");
+        updateCard.style.display = DisplayStyle.None;
+        updateText = Text(updateCard, "", "p");
+        updateBtn = Btn(updateCard, "Mettre à jour", () =>
+        {
+            updateBtn.SetEnabled(false);
+            StartCoroutine(Updater.Install(p => updateText.text = $"Téléchargement... {p * 100:0} %", err => { updateText.text = err; updateBtn.SetEnabled(true); }));
+        }, "green", "small");
         logo.schedule.Execute(() =>
         {
             float t = Time.unscaledTime;
             logo.style.rotate = new Rotate(Angle.Degrees(Mathf.Sin(t * 1.3f) * 1.5f));
             logo.style.translate = new Translate(0, Mathf.Sin(t * 2.1f) * 8f);
         }).Every(16);
+    }
+
+    VisualElement updateCard;
+    Label updateText;
+    Button updateBtn;
+
+    public void ShowUpdate(string version)
+    {
+        updateText.text = $"Nouvelle version {version} disponible !";
+        updateCard.style.display = DisplayStyle.Flex;
     }
 
     // --- Choix du jeu -----------------------------------------------------------------

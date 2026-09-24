@@ -66,7 +66,7 @@ public class Table : MonoBehaviour
 
     Material Tex(string res, bool cutout = false, float tiling = 1) => Mat(res + tiling, () =>
     {
-        var m = new Material(lit) { color = UnityEngine.Color.white };
+        var m = new Material(cutout ? Resources.Load<Material>("LitCutout") : lit) { color = UnityEngine.Color.white };
         m.SetTexture("_BaseMap", Resources.Load<Texture2D>(res));
         m.SetTextureScale("_BaseMap", Vector2.one * tiling);
         m.SetFloat("_Smoothness", 0.25f);
@@ -81,7 +81,7 @@ public class Table : MonoBehaviour
 
     Material Glow(string hex) => Mat("glow" + hex, () =>
     {
-        var m = new Material(lit) { color = Board.Hex(hex) };
+        var m = new Material(Resources.Load<Material>("LitGlow")) { color = Board.Hex(hex) };
         m.EnableKeyword("_EMISSION");
         m.SetColor("_EmissionColor", Board.Hex(hex) * 2.2f);
         return m;

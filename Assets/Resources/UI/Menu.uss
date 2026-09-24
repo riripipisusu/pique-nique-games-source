@@ -369,3 +369,6 @@ Button.btn.chip-btn, Button.btn.chip-btn:active, Button.btn.chip-btn:hover {
 .bj-bet { left: auto; right: 34px; bottom: 90px; translate: 0 0; width: 250px; }
 .bj-bet .rabbit-row { flex-direction: row; flex-wrap: wrap; justify-content: center; }
 .bj-bet Button.btn.small { width: 200px; margin: 6px 0; }
+
+.update-card { position: absolute; top: 40px; right: 40px; width: 420px; align-items: center; padding: 20px 26px; }
+.update-card .p { -unity-text-align: middle-center; }
