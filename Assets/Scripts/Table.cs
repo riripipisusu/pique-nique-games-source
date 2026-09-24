@@ -13,6 +13,8 @@ public class Table : MonoBehaviour
     public float speed = 1;
     public string back = "back_red";
     public Vector3 Focus => transform.TransformPoint(new Vector3(0, Top, -0.78f));
+    public Transform RouletteSpot { get; private set; }   // la table de roulette, ou l'on joue a la Roulette
+    public Animator RouletteDealer { get; private set; }
 
     Material lit;
     readonly Dictionary<string, Material> mats = new Dictionary<string, Material>();
@@ -44,9 +46,12 @@ public class Table : MonoBehaviour
             var other = new GameObject("AutreTable").transform;
             other.SetParent(transform, false);
             other.localPosition = new Vector3(x, 0, 3.6f);
-            other.localRotation = Quaternion.Euler(0, x < 0 ? 25 : -25, 0);
+            bool roulette = table.Contains("Roulette");
+            // Roulette : cylindre et croupier cote -z (face a la table de blackjack), joueurs cote +z, devant le tapis imprime.
+            other.localRotation = Quaternion.Euler(0, roulette ? 205 : -25, 0);
             Prop(table, Vector3.zero, 0, other);
-            Chars.Spawn(dealer, other, new Vector3(0, 0, 1.3f), 180, out _);
+            Chars.Spawn(dealer, other, roulette ? new Vector3(0.1f, 0, -1.25f) : new Vector3(0, 0, 1.3f), roulette ? 0 : 180, out var an);
+            if (roulette) { RouletteSpot = other; RouletteDealer = an; }
             Prop("SM_Prop_Chandelier_01", new Vector3(0, 5.15f, 0), 0, other);
         }
     }
@@ -102,7 +107,7 @@ public class Table : MonoBehaviour
     }
 
     // Objet du pack Casino Synty (null si le pack n'est pas installe).
-    GameObject Prop(string name, Vector3 pos, float rotY, Transform parent, float scale = 1)
+    GameObject Prop(string name, Vector3 pos, float rotY, Transform parent, float scale = 1, bool shadows = true)
     {
         var prefab = Synty.Get(name);
         if (!prefab) return null;
@@ -110,6 +115,9 @@ public class Table : MonoBehaviour
         g.transform.localPosition = pos;
         g.transform.localRotation = Quaternion.Euler(0, rotY, 0);
         g.transform.localScale = Vector3.one * scale;
+        if (!shadows) foreach (var r in g.GetComponentsInChildren<Renderer>()) r.shadowCastingMode = UnityEngine.Rendering.ShadowCastingMode.Off;
+        // Pampilles du lustre : leur materiau de verre sort en bloc blanc sous URP, on garde la monture seule.
+        foreach (var r in g.GetComponentsInChildren<Renderer>()) if (r.name.EndsWith("_Lights_01")) r.enabled = false;
         return g;
     }
 
@@ -178,10 +186,10 @@ public class Table : MonoBehaviour
 
     void BuildTable(Transform t, bool main)
     {
-        Part(HalfDisc(R, 48), new Vector3(0, Top + 0.004f, 0), Vector3.one, Tex("Casino/felt"), t);
+        Part(HalfDisc(R, 48), new Vector3(0, Top, 0), Vector3.one, Tex("Casino/felt"), t);
         // Meuble Synty (bord plat cote croupier, arrondi vers les joueurs), elargi pour notre tapis de 1.6 m de rayon.
         var body = Prop("SM_Prop_Blackjack_Table_01", Vector3.zero, 180, t);
-        if (body) body.transform.localScale = new Vector3(1.42f, 0.88f, 1.42f); // son tapis passe juste sous le notre (textes en francais)
+        if (body) body.transform.localScale = new Vector3(1.42f, 0.86f, 1.42f); // son tapis passe juste sous le notre (textes en francais)
         // Rack a jetons et sabot
         Part(Cube(), new Vector3(0, Top + 0.025f, -0.1f), new Vector3(0.9f, 0.05f, 0.16f), Color("241815", 0.5f), t);
         int[] rack = { 5, 10, 50, 100, 500 };
@@ -240,7 +248,7 @@ public class Table : MonoBehaviour
         Prop("SM_Prop_Wall_Art_03", new Vector3(0, 2.4f, 7.85f), 180, t);
         foreach (var (x, z) in new[] { (-8.2f, -6.3f), (8.2f, -6.3f), (-8.2f, 7.3f), (8.2f, 7.3f), (-2.6f, 7.3f), (2.6f, 7.3f) })
             Prop("SM_Prop_Pot_Plants_0" + (1 + (int)Mathf.Abs(x + z) % 4), new Vector3(x, 0, z), 0, t);
-        Prop("SM_Prop_Chandelier_01", new Vector3(0, 5.15f, -0.6f), 0, t);
+        Prop("SM_Prop_Chandelier_01", new Vector3(0, 5.15f, -0.6f), 0, t, 1, false);
     }
 
     void Light(Vector3 pos, float range, float intensity, bool shadows)
@@ -285,7 +293,7 @@ public class Table : MonoBehaviour
         for (int s = 0; s < seats; s++)
         {
             var seatPos = OnArc(s, R + 0.8f); seatPos.y = 0;
-            Prop("SM_Prop_Chair_03", seatPos, -SeatAngle(s) * Mathf.Rad2Deg - 90, root, 0.85f);
+            Prop("SM_Prop_Chair_03", seatPos, -SeatAngle(s) * Mathf.Rad2Deg - 90, root, 0.85f, false); // sinon leurs dossiers zebrent le tapis
             Part(cyl, OnArc(s, 1.26f) + Vector3.up * 0.0008f, new Vector3(0.31f, 0.0005f, 0.31f), Color(ColorUtility.ToHtmlStringRGB(Board.Colors[s]), 0.3f), root);
             Part(cyl, OnArc(s, 1.26f) + Vector3.up * 0.0012f, new Vector3(0.27f, 0.0005f, 0.27f), Color("15603a", 0.1f), root);
         }

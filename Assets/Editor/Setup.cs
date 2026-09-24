@@ -343,6 +343,34 @@ public static class Setup
             if (!a.Finished) throw new System.Exception("blackjack sans fin");
             if (string.Join("|", a.log) != string.Join("|", b.log)) throw new System.Exception("blackjack non deterministe");
         }
+        // Roulette : paiements, validite des mises, prison, fin de partie et jetons jamais negatifs.
+        void Eq(int got, int want, string what) { if (got != want) throw new System.Exception($"roulette {what} : {got} au lieu de {want}"); }
+        Eq(Roulette.Payout("P:17"), 35, "plein"); Eq(Roulette.Payout("C:14-17"), 17, "cheval"); Eq(Roulette.Payout("T:0a"), 11, "transversale 0");
+        Eq(Roulette.Payout("Q:0"), 8, "carre 0"); Eq(Roulette.Payout("Q:13"), 8, "carre"); Eq(Roulette.Payout("S:10"), 5, "sixain");
+        Eq(Roulette.Payout("D:2"), 2, "douzaine"); Eq(Roulette.Payout("L:2"), 2, "colonne"); Eq(Roulette.Payout("R"), 1, "rouge");
+        Eq(Roulette.Numbers("R").Length, 18, "rouges"); Eq(Roulette.Numbers("L:2").Last(), 36, "colonne 3");
+        foreach (var bad in new[] { "C:3-4", "C:0-5", "Q:3", "Q:33", "P:37", "S:11", "X" })
+            if (Roulette.Numbers(bad) != null) throw new System.Exception("roulette : mise invalide acceptee " + bad);
+        if (Roulette.Parse("R:-:15") != null || Roulette.Parse("P:17:10;R:-:20").Count != 2) throw new System.Exception("roulette : lecture des mises");
+        for (int g = 0; g < 300; g++)
+        {
+            var names = new[] { "A", "B", "C", "D" }.Take(1 + g % 4).ToArray();
+            var a = new Roulette(names, 20, g);
+            var b = new Roulette(names, 20, g);
+            string[] keys = { "P:0", "P:17", "C:0-2", "T:5", "Q:0", "S:3", "D:1", "L:0", "R", "N", "PA", "IM", "MA", "PS" };
+            for (int n = 0; n < 500 && !a.Finished; n++)
+            {
+                var p = a.Current;
+                var bets = Enumerable.Range(0, rng.Next(4)).Select(_ => keys[rng.Next(keys.Length)]).Select(k => $"{(Roulette.IsSimple(k) ? k + ":-" : k)}:{10 * (1 + rng.Next(5))}");
+                string[] act = { "bets", string.Join(";", bets) };
+                if (!a.TryApply(act)) { act = a.Bot(); if (!a.TryApply(act)) throw new System.Exception("roulette : action bot refusee " + act[1]); }
+                b.TryApply(act);
+                foreach (var q in a.players) if (q.chips < 0) throw new System.Exception("roulette : jetons negatifs");
+            }
+            if (!a.Finished) throw new System.Exception("roulette sans fin");
+            if (a.players.Any(q => q.prison.Count > 0)) throw new System.Exception("roulette : prison non videe en fin de partie");
+            if (string.Join("|", a.log) != string.Join("|", b.log)) throw new System.Exception("roulette non deterministe");
+        }
         if (!Updater.IsNewer("v2.1.0", "2.0.9") || Updater.IsNewer("v2.1.0", "2.1.0") || Updater.IsNewer("v1.9", "2.0")) throw new System.Exception("comparaison de versions");
         Debug.Log("SELFCHECK OK");
     }

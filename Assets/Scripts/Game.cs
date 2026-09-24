@@ -21,11 +21,13 @@ public class Game : MonoBehaviour
     public string myAvatar;
     public Rules rules;
     public Blackjack bj;
-    public IMatch Match => (IMatch)rules ?? bj;
+    public Roulette rt;
+    public IMatch Match => (IMatch)rules ?? (IMatch)bj ?? rt;
     public bool busy;
 
     Board board;
     Table table;
+    public RouletteView rview;
     Hub hub;
     Ui ui;
     Camera cam;
@@ -90,6 +92,8 @@ public class Game : MonoBehaviour
         board = new GameObject("Board").AddComponent<Board>();
         table = new GameObject("Casino").AddComponent<Table>();
         hub = new GameObject("PiqueNique").AddComponent<Hub>();
+        rview = table.gameObject.AddComponent<RouletteView>();
+        rview.Init(table);
         hub.SetMe(myAvatar);
         MenuBackdrop();
 
@@ -119,7 +123,7 @@ public class Game : MonoBehaviour
         if (nt >= 0) ui.StartCoroutine(NetTest(args[nt + 1] == "host", (GameId)Enum.Parse(typeof(GameId), args[nt + 2]), args[nt + 3]));
     }
 
-    public static int DefaultOption(GameId g) => g == GameId.Croque ? 0 : 10;
+    public static int DefaultOption(GameId g) => g == GameId.Croque ? 0 : g == GameId.Blackjack ? 10 : 20;
 
     public void SelectGame(GameId g)
     {
@@ -172,7 +176,7 @@ public class Game : MonoBehaviour
         yield return new WaitForEndOfFrame();
         var tex = ScreenCapture.CaptureScreenshotAsTexture();
         System.IO.File.WriteAllBytes(System.IO.Path.Combine(dir, (host ? "host" : "join") + ".png"), tex.EncodeToPNG());
-        var log = rules != null ? rules.log : bj.log;
+        var log = rules?.log ?? bj?.log ?? rt.log;
         System.IO.File.WriteAllText(System.IO.Path.Combine(dir, (host ? "host" : "join") + ".txt"),
             $"status={net.Status}\nseat={mySeat}\napplied={applied}\n" + string.Join("\n", log));
         yield return new WaitForSeconds(3);
@@ -185,6 +189,36 @@ public class Game : MonoBehaviour
         IEnumerator Shot(string n) { yield return new WaitForEndOfFrame(); var tex = ScreenCapture.CaptureScreenshotAsTexture(); System.IO.File.WriteAllBytes(System.IO.Path.Combine(dir, n + ".png"), tex.EncodeToPNG()); Destroy(tex); }
         IEnumerator Fps(string n) { int f = Time.frameCount; float t = Time.realtimeSinceStartup; yield return new WaitForSecondsRealtime(3); System.IO.File.AppendAllText(System.IO.Path.Combine(dir, "fps.txt"), $"{n}: {(Time.frameCount - f) / (Time.realtimeSinceStartup - t):0} fps" + System.Environment.NewLine); }
         yield return new WaitForSeconds(6); yield return Shot("1-titre"); yield return Fps("titre");
+        if (Array.IndexOf(Environment.GetCommandLineArgs(), "-roulette") >= 0)
+        {
+            names.Clear(); names.AddRange(new[] { "Anastasia", "Léo", "Camille" });
+            avatars.Clear(); avatars.AddRange(new[] { "Ami_Caramel", "Ami_Brun", "Ami_Platine" });
+            SelectGame(GameId.Roulette);
+            StartGame();
+            yield return new WaitForSeconds(2);
+            while (busy) yield return null;
+            yield return Shot("r1-tapis");
+            Act("bets|P:17:50;C:14-17:20;R:-:100;Q:0:10;D:1:30");
+            yield return new WaitForSeconds(0.5f);
+            Act("bets|N:-:50;S:3:20");
+            yield return new WaitForSeconds(0.8f);
+            yield return Shot("r1b-mises");
+            closeUp = true; dist = 1.5f; pitch = 40;
+            Act("bets|");
+            yield return new WaitForSeconds(1.8f); yield return Shot("r2a-piste");
+            yield return new WaitForSeconds(1.6f); yield return Shot("r2b-numeros");
+            yield return new WaitForSeconds(0.9f); yield return Shot("r2c-rebond");
+            while (busy) yield return null;
+            yield return Shot("r2d-case");
+            closeUp = false; dist = 3.2f; pitch = 50;
+            yield return Shot("r3-resultat");
+            yield return Fps("roulette");
+            for (int i = 0; i < 6; i++) { while (busy) yield return null; Act(string.Join("|", Match.Bot())); yield return new WaitForSeconds(0.3f); }
+            while (busy) yield return null;
+            yield return Shot("r4-historique");
+            Application.Quit();
+            yield break;
+        }
         bool croqueOnly = Array.IndexOf(Environment.GetCommandLineArgs(), "-croque") >= 0;
         if (!croqueOnly) {
         ui.OpenForTest("games"); yield return new WaitForSeconds(1); yield return Shot("2-jeux");
@@ -242,6 +276,7 @@ public class Game : MonoBehaviour
         }
         rules = null;
         bj = null;
+        rt = null;
         board.Build(r);
     }
 
@@ -251,6 +286,7 @@ public class Game : MonoBehaviour
         Sound.I.Refresh();
         board.speed = settings.animSpeed;
         table.speed = settings.animSpeed;
+        if (rview) rview.speed = settings.animSpeed;
         table.back = settings.cardBack;
         board.showNumbers = settings.tileNumbers;
         settings.Save();
@@ -290,9 +326,11 @@ public class Game : MonoBehaviour
         paused = false;
         Time.timeScale = 1;
         inGame = true;
+        bj = null;
+        rt = null;
+        rules = null;
         if (g == GameId.Croque)
         {
-            bj = null;
             rules = new Rules(opt == 0 ? Mode.Classique : Mode.Ameliore, n, seed);
             board.Build(rules);
             dist = 30;
@@ -300,9 +338,8 @@ public class Game : MonoBehaviour
             ui.ShowHud();
             ui.Say($"Au tour de {rules.Current.name} !");
         }
-        else
+        else if (g == GameId.Blackjack)
         {
-            rules = null;
             bj = new Blackjack(n, opt, seed);
             table.Build(bj);
             table.CamHome(mySeat, out target, out yaw);
@@ -312,9 +349,20 @@ public class Game : MonoBehaviour
             var first = bj.events.ToList();
             StartCoroutine(Run(table.Play(first, s => ui.Say(s)), null));
         }
-        Casino(g == GameId.Blackjack);
+        else
+        {
+            rt = new Roulette(n, opt, seed);
+            target = rview.Focus;
+            yaw = rview.Yaw;
+            dist = 3.2f;
+            pitch = 50;
+            ui.ShowHud();
+            var first = rt.events.ToList();
+            StartCoroutine(Run(rview.Play(first, s => ui.Say(s)), null));
+        }
+        Casino(g != GameId.Croque);
         snapCam = true;
-        Sound.I.Music(g == GameId.Blackjack ? "music_blackjack" : "music_game");
+        Sound.I.Music(g != GameId.Croque ? "music_blackjack" : "music_game");
     }
 
     // Ambiance : prairie ensoleillee ou salle de casino fermee aux lumieres chaudes.
@@ -341,7 +389,7 @@ public class Game : MonoBehaviour
 
     public void PlayerLeft(int seat)
     {
-        string n = rules != null ? rules.players[seat].name : bj.players[seat].name;
+        string n = rules?.players[seat].name ?? bj?.players[seat].name ?? rt.players[seat].name;
         ui.Say($"{n} est parti : l'hôte joue pour lui.", 3.5f);
     }
 
@@ -351,6 +399,13 @@ public class Game : MonoBehaviour
         if (rules != null)
         {
             if (p[0] == "draw") DoDraw(); else DoMove(int.Parse(p[1]));
+            return;
+        }
+        if (rt != null)
+        {
+            if (!rt.TryApply(p)) return;
+            var revs = rt.events.ToList();
+            StartCoroutine(Run(rview.Play(revs, s => ui.Say(s)), () => { if (rt.Finished) ui.ShowVictory(); }));
             return;
         }
         if (!bj.TryApply(p)) return;
@@ -458,6 +513,7 @@ public class Game : MonoBehaviour
             Apply(pending.Dequeue().Substring(4));
             ui.Refresh();
         }
+        if (!Focused) return;
         if (Input.GetKeyDown(KeyCode.Escape))
         {
             if (ui.InSubMenu) ui.Back();
@@ -470,7 +526,7 @@ public class Game : MonoBehaviour
             for (int r = 0; r < Rules.RabbitsPerPlayer; r++)
                 if (Input.GetKeyDown(KeyCode.Alpha1 + r) || Input.GetKeyDown(KeyCode.Keypad1 + r)) Move(r);
         }
-        else if (bj.phase == BJPhase.Play)
+        else if (bj != null && bj.phase == BJPhase.Play)
         {
             var h = bj.ActiveHand;
             if (Input.GetKeyDown(KeyCode.H)) Act("hit");
@@ -480,22 +536,29 @@ public class Game : MonoBehaviour
         }
     }
 
+    // Test automatique : la fenetre prend le focus au lancement, mais la souris appartient a l'utilisatrice.
+    bool closeUp;   // test automatique : camera collee au cylindre de la roulette
+    static readonly bool Testing = Array.IndexOf(Environment.GetCommandLineArgs(), "-autotest") >= 0;
+    static bool Focused => Application.isFocused && !Testing;
+
     void LateUpdate()
     {
         float dt = Time.unscaledDeltaTime, sens = settings.camSens;
         if (!inGame) yaw += 3.5f * dt;
-        if (Input.GetMouseButton(1))
+        // Fenetre sans le focus (autre jeu, autre ecran) : la souris et le clavier ne sont pas pour nous.
+        bool focus = Focused;
+        if (focus && Input.GetMouseButton(1))
         {
             yaw += Input.GetAxis("Mouse X") * 4 * sens;
             pitch = Mathf.Clamp(pitch - Input.GetAxis("Mouse Y") * 3 * sens, 10, 75);
         }
-        if (Input.GetKey(KeyCode.Q)) yaw += 70 * dt * sens;
-        if (Input.GetKey(KeyCode.E)) yaw -= 70 * dt * sens;
-        bool atTable = inGame && bj != null;
-        if (inGame && !paused) dist = Mathf.Clamp(dist - Input.mouseScrollDelta.y * (atTable ? 0.6f : 2f), atTable ? 1.5f : 12, atTable ? 3.3f : 55);
+        if (focus && Input.GetKey(KeyCode.Q)) yaw += 70 * dt * sens;
+        if (focus && Input.GetKey(KeyCode.E)) yaw -= 70 * dt * sens;
+        bool atTable = inGame && (bj != null || rt != null);
+        if (focus && inGame && !paused) dist = Mathf.Clamp(dist - Input.mouseScrollDelta.y * (atTable ? 0.6f : 2f), atTable ? 1.5f : 12, atTable ? 3.3f : 55);
 
         Vector3 want;
-        if (atTable) want = table.Focus;
+        if (atTable) want = bj != null ? table.Focus : closeUp ? rview.WheelPos : rview.Focus;
         else
         {
             var home = new Vector3(0, 2.5f, 0);
@@ -507,6 +570,6 @@ public class Game : MonoBehaviour
         cam.transform.position = target + Quaternion.Euler(pitch, yaw, 0) * Vector3.back * dist;
         cam.transform.LookAt(target);
         if (dof) dof.active = !inGame || paused;
-        if (atTable) ui.UpdateBubbles(table.Bubbles(), cam, table);
+        if (inGame && bj != null) ui.UpdateBubbles(table.Bubbles(), cam, table);
     }
 }

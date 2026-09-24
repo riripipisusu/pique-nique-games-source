@@ -72,3 +72,105 @@ public static class PrefabShot
         System.IO.File.WriteAllBytes(args[System.Array.IndexOf(args, "-out") + 1], tex.EncodeToPNG());
     }
 }
+public static class WheelShot
+{
+    // Vue de dessus du cylindre de la roulette Synty (calage des cases) : -executeMethod WheelShot.Run -out <png>
+    public static void Run()
+    {
+        ShaderUtil.allowAsyncCompilation = false;
+        UnityEditor.SceneManagement.EditorSceneManager.NewScene(UnityEditor.SceneManagement.NewSceneSetup.DefaultGameObjects);
+        var path = AssetDatabase.FindAssets("SM_Prop_Roulette_Table_01 t:Prefab").Select(AssetDatabase.GUIDToAssetPath).First(p => p.EndsWith("/SM_Prop_Roulette_Table_01.prefab"));
+        var g = (GameObject)Object.Instantiate(AssetDatabase.LoadAssetAtPath<GameObject>(path));
+        foreach (var t in g.GetComponentsInChildren<Transform>())
+        {
+            var r = t.GetComponent<Renderer>();
+            Debug.Log($"ROUE {t.name} localPos {t.localPosition} rot {t.localEulerAngles} " + (r ? $"bounds {r.bounds.center} ext {r.bounds.extents}" : ""));
+        }
+        var wheel = g.GetComponentsInChildren<Renderer>().First(r => r.name.Contains("Wheel"));
+        var cam = Camera.main;
+        var c = wheel.bounds.center;
+        cam.transform.SetPositionAndRotation(c + Vector3.up * 1.2f, Quaternion.Euler(90, 0, 0));
+        cam.fieldOfView = 35;
+        var args = System.Environment.GetCommandLineArgs();
+        var rt = new RenderTexture(900, 900, 24);
+        cam.targetTexture = rt; cam.Render(); cam.Render();
+        RenderTexture.active = rt;
+        var tex = new Texture2D(900, 900, TextureFormat.RGB24, false);
+        tex.ReadPixels(new Rect(0, 0, 900, 900), 0, 0);
+        System.IO.File.WriteAllBytes(args[System.Array.IndexOf(args, "-out") + 1], tex.EncodeToPNG());
+        cam.transform.SetPositionAndRotation(g.transform.position + new Vector3(0, 3.2f, 0), Quaternion.Euler(90, 0, 0));
+        cam.fieldOfView = 50;
+        cam.Render();
+        tex.ReadPixels(new Rect(0, 0, 900, 900), 0, 0);
+        System.IO.File.WriteAllBytes(args[System.Array.IndexOf(args, "-out") + 1].Replace(".png", "_table.png"), tex.EncodeToPNG());
+    }
+}
+public static class BallShot
+{
+    // Billes de calage autour du cylindre (rayon, hauteur sous le pivot) : -executeMethod BallShot.Run -out <png>
+    public static void Run()
+    {
+        ShaderUtil.allowAsyncCompilation = false;
+        UnityEditor.SceneManagement.EditorSceneManager.NewScene(UnityEditor.SceneManagement.NewSceneSetup.DefaultGameObjects);
+        var path = AssetDatabase.FindAssets("SM_Prop_Roulette_Table_01 t:Prefab").Select(AssetDatabase.GUIDToAssetPath).First(p => p.EndsWith("/SM_Prop_Roulette_Table_01.prefab"));
+        var g = (GameObject)Object.Instantiate(AssetDatabase.LoadAssetAtPath<GameObject>(path));
+        var wheel = g.GetComponentsInChildren<Transform>().First(t => t.name.Contains("Wheel"));
+        var args0 = System.Environment.GetCommandLineArgs();
+        bool side = System.Array.IndexOf(args0, "-side") >= 0;
+        var tests = side
+            ? new[] { (0.155f, -0.14f, Color.red), (0.155f, -0.17f, Color.green), (0.155f, -0.20f, Color.blue), (0.155f, -0.23f, Color.yellow), (0.215f, -0.14f, Color.magenta), (0.215f, -0.17f, Color.cyan), (0.215f, -0.20f, Color.white), (0.215f, -0.23f, Color.black) }
+            : new[] { (0.16f, -0.17f, Color.red), (0.16f, -0.20f, Color.green), (0.16f, -0.23f, Color.blue), (0.13f, -0.20f, Color.yellow), (0.19f, -0.20f, Color.magenta), (0.235f, -0.16f, Color.cyan), (0.235f, -0.19f, Color.white) };
+        for (int i = 0; i < tests.Length; i++)
+        {
+            var b = GameObject.CreatePrimitive(PrimitiveType.Sphere);
+            b.transform.SetParent(g.transform, false);
+            float a = (side ? 150 + (i % 4) * 20 : 200 + i * 22) * Mathf.Deg2Rad;
+            b.transform.localPosition = wheel.localPosition + new Vector3(Mathf.Sin(a) * tests[i].Item1, tests[i].Item2, Mathf.Cos(a) * tests[i].Item1);
+            b.transform.localScale = Vector3.one * 0.028f;
+            var m = new Material(Shader.Find("Universal Render Pipeline/Unlit")); m.color = tests[i].Item3;
+            b.GetComponent<Renderer>().sharedMaterial = m;
+        }
+        var cam = Camera.main;
+        var c = wheel.position;
+        cam.transform.position = c + (side ? new Vector3(0, -0.12f, -0.62f) : new Vector3(0, 0.35f, -0.75f));
+        cam.transform.LookAt(c + Vector3.down * (side ? 0.18f : 0.15f));
+        cam.fieldOfView = 40;
+        var rt = new RenderTexture(1200, 800, 24);
+        cam.targetTexture = rt; cam.Render(); cam.Render();
+        RenderTexture.active = rt;
+        var tex = new Texture2D(1200, 800, TextureFormat.RGB24, false);
+        tex.ReadPixels(new Rect(0, 0, 1200, 800), 0, 0);
+        var args = System.Environment.GetCommandLineArgs();
+        System.IO.File.WriteAllBytes(args[System.Array.IndexOf(args, "-out") + 1], tex.EncodeToPNG());
+    }
+}
+public static class WheelProfile
+{
+    // Profil du cylindre : hauteur de la surface (sous le pivot) selon le rayon, par lancer de rayons.
+    public static void Run()
+    {
+        UnityEditor.SceneManagement.EditorSceneManager.NewScene(UnityEditor.SceneManagement.NewSceneSetup.EmptyScene);
+        var path = AssetDatabase.FindAssets("SM_Prop_Roulette_Table_01 t:Prefab").Select(AssetDatabase.GUIDToAssetPath).First(p => p.EndsWith("/SM_Prop_Roulette_Table_01.prefab"));
+        var g = (GameObject)Object.Instantiate(AssetDatabase.LoadAssetAtPath<GameObject>(path));
+        foreach (var mf in g.GetComponentsInChildren<MeshFilter>()) mf.gameObject.AddComponent<MeshCollider>().sharedMesh = mf.sharedMesh;
+        Physics.SyncTransforms();
+        var wheel = g.GetComponentsInChildren<Transform>().First(t => t.name.Contains("Wheel"));
+        var sb = new System.Text.StringBuilder("PROFIL ");
+        foreach (float ang in new[] { 45f })
+            for (float r = 0.18f; r <= 0.46f; r += 0.01f)
+            {
+                float a = ang * Mathf.Deg2Rad;
+                var o = wheel.position + new Vector3(Mathf.Sin(a) * r, 0.5f, Mathf.Cos(a) * r);
+                var hits = Physics.RaycastAll(o, Vector3.down, 2).OrderBy(x => x.distance).ToArray();
+                string h = string.Join("/", hits.Select(x => (x.point.y - wheel.position.y).ToString("0.000") + (x.collider.transform == wheel ? "w" : "t")));
+                sb.Append($"a{ang} r{r:0.00}:{h}  ");
+            }
+        foreach (var (px, py) in new[] { (505f, 405f), (60f, 515f), (545f, 460f), (325f, 311f) })
+        {
+            var o = new Vector3((px - 450) / 301.6f, 3, (450 - py) / 301.6f);
+            var h = Physics.RaycastAll(o, Vector3.down, 5).OrderBy(x => x.distance).Select(x => x.point.y.ToString("0.000") + x.collider.name.Substring(Mathf.Max(0, x.collider.name.Length - 8)));
+            sb.Append($" TAPIS {px},{py}: " + string.Join("/", h));
+        }
+        Debug.Log(sb.ToString());
+    }
+}

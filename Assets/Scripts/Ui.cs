@@ -5,7 +5,7 @@ using UnityEngine;
 using UnityEngine.UIElements;
 
 // Tous les ecrans (UI Toolkit, construits en code, styles dans Resources/UI/Menu.uss).
-public class Ui : MonoBehaviour
+public partial class Ui : MonoBehaviour
 {
     Game game;
     VisualElement root, title, games, setup, picker, settingsScreen, rulesScreen, hud, pause, victory, onlineScreen, lobbyScreen;
@@ -162,13 +162,15 @@ public class Ui : MonoBehaviour
     {
         games = Screen();
         var panel = Div(games, "panel");
-        panel.style.width = 1300;
+        panel.style.width = 1640;
         Text(panel, "À quoi on joue ?", "panel-title");
         var row = Div(panel, "row");
         GameCard(row, GameId.Croque, "Croque-Carotte", "2 à 4 joueurs  ·  Course de lapins",
             "Grimpe la montagne jusqu'au potager... mais gare aux trous quand la carotte tourne !", "game-croque");
         GameCard(row, GameId.Blackjack, "Blackjack", "2 à 4 joueurs  ·  Cartes",
             "Approche-toi de 21 sans dépasser et bats le croupier. Le plus riche après les manches gagne.", "game-bj");
+        GameCard(row, GameId.Roulette, "Roulette", "1 à 4 joueurs  ·  Casino",
+            "Roulette française : pleins, chevaux, carrés, rouge ou noir... Le plus riche après les coups gagne.", "game-rt");
         var back = Btn(panel, "Retour", Back, "ghost", "small");
         back.style.width = 260;
         back.style.marginTop = 20;
@@ -220,7 +222,9 @@ public class Ui : MonoBehaviour
         parent.Clear();
         var opts = game.gameId == GameId.Croque
             ? new[] { (0, "Classique", "19 cases en spirale. La carotte ouvre 1 à 3 trous au hasard."), (1, "Amélioré", "25 cases, trous selon un cycle secret à deviner.") }
-            : new[] { (5, "Partie rapide", "5 manches"), (10, "Partie normale", "10 manches"), (20, "Longue soirée", "20 manches") };
+            : game.gameId == GameId.Blackjack
+            ? new[] { (5, "Partie rapide", "5 manches"), (10, "Partie normale", "10 manches"), (20, "Longue soirée", "20 manches") }
+            : new[] { (10, "Partie rapide", "10 coups"), (20, "Partie normale", "20 coups"), (40, "Longue soirée", "40 coups") };
         foreach (var (value, name, desc) in opts)
         {
             var b = new Button(() => { Sound.I.UI("tick"); pick(value); });
@@ -423,6 +427,13 @@ public class Ui : MonoBehaviour
             S("Mode Classique", "19 cases en spirale. Chaque tour de carotte ouvre 1 à 3 trous tirés au hasard, n'importe où à partir de la case 3.");
             S("Mode Amélioré", "25 cases sur deux anneaux. Les trous s'ouvrent un par un, selon un cycle de 25 crans tiré au début de la partie mais qui ne change plus. La carte Double carotte avance de deux crans. Quand un cran est connu, la case menacée s'allume en rouge. Observe, déduis, et place tes lapins là où ça ne tombera pas ! (D'après la vidéo d'Hydrios « Il manque 2 cases à Croque-Carotte ».)");
         }
+        else if (game.gameId == GameId.Roulette)
+        {
+            S("Le but", "Chaque joueur commence avec 1 000 jetons. Après le nombre de coups choisi, le joueur le plus riche gagne. Un joueur qui n'a plus de quoi miser (10 jetons) est éliminé.");
+            S("Faites vos jeux", "À ton tour, choisis un jeton puis clique sur le tapis pour miser (clic droit pour retirer). Quand tout le monde a misé, le croupier annonce « Rien ne va plus » et lance la bille. 37 cases : les numéros 1 à 36, rouges ou noirs, et le zéro vert.");
+            S("Les mises et leurs gains", "Plein (un numéro) : 35 fois la mise. Cheval (2 numéros voisins, clique sur leur bordure) : 17 fois. Transversale (une rangée de 3, clique sous la rangée) : 11 fois. Carré (4 numéros, clique sur leur coin) : 8 fois. Sixain (2 rangées, clique sous leur séparation) : 5 fois. Douzaine ou colonne : 2 fois. Chances simples (rouge, noir, pair, impair, manque 1-18, passe 19-36) : 1 fois.");
+            S("Le zéro et la prison", "Quand le 0 sort, les mises sur les chances simples ne sont pas perdues : elles vont « en prison ». Au coup suivant, si ta chance sort, ta mise t'est rendue ; sinon elle est perdue. Si le 0 ressort, il faudra que ta chance sorte deux fois de suite. Le 0 se joue en plein, à cheval avec 1, 2 ou 3, en transversale 0-1-2 ou 0-2-3, ou en carré 0-1-2-3.");
+        }
         else
         {
             S("Le but", "Chaque joueur commence avec 1 000 jetons et joue contre le croupier. Après le nombre de manches choisi, le joueur le plus riche gagne. Un joueur qui n'a plus de quoi miser (10 jetons) est éliminé.");
@@ -483,6 +494,8 @@ public class Ui : MonoBehaviour
         betInfo = Text(bar, "", "bar-item");
         roundInfo = Text(bar, "", "bar-item");
 
+        BuildRouletteHud();
+
         banner = Text(hud, "", "banner");
         banner.pickingMode = PickingMode.Ignore;
         hint = Text(hud, "", "hint");
@@ -497,13 +510,15 @@ public class Ui : MonoBehaviour
         Show(hud);
         card.AddToClassList("flip");
         card.style.display = DisplayStyle.None;
-        bool bj = game.bj != null;
-        ccHud.style.display = bj ? DisplayStyle.None : DisplayStyle.Flex;
+        bool bj = game.bj != null, rt = game.rt != null;
+        ccHud.style.display = game.rules != null ? DisplayStyle.Flex : DisplayStyle.None;
         bjHud.style.display = bj ? DisplayStyle.Flex : DisplayStyle.None;
+        rtHud.style.display = rt ? DisplayStyle.Flex : DisplayStyle.None;
         bubbles.Clear();
         seatTags.Clear();
-        playersBar.style.display = feed.style.display = bj ? DisplayStyle.None : DisplayStyle.Flex;
-        hint.text = bj ? "" : "Clic droit : tourner  ·  Molette : zoom  ·  Échap : pause";
+        playersBar.style.display = feed.style.display = bj || rt ? DisplayStyle.None : DisplayStyle.Flex;
+        hint.text = bj || rt ? "" : "Clic droit : tourner  ·  Molette : zoom  ·  Échap : pause";
+        if (rt) ResetRouletteBets();
         if (bj) betAmount = Blackjack.MinBet * 5;
         Refresh();
     }
@@ -539,6 +554,7 @@ public class Ui : MonoBehaviour
     {
         if (game.rules != null) RefreshCroque();
         else if (game.bj != null) RefreshBlackjack();
+        else if (game.rt != null) RefreshRoulette();
     }
 
     void PlayerCard(int i, string name, string avatar, bool active)
@@ -770,7 +786,8 @@ public class Ui : MonoBehaviour
         }
         else
         {
-            var ranking = game.bj.players.OrderByDescending(p => p.chips).ToList();
+            var ranking = (game.bj != null ? game.bj.players.Select(p => (p.name, p.seat, p.chips)) : game.rt.players.Select(p => (p.name, p.seat, p.chips)))
+                .OrderByDescending(p => p.chips).ToList();
             winTitle.text = $"{ranking[0].name} gagne !";
             winTitle.style.color = Board.Colors[ranking[0].seat];
             winSub.text = string.Join("\n", ranking.Select((p, i) => $"{i + 1}.  {p.name}  —  {p.chips} jetons"));

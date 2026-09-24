@@ -372,3 +372,53 @@ Button.btn.chip-btn, Button.btn.chip-btn:active, Button.btn.chip-btn:hover {
 
 .update-card { position: absolute; top: 40px; right: 40px; width: 420px; align-items: center; padding: 20px 26px; }
 .update-card .p { -unity-text-align: middle-center; }
+
+/* --- Roulette --------------------------------------------------------------------- */
+.game-rt .game-art { background-color: rgb(120, 22, 30); border-bottom-width: 12px; border-color: rgb(217, 178, 90); }
+.rt-panel {
+    position: absolute; bottom: 18px; left: 50%; translate: -50% 0; align-items: center;
+    padding: 12px 22px 14px 22px; border-radius: 26px; background-color: rgba(10, 20, 14, 0.86);
+    border-width: 3px; border-color: rgb(217, 178, 90);
+}
+.rt-panel > .row.spread { width: 100%; margin-bottom: 6px; align-items: center; }
+.rt-info { font-size: 24px; color: rgb(240, 225, 190); margin-right: 20px; }
+Button.chip-btn.rt-chipbtn { width: 62px; height: 62px; border-radius: 31px; margin: 0 4px; }
+Button.chip-btn.rt-chipbtn.rt-sel { scale: 1.18 1.18; translate: 0 -6px; }
+.rt-board { position: relative; margin: 6px 0 8px 0; }
+.rt-cell {
+    position: absolute; align-items: center; justify-content: center;
+    border-width: 1.5px; border-color: rgb(240, 225, 190); background-color: rgb(24, 98, 52);
+}
+.rt-cell.red { background-color: rgb(190, 32, 36); }
+.rt-cell.black { background-color: rgb(26, 24, 24); }
+.rt-cell.green { background-color: rgb(24, 128, 60); border-top-left-radius: 26px; border-bottom-left-radius: 26px; }
+.rt-cell.red-chance { background-color: rgb(24, 98, 52); background-image: none; }
+.rt-cell.red-chance > .rt-num, .rt-cell.black-chance > .rt-num { width: 34px; height: 34px; rotate: 45deg; }
+.rt-cell.red-chance > .rt-num { background-color: rgb(190, 32, 36); }
+.rt-cell.black-chance > .rt-num { background-color: rgb(26, 24, 24); }
+.rt-cell.hl { border-color: rgb(255, 222, 120); border-width: 3px; background-color: rgb(214, 160, 40); }
+.rt-cell:hover { border-color: rgb(255, 222, 120); }
+.rt-num { font-size: 22px; -unity-font-style: bold; color: rgb(255, 250, 235); -unity-text-align: middle-center; }
+.rt-spot { position: absolute; width: 18px; height: 18px; border-radius: 9px; background-color: rgba(255, 255, 255, 0); }
+.rt-spot:hover { background-color: rgba(255, 222, 120, 0.9); }
+.rt-chip {
+    position: absolute; width: 34px; height: 34px; border-radius: 17px; -unity-text-align: middle-center;
+    font-size: 14px; -unity-font-style: bold; color: rgb(40, 24, 10); background-color: rgb(255, 214, 90);
+    border-width: 3px; border-color: rgb(255, 255, 255);
+}
+.rt-prison { font-size: 20px; color: rgb(255, 180, 120); margin-bottom: 4px; }
+.rt-panel Button.btn.small { width: 190px; margin: 0 8px; }
+.rt-players { position: absolute; top: 110px; left: 24px; }
+.rt-player {
+    flex-direction: row; align-items: center; margin-bottom: 10px; padding: 6px 18px 6px 6px;
+    border-radius: 36px; background-color: rgba(10, 8, 6, 0.8); border-width: 2px; border-color: rgb(217, 178, 90);
+}
+.rt-player.active { border-color: rgb(255, 240, 150); background-color: rgba(60, 45, 10, 0.9); scale: 1.05 1.05; }
+.rt-history { position: absolute; top: 110px; right: 30px; flex-direction: column; align-items: center; }
+.rt-hist {
+    width: 50px; height: 50px; border-radius: 25px; margin-bottom: 6px; -unity-text-align: middle-center;
+    font-size: 22px; -unity-font-style: bold; color: rgb(255, 250, 235); border-width: 2px; border-color: rgb(217, 178, 90);
+}
+.rt-hist.red { background-color: rgb(190, 32, 36); }
+.rt-hist.black { background-color: rgb(26, 24, 24); }
+.rt-hist.green { background-color: rgb(24, 128, 60); }
