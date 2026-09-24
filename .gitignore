@@ -11,3 +11,21 @@
 .vs/
 /Downloads/
 *.zip
+
+# Packs Synty / Asset Store : jamais commites
+/Assets/Synty/
+/Assets/Synty.meta
+/Assets/PolygonNature/
+/Assets/PolygonNature.meta
+/Assets/PolygonFarm/
+/Assets/PolygonFarm.meta
+/Assets/PolygonFantasyKingdom/
+/Assets/PolygonFantasyKingdom.meta
+/Assets/PolygonFantasyCharacters/
+/Assets/PolygonFantasyCharacters.meta
+/Assets/PolygonCasino/
+/Assets/PolygonCasino.meta
+/Assets/PolygonNatureBiomes/
+/Assets/PolygonNatureBiomes.meta
+/Assets/Malbers Animations/
+/Assets/Malbers Animations.meta
