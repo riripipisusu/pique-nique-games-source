@@ -4,18 +4,16 @@ using UnityEngine;
 public class Hub : MonoBehaviour
 {
     public static readonly Vector3 Center = new Vector3(25, 0, -3);
-    public Vector3 Focus => transform.position + Vector3.up * 0.9f;
+    // Vise un peu a gauche de la nappe : la scene apparait a droite, degagee du menu.
+    public Vector3 Focus => transform.position + Vector3.up * 0.9f + transform.TransformDirection(new Vector3(Mathf.Sin(-205 * Mathf.Deg2Rad), 0, Mathf.Cos(-205 * Mathf.Deg2Rad))) * -1.6f;
+
+    const float SeatBack = 0.35f; // la caisse est sous le bassin, un peu en arriere des pieds
 
     Material lit;
     Transform me;
 
-    static readonly (string model, Vector3 pos, float rot, bool sit)[] Friends =
-    {
-        ("Casual2_Female", new Vector3(-1.7f, 0, 0.9f), 120, true),
-        ("Cowboy_Male", new Vector3(1.8f, 0, 1.1f), 230, true),
-        ("Chef_Female", new Vector3(0.6f, 0, 2.1f), 190, true),
-        ("Casual3_Male", new Vector3(-1.2f, 0, -1.6f), 40, true),
-    };
+    // La bande d'amis, assise en arc de cercle face a la camera (qui regarde depuis -z).
+    static readonly string[] Friends = { "Ami_Caramel", "Ami_Brune", "Ami_Platine", "Ami_Brun", "Ami_Roux" };
 
     void Awake()
     {
@@ -94,10 +92,15 @@ public class Hub : MonoBehaviour
             Model(i % 3 == 0 ? "SM_Env_Wildflowers_0" + (i / 3 % 3 + 1) : "SM_Env_Grass_Short_Clump_0" + (i % 3 + 1), p, 1f + (float)rng.NextDouble() * 0.5f, i * 47);
         }
 
-        foreach (var f in Friends)
+        for (int i = 0; i < Friends.Length; i++)
         {
-            Chars.Spawn(f.model, transform, f.pos, f.rot, out var an);
-            if (f.sit) an.Play("SitDown", 0, 0.95f);
+            float ang = (-5 + i * 42) * Mathf.Deg2Rad; // cote oppose a la camera du menu (qui regarde depuis -115 deg)
+            var pos = new Vector3(Mathf.Sin(ang), 0, Mathf.Cos(ang)) * 2.45f;
+            float rot = ang * Mathf.Rad2Deg + 180;
+            var face = Quaternion.Euler(0, rot, 0);
+            Model("SM_Prop_Camp_Crate_01", pos - face * new Vector3(0, 0, SeatBack), 0.6f, rot + 90);
+            Chars.Spawn(Friends[i], transform, pos, rot, out var an);
+            an.Play("SitDown", 0, 0.95f);
         }
     }
 
@@ -105,7 +108,8 @@ public class Hub : MonoBehaviour
     public void SetMe(string avatar)
     {
         if (me) Destroy(me.gameObject);
-        me = Chars.Spawn(avatar, transform, new Vector3(0.2f, 0, -2.6f), 0, out var an);
+        float a = -150 * Mathf.Deg2Rad; // debout au bord droit de la nappe
+        me = Chars.Spawn(avatar, transform, new Vector3(Mathf.Sin(a), 0, Mathf.Cos(a)) * 3.1f, -150 + 180, out var an);
         an.Play("Victory");
     }
 }

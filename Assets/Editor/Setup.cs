@@ -202,7 +202,7 @@ public static class Setup
     }
 
     // Portrait de chaque personnage (tete et epaules), pour l'ecran de choix d'avatar.
-    static void Portraits()
+    public static void Portraits()
     {
         string dir = Res + "Portraits/";
         Directory.CreateDirectory(dir);
@@ -220,11 +220,12 @@ public static class Setup
         RenderSettings.ambientLight = new Color(0.9f, 0.9f, 0.95f);
         var rt = new RenderTexture(256, 256, 24, RenderTextureFormat.ARGB32);
         cam.targetTexture = rt;
-        foreach (var path in Directory.GetFiles(Res + "Characters", "*.fbx"))
+        var names = Directory.GetFiles(Res + "Characters", "*.fbx").Select(Path.GetFileNameWithoutExtension).Concat(Chars.Looks.Keys);
+        foreach (var name in names)
         {
-            var prefab = AssetDatabase.LoadAssetAtPath<GameObject>(path.Replace('\\', '/'));
+            var prefab = AssetDatabase.LoadAssetAtPath<GameObject>(Res + "Characters/" + Chars.ModelOf(name) + ".fbx");
             var c = (GameObject)Object.Instantiate(prefab);
-            Chars.ApplySkin(c, prefab.name);
+            Chars.ApplySkin(c, name);
             c.transform.rotation = Quaternion.Euler(0, 180, 0);
             var rs = c.GetComponentsInChildren<Renderer>();
             var b = rs[0].bounds;
@@ -237,7 +238,7 @@ public static class Setup
             var tex = new Texture2D(256, 256, TextureFormat.RGBA32, false);
             tex.ReadPixels(new Rect(0, 0, 256, 256), 0, 0);
             tex.Apply();
-            File.WriteAllBytes(dir + Path.GetFileNameWithoutExtension(path) + ".png", tex.EncodeToPNG());
+            File.WriteAllBytes(dir + name + ".png", tex.EncodeToPNG());
             RenderTexture.active = null;
             Object.DestroyImmediate(tex);
             Object.DestroyImmediate(c);
