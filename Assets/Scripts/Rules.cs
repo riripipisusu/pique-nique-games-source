@@ -19,11 +19,12 @@ public struct Fall { public int player, rabbit, pos; }
 public class CarrotResult
 {
     public List<int> opened = new List<int>();
-    public int index = -1;
+    public List<int> closed = new List<int>();
+    public int index = -1, turns = 1;
     public List<Fall> fallen = new List<Fall>();
 }
 
-public class MoveResult { public int player, rabbit; public List<int> path = new List<int>(); }
+public class MoveResult { public int player, rabbit; public bool fell; public List<int> path = new List<int>(); }
 
 public class Rules
 {
@@ -41,6 +42,7 @@ public class Rules
     public int rotations;
     public int[] cycleStarts, cycleOrder;
     public int cycleStep;
+    public List<int> open = new List<int>();   // trous ouverts jusqu'a la prochaine rotation
 
     readonly List<Card> deck = new List<Card>();
     readonly Random rng;
@@ -118,7 +120,7 @@ public class Rules
         deck.RemoveAt(deck.Count - 1);
         if (!card.carrot) { drawn = card; return null; }
 
-        var res = new CarrotResult();
+        var res = new CarrotResult { turns = card.turns, closed = open };
         if (mode == Mode.Ameliore)
         {
             rotations += card.turns;
@@ -132,6 +134,7 @@ public class Rules
             Shuffle(holes);
             res.opened.AddRange(holes.Take(1 + rng.Next(3)));
         }
+        open = res.opened;
         foreach (var pos in res.opened)
         {
             var occ = Occupant(pos);
@@ -160,6 +163,14 @@ public class Rules
         while (target < summit && Occupant(target) != null) target++;
         target = Math.Min(target, summit);
         for (int i = from + 1; i <= target; i++) res.path.Add(i);
+        if (open.Contains(target))
+        {
+            res.fell = true;
+            p.rabbits[rabbit] = Start;
+            Log($"{p.name} saute dans le trou de la case {target} !");
+            NextTurn();
+            return res;
+        }
         p.rabbits[rabbit] = target;
         Log(target == summit ? $"{p.name} amène un lapin au potager !" : $"{p.name} avance un lapin de {steps} (case {target}).");
         if (p.rabbits.All(r => r == summit)) { winner = turn; Log($"{p.name} gagne la partie !"); }

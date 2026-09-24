@@ -9,3 +9,4 @@
 *.csproj
 *.sln
 .vs/
+/Downloads/
