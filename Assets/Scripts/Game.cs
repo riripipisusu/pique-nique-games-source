@@ -7,30 +7,49 @@ using UnityEngine.Rendering;
 using UnityEngine.Rendering.Universal;
 using UnityEngine.UIElements;
 
-// Chef d'orchestre : ambiance, camera, entrees, enchainement Rules -> animations -> interface.
+// Chef d'orchestre : ambiance, camera, entrees, enchainement regles -> animations -> interface.
 public class Game : MonoBehaviour
 {
     [RuntimeInitializeOnLoadMethod(RuntimeInitializeLoadType.AfterSceneLoad)]
     static void Boot() { if (!FindAnyObjectByType<Game>()) new GameObject("Game").AddComponent<Game>(); }
 
     public Settings settings;
-    public Rules rules;
-    public Mode mode = Mode.Classique;
+    public GameId gameId = GameId.Croque;
+    public int option;                            // Croque : 0 classique / 1 ameliore ; Blackjack : nombre de manches
     public readonly List<string> names = new List<string> { "Joueur 1", "Joueur 2" };
+    public readonly List<string> avatars = new List<string> { "Casual_Male", "Casual_Female" };
+    public string myAvatar;
+    public Rules rules;
+    public Blackjack bj;
+    public IMatch Match => (IMatch)rules ?? bj;
     public bool busy;
 
     Board board;
+    Table table;
+    Hub hub;
     Ui ui;
     Camera cam;
     Light sun;
     DepthOfField dof;
-    bool inGame, paused;
+    bool inGame, paused, snapCam = true;
     float yaw = 35, pitch = 24, dist = 36;
     Vector3 target = new Vector3(0, 2.5f, 0);
+
+    public static readonly string[] Characters =
+    {
+        "Casual_Male", "Casual_Female", "Casual2_Male", "Casual2_Female", "Casual3_Male", "Casual3_Female", "Casual_Bald",
+        "Suit_Male", "Suit_Female", "OldClassy_Male", "OldClassy_Female", "Worker_Male", "Worker_Female",
+        "Chef_Male", "Chef_Female", "Chef_Hat", "Doctor_Male_Young", "Doctor_Female_Young", "Doctor_Male_Old", "Doctor_Female_Old",
+        "Cowboy_Male", "Cowboy_Female", "Cowboy_Hair", "Pirate_Male", "Pirate_Female", "Kimono_Male", "Kimono_Female",
+        "Ninja_Male", "Ninja_Female", "Ninja_Male_Hair", "Ninja_Sand", "Ninja_Sand_Female", "Knight_Male", "Knight_Golden_Male",
+        "Knight_Golden_Female", "Viking_Male", "Viking_Female", "Soldier_Male", "Soldier_Female", "BlueSoldier_Male",
+        "BlueSoldier_Female", "Wizard", "Witch", "Elf", "Goblin_Male", "Goblin_Female", "Zombie_Male", "Zombie_Female",
+    };
 
     void Start()
     {
         settings = Settings.Load();
+        myAvatar = PlayerPrefs.GetString("cc-avatar", "Casual_Male");
 
         cam = new GameObject("Camera").AddComponent<Camera>();
         cam.tag = "MainCamera";
@@ -64,6 +83,9 @@ public class Game : MonoBehaviour
 
         Sound.Create(settings);
         board = new GameObject("Board").AddComponent<Board>();
+        table = new GameObject("Casino").AddComponent<Table>();
+        hub = new GameObject("PiqueNique").AddComponent<Hub>();
+        hub.SetMe(myAvatar);
         MenuBackdrop();
 
         var uiGo = new GameObject("UI");
@@ -72,18 +94,33 @@ public class Game : MonoBehaviour
         doc.panelSettings = Resources.Load<PanelSettings>("UI/Panel");
         uiGo.SetActive(true);
         ui = uiGo.AddComponent<Ui>();
+        net = Net.Create(this);
         ui.Init(this, doc);
+        net.Changed += ui.RefreshOnline;
 
         ApplySettings();
         ui.ShowTitle();
         Sound.I.Music("music_menu");
-        net = Net.Create(this);
-        net.Changed += ui.RefreshOnline;
         var args = Environment.GetCommandLineArgs();
         int at = Array.IndexOf(args, "-autotest");
         if (at >= 0) ui.StartCoroutine(AutoTest(args[at + 1]));
         int nt = Array.IndexOf(args, "-nettest");
-        if (nt >= 0) ui.StartCoroutine(NetTest(args[nt + 1] == "host", args[nt + 2]));
+        if (nt >= 0) ui.StartCoroutine(NetTest(args[nt + 1] == "host", (GameId)Enum.Parse(typeof(GameId), args[nt + 2]), args[nt + 3]));
+    }
+
+    public static int DefaultOption(GameId g) => g == GameId.Croque ? 0 : 10;
+
+    public void SelectGame(GameId g)
+    {
+        if (gameId != g) option = DefaultOption(g);
+        gameId = g;
+    }
+
+    public void SetMyAvatar(string a)
+    {
+        myAvatar = a;
+        PlayerPrefs.SetString("cc-avatar", a);
+        hub.SetMe(a);
     }
 
     public void Replay()
@@ -92,16 +129,17 @@ public class Game : MonoBehaviour
         else if (net.IsHost) net.StartMatch();
     }
 
+    // --- Tests automatiques ---------------------------------------------------------------
     int applied;
 
     // Deux instances jouent l'une contre l'autre via Relay puis ecrivent leur journal, pour comparer.
-    IEnumerator NetTest(bool host, string dir)
+    IEnumerator NetTest(bool host, GameId g, string dir)
     {
         string codeFile = System.IO.Path.Combine(dir, "code.txt");
         yield return new WaitForSeconds(3);
         if (host)
         {
-            net.Host("Hôte");
+            net.Host("Hôte", g, DefaultOption(g));
             while (net.Code == "") { if (net.Status.StartsWith("Impossible")) break; yield return null; }
             System.IO.File.WriteAllText(codeFile, net.Code);
             while (net.Lobby.Count < 2) yield return null;
@@ -114,21 +152,18 @@ public class Game : MonoBehaviour
             net.Join(System.IO.File.ReadAllText(codeFile), "Invité");
         }
         while (!inGame) yield return null;
-        while (applied < 30 && !rules.Over)
+        while (applied < 30 && !Match.Finished)
         {
-            if (MyTurn && CanAct)
-            {
-                if (rules.drawn == null) Draw();
-                else for (int k = 0; k < 3; k++) if (rules.CanMove(k)) { Move(k); break; }
-            }
+            if (MyTurn && CanAct) { var a = Match.Bot(); if (a != null) Act(string.Join("|", a)); }
             yield return new WaitForSeconds(0.2f);
         }
         while (busy || (pending.Count > 0 && applied < 30)) yield return null;
         yield return new WaitForEndOfFrame();
         var tex = ScreenCapture.CaptureScreenshotAsTexture();
         System.IO.File.WriteAllBytes(System.IO.Path.Combine(dir, (host ? "host" : "join") + ".png"), tex.EncodeToPNG());
+        var log = rules != null ? rules.log : bj.log;
         System.IO.File.WriteAllText(System.IO.Path.Combine(dir, (host ? "host" : "join") + ".txt"),
-            $"status={net.Status}\nseat={mySeat}\napplied={applied}\n" + string.Join("\n", rules.log));
+            $"status={net.Status}\nseat={mySeat}\napplied={applied}\n" + string.Join("\n", log));
         yield return new WaitForSeconds(3);
         Application.Quit();
     }
@@ -138,29 +173,32 @@ public class Game : MonoBehaviour
     {
         IEnumerator Shot(string n) { yield return new WaitForEndOfFrame(); var tex = ScreenCapture.CaptureScreenshotAsTexture(); System.IO.File.WriteAllBytes(System.IO.Path.Combine(dir, n + ".png"), tex.EncodeToPNG()); Destroy(tex); }
         yield return new WaitForSeconds(6); yield return Shot("1-titre");
-        ui.OpenForTest("settings"); yield return new WaitForSeconds(1); yield return Shot("2-parametres");
-        ui.OpenForTest("newgame"); yield return new WaitForSeconds(1); yield return Shot("3-nouvelle");
-        foreach (var m in new[] { Mode.Classique, Mode.Ameliore })
+        ui.OpenForTest("games"); yield return new WaitForSeconds(1); yield return Shot("2-jeux");
+        SelectGame(GameId.Blackjack);
+        ui.OpenForTest("setup"); yield return new WaitForSeconds(1); yield return Shot("3-setup");
+        ui.OpenForTest("avatar"); yield return new WaitForSeconds(1); yield return Shot("4-avatars");
+        names.Clear(); names.AddRange(new[] { "Anastasia", "Léo", "Camille" });
+        avatars.Clear(); avatars.AddRange(new[] { "Casual_Female", "Cowboy_Male", "Witch" });
+        SelectGame(GameId.Blackjack);
+        StartGame();
+        yield return new WaitForSeconds(2);
+        for (int i = 0; i < 40 && !Match.Finished; i++)
         {
-            mode = m;
-            names.Clear(); names.AddRange(new[] { "Anastasia", "Léo", "Camille" });
-            StartGame();
-            yield return new WaitForSeconds(2);
-            for (int i = 0; i < 16; i++)
-            {
-                while (busy) yield return null;
-                Debug.Log("AUTOTEST draw " + i); Draw();
-                yield return new WaitForSeconds(0.8f);
-                while (busy) yield return null;
-                if (i == 6) yield return Shot("4-" + m + "-carte");
-                for (int k = 0; k < 3 && rules.drawn != null; k++) Move((i + k) % 3);
-                yield return new WaitForSeconds(0.3f);
-                if (i == 10) yield return Shot("5-" + m + "-saut");
-            }
             while (busy) yield return null;
-            yield return new WaitForSeconds(1); yield return Shot("6-" + m + "-plateau");
+            var a = Match.Bot();
+            if (bj.phase == BJPhase.Play && i % 5 == 1 && bj.CanDouble(bj.ActiveHand, bj.Current)) a = new[] { "double" };
+            Act(string.Join("|", a));
+            yield return new WaitForSeconds(0.3f);
+            if (i == 6) yield return Shot("5-bj-mise");
+            if (i == 14) yield return Shot("6-bj-jeu");
         }
-        Pause(); yield return new WaitForSecondsRealtime(1); yield return Shot("7-pause");
+        while (busy) yield return null;
+        yield return Shot("7-bj-fin-manche");
+        SelectGame(GameId.Croque);
+        StartGame();
+        yield return new WaitForSeconds(3);
+        yield return Shot("8-croque");
+        Pause(); yield return new WaitForSecondsRealtime(1); yield return Shot("9-pause");
         yield return new WaitForSecondsRealtime(1);
         Application.Quit();
     }
@@ -176,6 +214,7 @@ public class Game : MonoBehaviour
             if (r.drawn != null) for (int k = 0; k < 3 && r.Move(rng.Next(3)) == null; k++) { }
         }
         rules = null;
+        bj = null;
         board.Build(r);
     }
 
@@ -184,6 +223,8 @@ public class Game : MonoBehaviour
         settings.Apply(cam, sun);
         Sound.I.Refresh();
         board.speed = settings.animSpeed;
+        table.speed = settings.animSpeed;
+        table.back = settings.cardBack;
         board.showNumbers = settings.tileNumbers;
         settings.Save();
     }
@@ -201,51 +242,94 @@ public class Game : MonoBehaviour
     readonly Queue<string> pending = new Queue<string>();
     float waitUntil;
     public bool Online => net.Active && net.InGame;
-    public bool MyTurn => rules != null && (!Online || rules.turn == mySeat);
+    public bool MyTurn => Match != null && Match.Actor >= 0 && (!Online || Match.Actor == mySeat);
     public bool Idle => inGame && !busy && pending.Count == 0;
-    bool CanAct => inGame && !busy && !paused && rules != null && !rules.Over && MyTurn && pending.Count == 0 && Time.time > waitUntil;
+    public bool CanAct => inGame && !busy && !paused && Match != null && !Match.Finished && MyTurn && pending.Count == 0 && Time.time > waitUntil;
 
     public void StartGame()
     {
         var n = names.Select((s, i) => string.IsNullOrWhiteSpace(s) ? "Joueur " + (i + 1) : s.Trim()).ToList();
-        StartGame(mode, n, UnityEngine.Random.Range(0, int.MaxValue));
+        StartGame(gameId, option, n, UnityEngine.Random.Range(0, int.MaxValue), avatars.ToList());
     }
 
-    public void StartGame(Mode m, List<string> n, int seed)
+    public void StartGame(GameId g, int opt, List<string> n, int seed, List<string> av)
     {
         StopAllCoroutines();
         pending.Clear();
         waitUntil = 0;
-        rules = new Rules(m, n, seed);
-        board.Build(rules);
+        gameId = g;
+        option = opt;
         busy = false;
         paused = false;
         Time.timeScale = 1;
         inGame = true;
-        dist = 30;
-        pitch = 34;
-        ui.ShowHud();
-        ui.Say($"Au tour de {rules.Current.name} !");
-        Sound.I.Music("music_game");
+        if (g == GameId.Croque)
+        {
+            bj = null;
+            rules = new Rules(opt == 0 ? Mode.Classique : Mode.Ameliore, n, seed);
+            board.Build(rules);
+            dist = 30;
+            pitch = 34;
+            ui.ShowHud();
+            ui.Say($"Au tour de {rules.Current.name} !");
+        }
+        else
+        {
+            rules = null;
+            bj = new Blackjack(n, opt, seed);
+            table.Build(bj);
+            table.CamHome(mySeat, out target, out yaw);
+            dist = 2.9f;
+            pitch = 52;
+            ui.ShowHud();
+            var first = bj.events.ToList();
+            StartCoroutine(Run(table.Play(first, s => ui.Say(s)), null));
+        }
+        Casino(g == GameId.Blackjack);
+        snapCam = true;
+        Sound.I.Music(g == GameId.Blackjack ? "music_blackjack" : "music_game");
     }
 
-    public void Draw()
+    // Ambiance : prairie ensoleillee ou salle de casino fermee aux lumieres chaudes.
+    void Casino(bool on)
     {
-        if (!CanAct || rules.drawn != null) return;
-        if (Online) { waitUntil = Time.time + 2; net.Act("draw"); return; }
-        DoDraw();
+        sun.enabled = !on;
+        RenderSettings.fog = !on;
+        RenderSettings.ambientMode = on ? AmbientMode.Flat : AmbientMode.Trilight;
+        RenderSettings.ambientLight = Board.Hex("4a3a33");
     }
 
-    public void Move(int rabbit)
+    // Action choisie par le joueur local : jouee tout de suite, ou envoyee a l'hote en ligne.
+    public void Act(string action)
     {
-        if (!CanAct || !rules.CanMove(rabbit)) return;
-        if (Online) { waitUntil = Time.time + 2; net.Act("move|" + rabbit); return; }
-        DoMove(rabbit);
+        if (!CanAct) return;
+        if (Online) { waitUntil = Time.time + 2; net.Act(action); return; }
+        Apply(action);
     }
+
+    public void Draw() { if (rules != null && rules.drawn == null) Act("draw"); }
+    public void Move(int rabbit) { if (rules != null && rules.CanMove(rabbit)) Act("move|" + rabbit); }
 
     public void Enqueue(string action) => pending.Enqueue(action);
 
-    public void PlayerLeft(int seat) => ui.Say($"{rules.players[seat].name} est parti : l'hôte joue pour lui.", 3.5f);
+    public void PlayerLeft(int seat)
+    {
+        string n = rules != null ? rules.players[seat].name : bj.players[seat].name;
+        ui.Say($"{n} est parti : l'hôte joue pour lui.", 3.5f);
+    }
+
+    void Apply(string action)
+    {
+        var p = action.Split('|');
+        if (rules != null)
+        {
+            if (p[0] == "draw") DoDraw(); else DoMove(int.Parse(p[1]));
+            return;
+        }
+        if (!bj.TryApply(p)) return;
+        var evs = bj.events.ToList();
+        StartCoroutine(Run(table.Play(evs, s => ui.Say(s)), () => { if (bj.Finished) ui.ShowVictory(); }));
+    }
 
     void DoDraw()
     {
@@ -286,7 +370,7 @@ public class Game : MonoBehaviour
     IEnumerator NextTurnBanner(float delay)
     {
         yield return new WaitForSeconds(delay);
-        if (inGame && !rules.Over && rules.drawn == null && !busy) ui.Say($"Au tour de {rules.Current.name} !");
+        if (inGame && rules != null && !rules.Over && rules.drawn == null && !busy) ui.Say($"Au tour de {rules.Current.name} !");
     }
 
     IEnumerator Run(IEnumerator anim, Action after)
@@ -303,7 +387,7 @@ public class Game : MonoBehaviour
 
     public void Pause()
     {
-        if (!inGame || paused || rules.Over) return;
+        if (!inGame || paused || Match == null || Match.Finished) return;
         paused = true;
         if (!Online)
         {
@@ -329,6 +413,10 @@ public class Game : MonoBehaviour
         inGame = false;
         busy = false;
         MenuBackdrop();
+        Casino(false);
+        snapCam = true;
+        pitch = 14;
+        dist = 6.5f;
         ui.ShowTitle();
         Sound.I.Music("music_menu");
     }
@@ -336,12 +424,11 @@ public class Game : MonoBehaviour
     // --- Boucle ---------------------------------------------------------------------------
     void Update()
     {
-        if (inGame && !busy && pending.Count > 0 && rules != null && !rules.Over)
+        if (inGame && !busy && pending.Count > 0 && Match != null && !Match.Finished)
         {
-            var p = pending.Dequeue().Split('|');
             waitUntil = 0;
             applied++;
-            if (p[1] == "draw") DoDraw(); else DoMove(int.Parse(p[2]));
+            Apply(pending.Dequeue().Substring(4));
             ui.Refresh();
         }
         if (Input.GetKeyDown(KeyCode.Escape))
@@ -349,11 +436,20 @@ public class Game : MonoBehaviour
             if (ui.InSubMenu) ui.Back();
             else if (inGame && !paused) Pause();
         }
-        if (CanAct)
+        if (!CanAct) return;
+        if (rules != null)
         {
             if (Input.GetKeyDown(KeyCode.Space)) Draw();
             for (int r = 0; r < Rules.RabbitsPerPlayer; r++)
                 if (Input.GetKeyDown(KeyCode.Alpha1 + r) || Input.GetKeyDown(KeyCode.Keypad1 + r)) Move(r);
+        }
+        else if (bj.phase == BJPhase.Play)
+        {
+            var h = bj.ActiveHand;
+            if (Input.GetKeyDown(KeyCode.H)) Act("hit");
+            if (Input.GetKeyDown(KeyCode.S)) Act("stand");
+            if (Input.GetKeyDown(KeyCode.D) && bj.CanDouble(h, bj.Current)) Act("double");
+            if (Input.GetKeyDown(KeyCode.P) && bj.CanSplit(h, bj.Current)) Act("split");
         }
     }
 
@@ -368,14 +464,22 @@ public class Game : MonoBehaviour
         }
         if (Input.GetKey(KeyCode.Q)) yaw += 70 * dt * sens;
         if (Input.GetKey(KeyCode.E)) yaw -= 70 * dt * sens;
-        if (inGame && !paused) dist = Mathf.Clamp(dist - Input.mouseScrollDelta.y * 2f, 12, 55);
+        bool atTable = inGame && bj != null;
+        if (inGame && !paused) dist = Mathf.Clamp(dist - Input.mouseScrollDelta.y * (atTable ? 0.6f : 2f), atTable ? 1.5f : 12, atTable ? 3.3f : 55);
 
-        var home = new Vector3(0, 2.5f, 0);
-        var want = inGame && settings.autoCam ? Vector3.Lerp(home, board.Focus, 0.55f) : home;
-        if (!inGame) { want = new Vector3(0, 4f, 0); pitch = Mathf.Lerp(pitch, 20, dt); dist = Mathf.Lerp(dist, 34, dt); }
-        target = Vector3.Lerp(target, want, 1 - Mathf.Exp(-2.5f * dt));
+        Vector3 want;
+        if (atTable) want = table.Focus;
+        else
+        {
+            var home = new Vector3(0, 2.5f, 0);
+            want = inGame && settings.autoCam ? Vector3.Lerp(home, board.Focus, 0.55f) : home;
+            if (!inGame) { want = hub.Focus; pitch = Mathf.Lerp(pitch, 14, dt); dist = Mathf.Lerp(dist, 6.5f, dt); }
+        }
+        target = snapCam ? want : Vector3.Lerp(target, want, 1 - Mathf.Exp(-2.5f * dt));
+        snapCam = false;
         cam.transform.position = target + Quaternion.Euler(pitch, yaw, 0) * Vector3.back * dist;
         cam.transform.LookAt(target);
         if (dof) dof.active = !inGame || paused;
+        if (atTable) ui.UpdateBubbles(table.Bubbles(), cam, table);
     }
 }

@@ -19,6 +19,7 @@ public class Settings
     public bool mute;
     public float animSpeed = 1f, camSens = 1f;
     public bool autoCam = true, tileNumbers = true;
+    public string cardBack = "back_red";
 
     public static readonly int[] Fps = { 30, 60, 120, 144, 0 };
 

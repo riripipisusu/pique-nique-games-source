@@ -26,8 +26,25 @@ public class CarrotResult
 
 public class MoveResult { public int player, rabbit; public bool fell; public List<int> path = new List<int>(); }
 
-public class Rules
+public class Rules : IMatch
 {
+    public int Actor => Over ? -1 : turn;
+    public bool Finished => Over;
+
+    public bool TryApply(string[] a)
+    {
+        if (Over) return false;
+        if (a[0] == "draw") { if (drawn != null) return false; Draw(); return true; }
+        return a[0] == "move" && int.TryParse(a[1], out int k) && k >= 0 && k < RabbitsPerPlayer && Move(k) != null;
+    }
+
+    public string[] Bot()
+    {
+        if (drawn == null) return new[] { "draw" };
+        for (int k = 0; k < RabbitsPerPlayer; k++) if (CanMove(k)) return new[] { "move", k.ToString() };
+        return null;
+    }
+
     public const int Start = 0, RabbitsPerPlayer = 3, MaxPlayers = 4, CycleLength = 25, OuterRing = 15;
 
     public Mode mode;

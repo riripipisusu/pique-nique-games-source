@@ -22,8 +22,10 @@ public class Net : MonoBehaviour
     public bool IsHost;
     public string Code => session?.Code ?? "";
     public string Status = "";
-    public Mode LobbyMode = Mode.Classique;
+    public GameId LobbyGame;
+    public int LobbyOption;
     public readonly List<string> Lobby = new List<string>();
+    public readonly List<string> LobbyAvatars = new List<string>();
     public bool InGame;
 
     Game game;
@@ -32,7 +34,7 @@ public class Net : MonoBehaviour
     string myName;
     readonly Dictionary<ulong, int> seats = new Dictionary<ulong, int>();
     readonly HashSet<int> gone = new HashSet<int>();
-    Rules shadow;   // copie instantanee de la partie cote hote, pour valider les actions
+    IMatch shadow;   // copie instantanee de la partie cote hote, pour valider les actions
     public event Action Changed;
 
     public static Net Create(Game g)
@@ -70,11 +72,13 @@ public class Net : MonoBehaviour
 
     void Say(string s) { Status = s; Changed?.Invoke(); }
 
-    public async void Host(string name)
+    public async void Host(string name, GameId g, int option)
     {
         try
         {
             myName = Clean(name);
+            LobbyGame = g;
+            LobbyOption = option;
             Say("Création de la partie...");
             await Init();
             session = await MultiplayerService.Instance.CreateSessionAsync(new SessionOptions { MaxPlayers = Rules.MaxPlayers, IsPrivate = true }.WithRelayNetwork());
@@ -84,6 +88,8 @@ public class Net : MonoBehaviour
             seats[nm.LocalClientId] = 0;
             Lobby.Clear();
             Lobby.Add(myName);
+            LobbyAvatars.Clear();
+            LobbyAvatars.Add(game.myAvatar);
             game.mySeat = 0;
             Say("Partage le code à tes amis !");
             SendLobby();
@@ -102,7 +108,7 @@ public class Net : MonoBehaviour
             session = await MultiplayerService.Instance.JoinSessionByCodeAsync(code.Trim().ToUpperInvariant());
             Hook();
             Say("Connecté ! En attente de l'hôte...");
-            if (nm.IsConnectedClient) Send("hello|" + myName);
+            if (nm.IsConnectedClient) Send($"hello|{myName}|{game.myAvatar}");
         }
         catch (Exception e) { Fail(e); }
     }
@@ -127,6 +133,7 @@ public class Net : MonoBehaviour
         session = null;
         InGame = false;
         Lobby.Clear();
+        LobbyAvatars.Clear();
         seats.Clear();
         gone.Clear();
         game.mySeat = -1;
@@ -143,7 +150,7 @@ public class Net : MonoBehaviour
 
     void OnConnected(ulong id)
     {
-        if (!IsHost && id == nm.LocalClientId) Send("hello|" + myName);
+        if (!IsHost && id == nm.LocalClientId) Send($"hello|{myName}|{game.myAvatar}");
     }
 
     void OnDisconnected(ulong id)
@@ -163,6 +170,7 @@ public class Net : MonoBehaviour
         {
             seats.Remove(id);
             Lobby.RemoveAt(seat);
+            LobbyAvatars.RemoveAt(seat);
             foreach (var k in seats.Keys.ToList()) if (seats[k] > seat) seats[k]--;
             SendLobby();
         }
@@ -193,7 +201,7 @@ public class Net : MonoBehaviour
 
     void SendLobby()
     {
-        Broadcast($"lobby|{LobbyMode}|{string.Join(";", Lobby)}");
+        Broadcast($"lobby|{LobbyGame}|{LobbyOption}|{string.Join(";", Lobby)}|{string.Join(";", LobbyAvatars)}");
         foreach (var kv in seats) if (kv.Key != nm.LocalClientId) SendTo(kv.Key, "seat|" + kv.Value);
     }
 
@@ -207,9 +215,10 @@ public class Net : MonoBehaviour
             if (InGame || seats.ContainsKey(sender) || Lobby.Count >= Rules.MaxPlayers) return;
             seats[sender] = Lobby.Count;
             Lobby.Add(Clean(p[1]) is var n && n.Length > 0 ? n : "Joueur " + (Lobby.Count + 1));
+            LobbyAvatars.Add(p.Length > 2 && Array.IndexOf(Game.Characters, p[2]) >= 0 ? p[2] : "Casual_Male");
             SendLobby();
         }
-        else if (p[0] == "act" && InGame && seats.TryGetValue(sender, out int seat) && seat == shadow.turn)
+        else if (p[0] == "act" && InGame && seats.TryGetValue(sender, out int seat) && seat == shadow.Actor)
             HostAct(p);
     }
 
@@ -219,9 +228,12 @@ public class Net : MonoBehaviour
         switch (p[0])
         {
             case "lobby":
-                LobbyMode = (Mode)Enum.Parse(typeof(Mode), p[1]);
+                LobbyGame = (GameId)Enum.Parse(typeof(GameId), p[1]);
+                LobbyOption = int.Parse(p[2]);
                 Lobby.Clear();
-                Lobby.AddRange(p[2].Split(';'));
+                Lobby.AddRange(p[3].Split(';'));
+                LobbyAvatars.Clear();
+                LobbyAvatars.AddRange(p[4].Split(';'));
                 Changed?.Invoke();
                 break;
             case "seat":
@@ -230,7 +242,7 @@ public class Net : MonoBehaviour
                 break;
             case "start":
                 InGame = true;
-                game.StartGame((Mode)Enum.Parse(typeof(Mode), p[1]), p[3].Split(';').ToList(), int.Parse(p[2]));
+                game.StartGame((GameId)Enum.Parse(typeof(GameId), p[1]), int.Parse(p[2]), p[4].Split(';').ToList(), int.Parse(p[3]), p[5].Split(';').ToList());
                 break;
             case "act":
                 game.Enqueue(s);
@@ -242,36 +254,34 @@ public class Net : MonoBehaviour
     }
 
     // --- Actions de l'hote / des joueurs -------------------------------------------
-    public void SetMode(Mode m) { if (IsHost && !InGame) { LobbyMode = m; SendLobby(); } }
+    public void SetOption(int option) { if (IsHost && !InGame) { LobbyOption = option; SendLobby(); } }
 
     public void StartMatch()
     {
         if (!IsHost || Lobby.Count < 2) return;
         int seed = UnityEngine.Random.Range(0, int.MaxValue);
-        shadow = new Rules(LobbyMode, Lobby, seed);
-        Broadcast($"start|{LobbyMode}|{seed}|{string.Join(";", Lobby)}");
+        shadow = Games.Create(LobbyGame, LobbyOption, Lobby, seed);
+        Broadcast($"start|{LobbyGame}|{LobbyOption}|{seed}|{string.Join(";", Lobby)}|{string.Join(";", LobbyAvatars)}");
     }
 
     public void Act(string action)
     {
-        if (IsHost) { if (shadow.turn == game.mySeat) HostAct(("act|" + action).Split('|')); }
+        if (IsHost) { if (shadow.Actor == game.mySeat) HostAct(("act|" + action).Split('|')); }
         else Send("act|" + action);
     }
 
     // Valide l'action sur la copie de l'hote puis la diffuse.
     void HostAct(string[] p)
     {
-        if (shadow.Over) return;
-        if (p[1] == "draw") { if (shadow.drawn != null) return; shadow.Draw(); }
-        else { int k = int.Parse(p[2]); if (!shadow.CanMove(k)) return; shadow.Move(k); }
+        if (shadow.Finished || !shadow.TryApply(p.Skip(1).ToArray())) return;
         Broadcast(string.Join("|", p));
     }
 
-    // ponytail: un joueur parti est joue par l'hote (pioche + premier lapin jouable).
+    // ponytail: un joueur parti est joue par l'hote avec une strategie simple (IMatch.Bot).
     void Update()
     {
-        if (!IsHost || !InGame || shadow == null || shadow.Over || !gone.Contains(shadow.turn) || !game.Idle) return;
-        if (shadow.drawn == null) HostAct(new[] { "act", "draw" });
-        else for (int k = 0; k < Rules.RabbitsPerPlayer; k++) if (shadow.CanMove(k)) { HostAct(new[] { "act", "move", k.ToString() }); break; }
+        if (!IsHost || !InGame || shadow == null || shadow.Finished || !gone.Contains(shadow.Actor) || !game.Idle) return;
+        var a = shadow.Bot();
+        if (a != null) HostAct(new[] { "act" }.Concat(a).ToArray());
     }
 }

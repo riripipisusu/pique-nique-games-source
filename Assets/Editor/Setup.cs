@@ -84,13 +84,16 @@ public static class Setup
         var scene = EditorSceneManager.NewScene(NewSceneSetup.EmptyScene, NewSceneMode.Single);
         EditorSceneManager.SaveScene(scene, "Assets/Scenes/Main.unity");
         EditorBuildSettings.scenes = new[] { new EditorBuildSettingsScene("Assets/Scenes/Main.unity", true) };
-        PlayerSettings.productName = "Croque-Carotte";
+        PlayerSettings.productName = "Pique-Nique's Games";
         PlayerSettings.companyName = "Anastasia";
         PlayerSettings.defaultIsNativeResolution = true;
         PlayerSettings.fullScreenMode = FullScreenMode.FullScreenWindow;
         AssetDatabase.SaveAssets();
 
         RabbitController();
+        AssetDatabase.ImportAsset(Res + "Characters", ImportAssetOptions.ImportRecursive | ImportAssetOptions.ForceUpdate);
+        CharacterController();
+        Portraits();
         AssetDatabase.DeleteAsset(Res + "Base.mat");
         AssetDatabase.SaveAssets();
         Diagnose();
@@ -123,6 +126,82 @@ public static class Setup
         }
     }
 
+    // Tous les personnages Quaternius partagent le meme squelette : un seul controleur suffit.
+    static void CharacterController()
+    {
+        string dir = Res + "CharAnim/";
+        Directory.CreateDirectory(dir);
+        var clips = AssetDatabase.LoadAllAssetsAtPath(Res + "Characters/Casual_Male.fbx").OfType<AnimationClip>().Where(c => !c.name.StartsWith("__preview")).ToArray();
+        Debug.Log("DIAG char clips: " + string.Join(", ", clips.Select(c => c.name)));
+        string ctrlPath = Res + "CharAnim.controller";
+        AssetDatabase.DeleteAsset(ctrlPath);
+        var ctrl = UnityEditor.Animations.AnimatorController.CreateAnimatorControllerAtPath(ctrlPath);
+        var sm = ctrl.layers[0].stateMachine;
+        string[] loops = { "Idle", "Walk", "Run" };
+        foreach (var n in new[] { "Idle", "Walk", "Run", "PickUp", "Victory", "Defeat", "RecieveHit", "Death", "SitDown" })
+        {
+            var src = clips.FirstOrDefault(c => c.name.EndsWith(n) && !clips.Any(o => o != c && o.name.EndsWith(n) && o.name.Length < c.name.Length));
+            if (!src) { Debug.LogWarning("DIAG clip manquant: " + n); continue; }
+            var copy = Object.Instantiate(src);
+            copy.name = n;
+            var s = AnimationUtility.GetAnimationClipSettings(copy);
+            s.loopTime = loops.Contains(n);
+            AnimationUtility.SetAnimationClipSettings(copy, s);
+            AssetDatabase.DeleteAsset(dir + n + ".anim");
+            AssetDatabase.CreateAsset(copy, dir + n + ".anim");
+            var state = sm.AddState(n);
+            state.motion = copy;
+            if (n == "Idle") sm.defaultState = state;
+        }
+    }
+
+    // Portrait de chaque personnage (tete et epaules), pour l'ecran de choix d'avatar.
+    static void Portraits()
+    {
+        string dir = Res + "Portraits/";
+        Directory.CreateDirectory(dir);
+        var go = new GameObject("PortraitCam");
+        var cam = go.AddComponent<Camera>();
+        cam.clearFlags = CameraClearFlags.SolidColor;
+        cam.backgroundColor = new Color(0, 0, 0, 0);
+        cam.fieldOfView = 22;
+        var lightGo = new GameObject("PortraitLight");
+        var light = lightGo.AddComponent<Light>();
+        light.type = LightType.Directional;
+        light.intensity = 1.4f;
+        lightGo.transform.rotation = Quaternion.Euler(30, -25, 0);
+        RenderSettings.ambientMode = AmbientMode.Flat;
+        RenderSettings.ambientLight = new Color(0.9f, 0.9f, 0.95f);
+        var rt = new RenderTexture(256, 256, 24, RenderTextureFormat.ARGB32);
+        cam.targetTexture = rt;
+        foreach (var path in Directory.GetFiles(Res + "Characters", "*.fbx"))
+        {
+            var prefab = AssetDatabase.LoadAssetAtPath<GameObject>(path.Replace('\\', '/'));
+            var c = (GameObject)Object.Instantiate(prefab);
+            Chars.ApplySkin(c, prefab.name);
+            c.transform.rotation = Quaternion.Euler(0, 180, 0);
+            var rs = c.GetComponentsInChildren<Renderer>();
+            var b = rs[0].bounds;
+            foreach (var r in rs) b.Encapsulate(r.bounds);
+            var head = new Vector3(b.center.x, b.max.y - b.size.y * 0.24f, b.center.z);
+            cam.transform.position = head + new Vector3(0, b.size.y * 0.05f, -b.size.y * 1.5f);
+            cam.transform.LookAt(head);
+            cam.Render();
+            RenderTexture.active = rt;
+            var tex = new Texture2D(256, 256, TextureFormat.RGBA32, false);
+            tex.ReadPixels(new Rect(0, 0, 256, 256), 0, 0);
+            tex.Apply();
+            File.WriteAllBytes(dir + Path.GetFileNameWithoutExtension(path) + ".png", tex.EncodeToPNG());
+            RenderTexture.active = null;
+            Object.DestroyImmediate(tex);
+            Object.DestroyImmediate(c);
+        }
+        Object.DestroyImmediate(go);
+        Object.DestroyImmediate(lightGo);
+        rt.Release();
+        AssetDatabase.ImportAsset(dir, ImportAssetOptions.ImportRecursive);
+    }
+
     static void Mat(string name, string shader, System.Action<Material> init)
     {
         string path = Res + name + ".mat";
@@ -130,6 +209,16 @@ public static class Setup
         var m = new Material(Shader.Find(shader));
         init?.Invoke(m);
         AssetDatabase.CreateAsset(m, path);
+    }
+
+    public static void DiagChar()
+    {
+        var go = AssetDatabase.LoadAssetAtPath<GameObject>(Res + "Characters/Casual_Male.fbx");
+        foreach (var r in go.GetComponentsInChildren<Renderer>())
+            foreach (var m in r.sharedMaterials)
+                Debug.Log($"DIAG mat {r.name}/{m.name} shader={m.shader.name} color={m.color} tex={m.mainTexture} keywords={string.Join(",", m.shaderKeywords)} surf={(m.HasProperty("_Surface") ? m.GetFloat("_Surface") : -1)} metal={(m.HasProperty("_Metallic") ? m.GetFloat("_Metallic") : -1)}");
+        var imp = (ModelImporter)AssetImporter.GetAtPath(Res + "Characters/Casual_Male.fbx");
+        Debug.Log("DIAG importer materialImportMode=" + imp.materialImportMode + " location=" + imp.materialLocation);
     }
 
     static void Diagnose()
@@ -149,7 +238,7 @@ public static class Setup
 
     public static void Build()
     {
-        var r = BuildPipeline.BuildPlayer(new[] { "Assets/Scenes/Main.unity" }, "Build/CroqueCarotte.exe", BuildTarget.StandaloneWindows64, BuildOptions.None);
+        var r = BuildPipeline.BuildPlayer(new[] { "Assets/Scenes/Main.unity" }, "Build/PiqueNiqueGames.exe", BuildTarget.StandaloneWindows64, BuildOptions.None);
         if (r.summary.result != UnityEditor.Build.Reporting.BuildResult.Succeeded) throw new System.Exception("build: " + r.summary.result);
     }
 
@@ -170,6 +259,29 @@ public static class Setup
                     if (pos != 0 && pos != r.summit && !seen.Add(pos)) throw new System.Exception("deux lapins sur la case " + pos);
             }
             if (!r.Over) throw new System.Exception("partie sans fin");
+        }
+        // Blackjack : bots au hasard, puis rejeu des memes actions pour verifier le determinisme.
+        for (int g = 0; g < 300; g++)
+        {
+            var names = new[] { "A", "B", "C", "D" }.Take(2 + g % 3).ToArray();
+            var a = new Blackjack(names, 10, g);
+            var b = new Blackjack(names, 10, g);
+            string[] all = { "hit", "stand", "double", "split" };
+            for (int n = 0; n < 5000 && !a.Finished; n++)
+            {
+                string[] act = a.phase == BJPhase.Bet ? new[] { "bet", (10 * (1 + rng.Next(10))).ToString() }
+                             : a.phase == BJPhase.Insurance ? new[] { "ins", rng.Next(2).ToString() }
+                             : new[] { all[rng.Next(4)] };
+                if (!a.TryApply(act)) { act = a.Bot(); if (!a.TryApply(act)) throw new System.Exception("action bot refusee : " + string.Join("|", act)); }
+                b.TryApply(act);
+                foreach (var p in a.players)
+                {
+                    if (p.chips < 0) throw new System.Exception("jetons negatifs");
+                    foreach (var h in p.hands) if (Blackjack.Value(h.cards) > 21 && !h.done) throw new System.Exception("main sautee non terminee");
+                }
+            }
+            if (!a.Finished) throw new System.Exception("blackjack sans fin");
+            if (string.Join("|", a.log) != string.Join("|", b.log)) throw new System.Exception("blackjack non deterministe");
         }
         Debug.Log("SELFCHECK OK");
     }

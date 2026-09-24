@@ -135,7 +135,8 @@ public class Board : MonoBehaviour
             float r = new Vector2(p.x, p.z).magnitude;
             return r > HillR + margin
                 && Vector3.Distance(new Vector3(p.x, 0, p.z), PenCenter) > 7.5f
-                && Vector3.Distance(new Vector3(p.x, 0, p.z), Pond) > 6.5f;
+                && Vector3.Distance(new Vector3(p.x, 0, p.z), Pond) > 6.5f
+                && Vector3.Distance(new Vector3(p.x, 0, p.z), Hub.Center) > 7f;
         }
         Vector3 RandomSpot(float rMin, float rMax, float margin)
         {

@@ -8,16 +8,9 @@ using UnityEngine.UIElements;
 public class Ui : MonoBehaviour
 {
     Game game;
-    VisualElement root, title, newGame, settingsScreen, rulesScreen, hud, pause, victory;
+    VisualElement root, title, games, setup, picker, settingsScreen, rulesScreen, hud, pause, victory, onlineScreen, lobbyScreen;
     VisualElement current;
     readonly Stack<VisualElement> history = new Stack<VisualElement>();
-
-    VisualElement modeClassic, modeImproved, playerList, settingsBody, playersBar, action, card, rabbitRow, cycle, cycleGrid, feed;
-    Label turn, cardValue, cardSub, deck, banner, winTitle, winSub;
-    Button drawBtn, addPlayer;
-    readonly List<Button> tabs = new List<Button>();
-    int tab;
-    IVisualElementScheduledItem bannerHide;
 
     public void Init(Game g, UIDocument doc)
     {
@@ -27,7 +20,8 @@ public class Ui : MonoBehaviour
         root.AddToClassList("root");
         root.pickingMode = PickingMode.Ignore;
         BuildTitle();
-        BuildNewGame();
+        BuildGames();
+        BuildSetup();
         BuildSettings();
         BuildRules();
         BuildHud();
@@ -35,98 +29,7 @@ public class Ui : MonoBehaviour
         BuildVictory();
         BuildOnline();
         BuildLobby();
-    }
-
-    // --- En ligne -----------------------------------------------------------------------
-    VisualElement onlineScreen, lobbyScreen, lobbyList, lobbyModeC, lobbyModeA;
-    TextField onlineName, codeField;
-    Label onlineStatus, lobbyCode, lobbyStatus;
-    Button startBtn, replayBtn;
-
-    void BuildOnline()
-    {
-        onlineScreen = Screen();
-        var panel = Div(onlineScreen, "panel");
-        panel.style.width = 900;
-        Text(panel, "Jouer en ligne", "panel-title");
-        Text(panel, "Ton prénom", "h2");
-        onlineName = Add(panel, new TextField { value = PlayerPrefs.GetString("cc-name", "Joueur"), maxLength = 16 }, "name-field");
-        Text(panel, "Créer une partie", "h2");
-        Text(panel, "Tu recevras un code à donner à tes amis (jusqu'à 4 joueurs).", "p");
-        Btn(panel, "Héberger une partie", () => { SaveName(); game.net.Host(onlineName.value); }, "green");
-        Text(panel, "Rejoindre une partie", "h2");
-        var row = Div(panel, "row");
-        codeField = Add(row, new TextField { maxLength = 8 }, "name-field");
-        var join = Btn(row, "Rejoindre", () => { SaveName(); game.net.Join(codeField.value, onlineName.value); }, "small");
-        join.style.marginLeft = 12;
-        join.style.width = 240;
-        onlineStatus = Text(panel, "", "p", "status");
-        var back = Btn(panel, "Retour", Back, "ghost", "small");
-        back.style.width = 240;
-        back.style.alignSelf = Align.FlexStart;
-    }
-
-    void SaveName() => PlayerPrefs.SetString("cc-name", onlineName.value);
-
-    void BuildLobby()
-    {
-        lobbyScreen = Screen();
-        var panel = Div(lobbyScreen, "panel");
-        panel.style.width = 1000;
-        Text(panel, "Salon", "panel-title");
-        var cr = Div(panel, "row");
-        cr.style.justifyContent = Justify.Center;
-        Text(cr, "Code :", "h2");
-        lobbyCode = Text(cr, "", "code");
-        var cp = Btn(cr, "Copier", () => GUIUtility.systemCopyBuffer = game.net.Code, "ghost", "small");
-        cp.style.width = 180;
-        cp.style.marginLeft = 16;
-        Text(panel, "Joueurs", "h2");
-        lobbyList = Div(panel);
-        Text(panel, "Mode de jeu", "h2");
-        var modes = Div(panel, "row");
-        lobbyModeC = LobbyModeCard(modes, Mode.Classique, "Classique");
-        lobbyModeA = LobbyModeCard(modes, Mode.Ameliore, "Amélioré");
-        lobbyStatus = Text(panel, "", "p", "status");
-        var bottom = Div(panel, "row", "spread");
-        bottom.style.marginTop = 16;
-        Btn(bottom, "Quitter", Back, "ghost", "small").style.width = 240;
-        startBtn = Btn(bottom, "Lancer la partie !", () => game.net.StartMatch(), "green");
-        startBtn.style.width = 420;
-    }
-
-    VisualElement LobbyModeCard(VisualElement p, Mode m, string name)
-    {
-        var b = new Button(() => { Sound.I.UI("tick"); game.net.SetMode(m); });
-        b.AddToClassList("mode-card");
-        b.style.height = 90;
-        Text(b, name, "mode-name");
-        p.Add(b);
-        return b;
-    }
-
-    public void RefreshOnline()
-    {
-        var n = game.net;
-        onlineStatus.text = n.Status;
-        if (n.InGame) return;
-        if (n.Active && n.Lobby.Count > 0 && current == onlineScreen) Go(lobbyScreen);
-        if (!n.Active && current == lobbyScreen) Go(onlineScreen, false);
-        lobbyCode.text = n.Code;
-        lobbyStatus.text = n.IsHost ? (n.Lobby.Count < 2 ? "En attente d'au moins un autre joueur..." : "Tout le monde est là ? Lance la partie !") : "En attente de l'hôte...";
-        lobbyList.Clear();
-        for (int i = 0; i < n.Lobby.Count; i++)
-        {
-            var row = Div(lobbyList, "player-row");
-            Div(row, "chip").style.backgroundColor = Board.Colors[i];
-            Text(row, n.Lobby[i] + (i == game.mySeat ? "  (toi)" : "") + (i == 0 ? "  · hôte" : ""), "p").style.marginBottom = 0;
-        }
-        lobbyModeC.EnableInClassList("selected", n.LobbyMode == Mode.Classique);
-        lobbyModeA.EnableInClassList("selected", n.LobbyMode == Mode.Ameliore);
-        lobbyModeC.SetEnabled(n.IsHost);
-        lobbyModeA.SetEnabled(n.IsHost);
-        startBtn.style.display = n.IsHost ? DisplayStyle.Flex : DisplayStyle.None;
-        startBtn.SetEnabled(n.Lobby.Count >= 2);
+        BuildPicker();
     }
 
     // --- Outils ---------------------------------------------------------------------
@@ -147,6 +50,18 @@ public class Ui : MonoBehaviour
         return Add(p, b, c);
     }
 
+    // Portrait cliquable d'un personnage.
+    VisualElement Portrait(VisualElement p, string avatar, Action onClick, float size = 64)
+    {
+        VisualElement e = onClick != null ? new Button(() => { Sound.I.UI("click"); onClick(); }) : new VisualElement();
+        e.AddToClassList("portrait");
+        e.style.width = size;
+        e.style.height = size;
+        e.style.backgroundImage = Resources.Load<Texture2D>("Portraits/" + avatar);
+        p.Add(e);
+        return e;
+    }
+
     VisualElement Screen(params string[] c)
     {
         var s = Div(root, "screen", "hidden");
@@ -164,6 +79,8 @@ public class Ui : MonoBehaviour
     }
 
     static void Hide(VisualElement s) { s.AddToClassList("hidden"); s.RemoveFromClassList("in"); }
+
+    VisualElement[] All => new[] { title, games, setup, picker, settingsScreen, rulesScreen, hud, pause, victory, onlineScreen, lobbyScreen };
 
     // Navigation entre ecrans de menu, avec retour arriere.
     void Go(VisualElement s, bool remember = true)
@@ -190,14 +107,15 @@ public class Ui : MonoBehaviour
 
     public void OpenForTest(string screen)
     {
-        if (screen == "settings") { SelectTab(0); Go(settingsScreen); }
-        else { Back(); RefreshPlayers(); Go(newGame); }
+        if (screen == "games") Go(games);
+        else if (screen == "setup") { RefreshSetup(); Go(setup); }
+        else if (screen == "avatar") OpenPicker(a => { });
     }
 
     public void ShowTitle()
     {
         history.Clear();
-        foreach (var s in new[] { newGame, settingsScreen, rulesScreen, hud, pause, victory, onlineScreen, lobbyScreen }) Hide(s);
+        foreach (var s in All) Hide(s);
         current = null;
         Go(title, false);
     }
@@ -206,73 +124,147 @@ public class Ui : MonoBehaviour
     void BuildTitle()
     {
         title = Screen("title-screen");
-        var logo = Text(title, "Croque-Carotte", "logo");
-        Text(title, "La course de lapins la plus traître de la montagne !", "tagline");
+        var logo = Text(title, "Pique-Nique's Games", "logo");
+        Text(title, "Des jeux de société à partager entre amis", "tagline");
         var col = Div(title, "menu-col");
-        Btn(col, "Jouer sur ce PC", () => { RefreshPlayers(); Go(newGame); });
-        Btn(col, "Jouer en ligne", () => { RefreshOnline(); Go(onlineScreen); });
-        Btn(col, "Règles", () => Go(rulesScreen), "green");
+        Btn(col, "Jouer", () => Go(games));
         Btn(col, "Paramètres", () => { SelectTab(tab); Go(settingsScreen); }, "green");
         Btn(col, "Quitter", Application.Quit, "ghost");
-        Text(title, "v1.0  ·  Modèles Kenney & Quaternius (CC0)  ·  Musique CC0", "credits");
+        Text(title, "v2.0  ·  Modèles Kenney & Quaternius (CC0)  ·  Musiques CC0 et « A Conversation with Saul » de Matthew Pablo (CC-BY 3.0)", "credits");
         logo.schedule.Execute(() =>
         {
             float t = Time.unscaledTime;
-            logo.style.rotate = new Rotate(Angle.Degrees(Mathf.Sin(t * 1.3f) * 2f));
+            logo.style.rotate = new Rotate(Angle.Degrees(Mathf.Sin(t * 1.3f) * 1.5f));
             logo.style.translate = new Translate(0, Mathf.Sin(t * 2.1f) * 8f);
         }).Every(16);
     }
 
-    // --- Nouvelle partie --------------------------------------------------------------
-    void BuildNewGame()
+    // --- Choix du jeu -----------------------------------------------------------------
+    void BuildGames()
     {
-        newGame = Screen();
-        var panel = Div(newGame, "panel");
-        panel.style.width = 1120;
-        Text(panel, "Nouvelle partie", "panel-title");
-        Text(panel, "Mode de jeu", "h2");
-        var modes = Div(panel, "row");
-        modeClassic = ModeCard(modes, Mode.Classique, "Classique", "19 cases en spirale. Quand la carotte tourne, 1 à 3 trous s'ouvrent au hasard. Pur suspense !");
-        modeImproved = ModeCard(modes, Mode.Ameliore, "Amélioré", "25 cases sur deux anneaux. Les trous s'ouvrent un par un selon un cycle secret : observe-le pour le déjouer.");
-        Text(panel, "Joueurs (sur ce PC, chacun son tour)", "h2");
-        playerList = Div(panel);
-        addPlayer = Btn(panel, "+ Ajouter un joueur", () => { game.names.Add("Joueur " + (game.names.Count + 1)); RefreshPlayers(); }, "ghost", "small");
-        var bottom = Div(panel, "row", "spread");
-        bottom.style.marginTop = 20;
-        Btn(bottom, "Retour", Back, "ghost", "small").style.width = 260;
-        Btn(bottom, "Lancer la partie !", () => game.StartGame(), "green").style.width = 480;
+        games = Screen();
+        var panel = Div(games, "panel");
+        panel.style.width = 1300;
+        Text(panel, "À quoi on joue ?", "panel-title");
+        var row = Div(panel, "row");
+        GameCard(row, GameId.Croque, "Croque-Carotte", "2 à 4 joueurs  ·  Course de lapins",
+            "Grimpe la montagne jusqu'au potager... mais gare aux trous quand la carotte tourne !", "game-croque");
+        GameCard(row, GameId.Blackjack, "Blackjack", "2 à 4 joueurs  ·  Cartes",
+            "Approche-toi de 21 sans dépasser et bats le croupier. Le plus riche après les manches gagne.", "game-bj");
+        var back = Btn(panel, "Retour", Back, "ghost", "small");
+        back.style.width = 260;
+        back.style.marginTop = 20;
     }
 
-    VisualElement ModeCard(VisualElement parent, Mode m, string name, string desc)
+    void GameCard(VisualElement parent, GameId g, string name, string meta, string desc, string cls)
     {
-        var b = new Button(() => { Sound.I.UI("tick"); game.mode = m; RefreshPlayers(); });
-        b.AddToClassList("mode-card");
+        var b = new Button(() => { Sound.I.UI("click"); game.SelectGame(g); RefreshSetup(); Go(setup); });
+        b.AddToClassList("game-card");
+        b.AddToClassList(cls);
+        Div(b, "game-art");
         Text(b, name, "mode-name");
+        Text(b, meta, "game-meta");
         Text(b, desc, "mode-desc");
         parent.Add(b);
-        return b;
     }
 
-    void RefreshPlayers()
+    // --- Preparation d'une partie (options + joueurs) -------------------------------------
+    VisualElement setupOptions, playerList;
+    Label setupTitle;
+    Button addPlayer;
+
+    void BuildSetup()
     {
-        modeClassic.EnableInClassList("selected", game.mode == Mode.Classique);
-        modeImproved.EnableInClassList("selected", game.mode == Mode.Ameliore);
+        setup = Screen();
+        var panel = Div(setup, "panel");
+        panel.style.width = 1180;
+        setupTitle = Text(panel, "", "panel-title");
+        Text(panel, "Options", "h2");
+        setupOptions = Div(panel, "row");
+        Text(panel, "Joueurs sur ce PC (chacun son tour)", "h2");
+        playerList = Div(panel);
+        addPlayer = Btn(panel, "+ Ajouter un joueur", () =>
+        {
+            game.names.Add("Joueur " + (game.names.Count + 1));
+            game.avatars.Add(Game.Characters[(game.names.Count * 7) % Game.Characters.Length]);
+            RefreshSetup();
+        }, "ghost", "small");
+        var bottom = Div(panel, "row", "spread");
+        bottom.style.marginTop = 20;
+        Btn(bottom, "Retour", Back, "ghost", "small").style.width = 200;
+        Btn(bottom, "Règles", () => { RefreshRules(); Go(rulesScreen); }, "ghost", "small").style.width = 200;
+        Btn(bottom, "Jouer en ligne", () => { RefreshOnline(); Go(onlineScreen); }, "small").style.width = 300;
+        Btn(bottom, "Jouer sur ce PC !", () => game.StartGame(), "green").style.width = 380;
+    }
+
+    void OptionCards(VisualElement parent, int current, Action<int> pick)
+    {
+        parent.Clear();
+        var opts = game.gameId == GameId.Croque
+            ? new[] { (0, "Classique", "19 cases en spirale. La carotte ouvre 1 à 3 trous au hasard."), (1, "Amélioré", "25 cases, trous selon un cycle secret à deviner.") }
+            : new[] { (5, "Partie rapide", "5 manches"), (10, "Partie normale", "10 manches"), (20, "Longue soirée", "20 manches") };
+        foreach (var (value, name, desc) in opts)
+        {
+            var b = new Button(() => { Sound.I.UI("tick"); pick(value); });
+            b.AddToClassList("mode-card");
+            b.EnableInClassList("selected", value == current);
+            Text(b, name, "mode-name");
+            Text(b, desc, "mode-desc");
+            parent.Add(b);
+        }
+    }
+
+    void RefreshSetup()
+    {
+        setupTitle.text = Games.Name(game.gameId);
+        OptionCards(setupOptions, game.option, v => { game.option = v; RefreshSetup(); });
+        while (game.avatars.Count < game.names.Count) game.avatars.Add("Casual_Male");
         playerList.Clear();
         for (int i = 0; i < game.names.Count; i++)
         {
             int idx = i;
             var row = Div(playerList, "player-row");
+            Portrait(row, game.avatars[i], () => OpenPicker(a => { game.avatars[idx] = a; RefreshSetup(); }), 60).style.borderTopColor = Board.Colors[i];
             Div(row, "chip").style.backgroundColor = Board.Colors[i];
             var field = Add(row, new TextField { value = game.names[i], maxLength = 16 }, "name-field");
             field.RegisterValueChangedCallback(e => game.names[idx] = e.newValue);
-            var rm = Btn(row, "Retirer", () => { game.names.RemoveAt(idx); RefreshPlayers(); }, "ghost", "small");
+            var rm = Btn(row, "Retirer", () => { game.names.RemoveAt(idx); game.avatars.RemoveAt(idx); RefreshSetup(); }, "ghost", "small");
             rm.style.marginLeft = 12;
             rm.SetEnabled(game.names.Count > 2);
         }
         addPlayer.style.display = game.names.Count < Rules.MaxPlayers ? DisplayStyle.Flex : DisplayStyle.None;
     }
 
+    // --- Choix du personnage ---------------------------------------------------------------
+    Action<string> onPick;
+
+    void BuildPicker()
+    {
+        picker = Screen("dim");
+        var panel = Div(picker, "panel", "settings-panel");
+        Text(panel, "Choisis ton personnage", "panel-title");
+        var sv = Add(panel, new ScrollView(), "settings-scroll");
+        var grid = Div(sv, "avatar-grid");
+        foreach (var c in Game.Characters)
+        {
+            var cell = Div(grid, "avatar-cell");
+            Portrait(cell, c, () => { onPick?.Invoke(c); Back(); }, 120);
+            Text(cell, Pretty(c), "avatar-name");
+        }
+        var bottom = Div(panel, "row");
+        bottom.style.justifyContent = Justify.Center;
+        Btn(bottom, "Annuler", Back, "ghost", "small").style.width = 280;
+    }
+
+    static string Pretty(string c) => c.Replace("_Male", " (H)").Replace("_Female", " (F)").Replace("_", " ").Replace("Casual", "Décontracté").Replace("OldClassy", "Chic").Replace("Worker", "Ouvrier").Replace("Suit", "Costume").Replace("Chef", "Chef").Replace("Doctor", "Docteur").Replace("Young", "jeune").Replace("Old", "âgé").Replace("Knight", "Chevalier").Replace("Golden", "doré").Replace("Soldier", "Soldat").Replace("BlueSoldier", "Soldat bleu").Replace("Wizard", "Sorcier").Replace("Witch", "Sorcière").Replace("Zombie", "Zombie").Replace("Pirate", "Pirate").Replace("Hair", "coiffé").Replace("Hat", "à toque").Replace("Bald", "chauve").Replace("Sand", "du désert").Replace("Goblin", "Gobelin").Replace("Elf", "Elfe");
+
+    void OpenPicker(Action<string> pick) { onPick = pick; Go(picker); }
+
     // --- Parametres -------------------------------------------------------------------
+    VisualElement settingsBody;
+    readonly List<Button> tabs = new List<Button>();
+    int tab;
+
     void BuildSettings()
     {
         settingsScreen = Screen("dim");
@@ -293,6 +285,8 @@ public class Ui : MonoBehaviour
         Btn(bottom, "Par défaut", () => { game.ResetSettings(); SelectTab(tab); }, "ghost", "small").style.width = 280;
         Btn(bottom, "Retour", Back, "small").style.width = 280;
     }
+
+    static readonly string[] Backs = { "back_red", "back_blue", "back_teal", "back_purple", "back_black", "back_pn" };
 
     void SelectTab(int k)
     {
@@ -326,12 +320,18 @@ public class Ui : MonoBehaviour
             case 2:
                 Range("Vitesse des animations", 0.5f, 2.5f, s.animSpeed, v => s.animSpeed = v, v => v.ToString("0.0") + "x");
                 Range("Sensibilité de la caméra", 0.3f, 2.5f, s.camSens, v => s.camSens = v, v => v.ToString("0.0") + "x");
-                Check("Caméra qui suit l'action", s.autoCam, v => s.autoCam = v);
-                Check("Numéros sur les cases", s.tileNumbers, v => s.tileNumbers = v);
+                Check("Caméra qui suit l'action (Croque-Carotte)", s.autoCam, v => s.autoCam = v);
+                Check("Numéros sur les cases (Croque-Carotte)", s.tileNumbers, v => s.tileNumbers = v);
+                Drop("Dos des cartes", new[] { "Rouge", "Bleu", "Vert", "Violet", "Noir", "Pique-Nique" }, Array.IndexOf(Backs, s.cardBack), v => s.cardBack = Backs[v]);
                 break;
             default:
-                Info("Piocher une carte", "Espace  ·  bouton Piocher");
+                Text(settingsBody, "Croque-Carotte", "h2");
+                Info("Piocher une carte", "Espace");
                 Info("Choisir un lapin", "1  ·  2  ·  3");
+                Text(settingsBody, "Blackjack", "h2");
+                Info("Tirer / Rester", "H  ·  S");
+                Info("Doubler / Séparer", "D  ·  P");
+                Text(settingsBody, "Partout", "h2");
                 Info("Tourner la caméra", "Clic droit + glisser  ·  Q / E");
                 Info("Zoomer", "Molette");
                 Info("Pause", "Échap");
@@ -377,43 +377,67 @@ public class Ui : MonoBehaviour
     }
 
     // --- Regles -----------------------------------------------------------------------
+    VisualElement rulesBody;
+    Label rulesTitle;
+
     void BuildRules()
     {
         rulesScreen = Screen("dim");
         var panel = Div(rulesScreen, "panel", "settings-panel");
-        Text(panel, "Règles du jeu", "panel-title");
-        var sv = Add(panel, new ScrollView(), "settings-scroll");
-        Text(sv, "Le but", "h2");
-        Text(sv, "Chaque joueur a 3 lapins. Le premier à les amener tous les trois au potager, en haut de la montagne, gagne la partie.", "p");
-        Text(sv, "À ton tour", "h2");
-        Text(sv, "Pioche une carte. Une carte chiffrée (1, 2 ou 3) fait avancer le lapin de ton choix d'autant de cases. Une case ne porte qu'un lapin : si elle est prise, on saute jusqu'à la suivante libre.", "p");
-        Text(sv, "La carte Carotte", "h2");
-        Text(sv, "Elle fait tourner la grosse carotte du sommet... et des trous s'ouvrent sous certaines cases ! Les lapins qui s'y trouvent dégringolent jusqu'à l'enclos de départ. Les trous restent ouverts jusqu'au prochain tour de carotte : un lapin qui s'arrête dessus tombe aussi !", "p");
-        Text(sv, "Mode Classique", "h2");
-        Text(sv, "19 cases en spirale. Chaque tour de carotte ouvre 1 à 3 trous tirés au hasard, n'importe où à partir de la case 3.", "p");
-        Text(sv, "Mode Amélioré", "h2");
-        Text(sv, "25 cases sur deux anneaux. Les trous s'ouvrent un par un, selon un cycle de 25 crans tiré au début de la partie mais qui ne change plus. La carte Double carotte avance de deux crans. Le tableau des crans garde la trace de tout ce qui s'est ouvert : quand un cran est connu, la case menacée s'allume en rouge sur le plateau. Observe, déduis, et place tes lapins là où ça ne tombera pas !", "p");
-        Text(sv, "D'après la vidéo d'Hydrios « Il manque 2 cases à Croque-Carotte ».", "p").style.color = new Color(0.55f, 0.43f, 0.31f);
+        rulesTitle = Text(panel, "", "panel-title");
+        rulesBody = Add(panel, new ScrollView(), "settings-scroll");
         var bottom = Div(panel, "row");
         bottom.style.justifyContent = Justify.Center;
         Btn(bottom, "Retour", Back, "small").style.width = 280;
     }
 
+    void RefreshRules()
+    {
+        rulesTitle.text = "Règles : " + Games.Name(game.gameId);
+        rulesBody.Clear();
+        void S(string h, string p) { Text(rulesBody, h, "h2"); Text(rulesBody, p, "p"); }
+        if (game.gameId == GameId.Croque)
+        {
+            S("Le but", "Chaque joueur a 3 lapins. Le premier à les amener tous les trois au potager, en haut de la montagne, gagne la partie.");
+            S("À ton tour", "Pioche une carte. Une carte chiffrée (1, 2 ou 3) fait avancer le lapin de ton choix d'autant de cases. Une case ne porte qu'un lapin : si elle est prise, on saute jusqu'à la suivante libre.");
+            S("La carte Carotte", "Elle fait tourner la grosse carotte du sommet... et des trous s'ouvrent sous certaines cases ! Les lapins qui s'y trouvent dégringolent jusqu'à l'enclos de départ. Les trous restent ouverts jusqu'au prochain tour de carotte : un lapin qui s'arrête dessus tombe aussi !");
+            S("Mode Classique", "19 cases en spirale. Chaque tour de carotte ouvre 1 à 3 trous tirés au hasard, n'importe où à partir de la case 3.");
+            S("Mode Amélioré", "25 cases sur deux anneaux. Les trous s'ouvrent un par un, selon un cycle de 25 crans tiré au début de la partie mais qui ne change plus. La carte Double carotte avance de deux crans. Quand un cran est connu, la case menacée s'allume en rouge. Observe, déduis, et place tes lapins là où ça ne tombera pas ! (D'après la vidéo d'Hydrios « Il manque 2 cases à Croque-Carotte ».)");
+        }
+        else
+        {
+            S("Le but", "Chaque joueur commence avec 1 000 jetons et joue contre le croupier. Après le nombre de manches choisi, le joueur le plus riche gagne. Un joueur qui n'a plus de quoi miser (10 jetons) est éliminé.");
+            S("Une manche", "Chacun mise (10 jetons minimum), puis le croupier distribue deux cartes à chaque joueur et deux pour lui, dont une face cachée. Les figures valent 10, l'As vaut 1 ou 11, les autres cartes leur valeur.");
+            S("À ton tour", "Tirer : prendre une carte. Rester : garder sa main. Dépasser 21, c'est perdre sa mise tout de suite.");
+            S("Doubler", "Sur tes deux premières cartes : tu doubles ta mise et tu reçois exactement une carte de plus.");
+            S("Séparer", "Si tes deux premières cartes ont le même rang, tu peux les séparer en deux mains (avec une deuxième mise égale). Jusqu'à 4 mains. Des As séparés ne reçoivent qu'une carte chacun.");
+            S("Assurance", "Quand le croupier montre un As, tu peux payer la moitié de ta mise pour t'assurer contre son blackjack. S'il l'a, l'assurance te rapporte 2 contre 1.");
+            S("Le croupier", "Il retourne sa carte cachée puis tire jusqu'à avoir au moins 17. Tu gagnes si tu as plus que lui sans dépasser 21, ou s'il saute. Égalité : ta mise t'est rendue. Un blackjack (As + 10 en deux cartes) paie 3 contre 2.");
+        }
+    }
+
     // --- HUD --------------------------------------------------------------------------
+    VisualElement playersBar, ccHud, bjHud, action, card, rabbitRow, cycle, cycleGrid, feed, bjAction, bjButtons, bubbles, seatTags, bjLeft, bjRight;
+    Label turn, cardValue, cardSub, deck, banner, hint, roundLabel, bjTurn, betLabel, balance, betInfo, roundInfo;
+    Button drawBtn;
+    IVisualElementScheduledItem bannerHide;
+    int betAmount = Blackjack.MinBet;
+
     void BuildHud()
     {
         hud = Screen("hud");
+        bubbles = Div(hud, "bubbles");
+        bubbles.pickingMode = PickingMode.Ignore;
         playersBar = Div(hud, "players-bar");
         Btn(hud, "II", () => game.Pause(), "round", "ghost", "pause-btn");
+        feed = Div(hud, "panel", "feed");
 
-        cycle = Div(hud, "panel", "cycle");
+        ccHud = Div(hud, "layer");
+        cycle = Div(ccHud, "panel", "cycle");
         Text(cycle, "Crans des aiguilles", "h2").style.marginTop = 0;
         cycleGrid = Div(cycle, "cycle-grid");
         Text(cycle, "Orange : cran actuel. Rouge : les 2 prochains crans (carotte simple ou double).", "small-note");
-
-        feed = Div(hud, "panel", "feed");
-
-        action = Div(hud, "panel", "action");
+        action = Div(ccHud, "panel", "action");
         card = Div(action, "card", "flip");
         cardValue = Text(card, "", "card-value");
         cardSub = Text(card, "", "card-sub");
@@ -424,19 +448,44 @@ public class Ui : MonoBehaviour
         rabbitRow = Div(col, "rabbit-row");
         deck = Text(col, "", "deck");
 
+        bjHud = Div(hud, "layer");
+        seatTags = Div(bjHud, "layer");
+        seatTags.pickingMode = PickingMode.Ignore;
+        roundLabel = Text(bjHud, "", "round-label");
+        bjTurn = Text(bjHud, "", "bj-turn");
+        bjTurn.pickingMode = roundLabel.pickingMode = PickingMode.Ignore;
+        bjLeft = Div(bjHud, "bj-side", "left");
+        bjRight = Div(bjHud, "bj-side", "right");
+        bjAction = Div(bjHud, "bj-bet");
+        betLabel = Text(bjAction, "", "bet-label");
+        bjButtons = Div(bjAction, "rabbit-row");
+        var bar = Div(bjHud, "bj-bar");
+        balance = Text(bar, "", "bar-item");
+        betInfo = Text(bar, "", "bar-item");
+        roundInfo = Text(bar, "", "bar-item");
+
         banner = Text(hud, "", "banner");
         banner.pickingMode = PickingMode.Ignore;
-        Text(hud, "Clic droit : tourner  ·  Molette : zoom  ·  Échap : pause", "hint");
+        hint = Text(hud, "", "hint");
+        foreach (var e in new[] { ccHud, bjHud }) e.pickingMode = PickingMode.Ignore;
     }
 
     public void ShowHud()
     {
         history.Clear();
-        foreach (var s in new[] { title, newGame, settingsScreen, rulesScreen, pause, victory, onlineScreen, lobbyScreen }) Hide(s);
+        foreach (var s in All) if (s != hud) Hide(s);
         current = hud;
         Show(hud);
         card.AddToClassList("flip");
         card.style.display = DisplayStyle.None;
+        bool bj = game.bj != null;
+        ccHud.style.display = bj ? DisplayStyle.None : DisplayStyle.Flex;
+        bjHud.style.display = bj ? DisplayStyle.Flex : DisplayStyle.None;
+        bubbles.Clear();
+        seatTags.Clear();
+        playersBar.style.display = feed.style.display = bj ? DisplayStyle.None : DisplayStyle.Flex;
+        hint.text = bj ? "" : "Clic droit : tourner  ·  Molette : zoom  ·  Échap : pause";
+        if (bj) betAmount = Blackjack.MinBet * 5;
         Refresh();
     }
 
@@ -469,17 +518,38 @@ public class Ui : MonoBehaviour
 
     public void Refresh()
     {
-        var r = game.rules;
-        if (r == null) return;
+        if (game.rules != null) RefreshCroque();
+        else if (game.bj != null) RefreshBlackjack();
+    }
 
+    void PlayerCard(int i, string name, string avatar, bool active)
+    {
+        var pc = Div(playersBar, "pcard");
+        pc.EnableInClassList("active", active);
+        var por = Portrait(pc, avatar, null, 46);
+        por.style.borderTopColor = por.style.borderBottomColor = por.style.borderLeftColor = por.style.borderRightColor = Board.Colors[i];
+        Text(pc, name, "pname");
+    }
+
+    void Feed(List<string> log)
+    {
+        feed.Clear();
+        var lines = log.Skip(Math.Max(0, log.Count - 5)).ToList();
+        for (int i = 0; i < lines.Count; i++) Text(feed, lines[i], "feed-line").EnableInClassList("last", i == lines.Count - 1);
+    }
+
+    string Avatar(int seat) => game.Online ? (seat < game.net.LobbyAvatars.Count ? game.net.LobbyAvatars[seat] : "Casual_Male")
+                                           : (seat < game.avatars.Count ? game.avatars[seat] : "Casual_Male");
+
+    void RefreshCroque()
+    {
+        var r = game.rules;
         playersBar.Clear();
         for (int i = 0; i < r.players.Count; i++)
         {
             var p = r.players[i];
-            var pc = Div(playersBar, "pcard");
-            pc.EnableInClassList("active", i == r.turn && !r.Over);
-            Div(pc, "chip").style.backgroundColor = Board.Colors[p.color];
-            Text(pc, p.name, "pname");
+            PlayerCard(i, p.name, Avatar(i), i == r.turn && !r.Over);
+            var pc = playersBar.Children().Last();
             foreach (int pos in p.rabbits.OrderByDescending(x => x))
             {
                 var pip = Text(pc, pos > 0 && pos < r.summit ? pos.ToString() : "", "pip");
@@ -490,7 +560,6 @@ public class Ui : MonoBehaviour
 
         bool mine = !game.busy && !r.Over && game.MyTurn;
         drawBtn.style.display = r.drawn == null && mine ? DisplayStyle.Flex : DisplayStyle.None;
-        drawBtn.SetEnabled(mine);
         var name = $"<color={Hex(Board.Colors[r.Current.color])}>{r.Current.name}</color>";
         turn.text = r.Over ? "Partie terminée !" : game.busy ? "..." : r.drawn == null ? $"Au tour de <b>{name}</b>" : $"{name}, quel lapin avance ?";
         rabbitRow.Clear();
@@ -520,13 +589,126 @@ public class Ui : MonoBehaviour
                 if (t == now && r.rotations > 0) cell.AddToClassList("now");
             }
         }
+        Feed(r.log);
+    }
 
-        feed.Clear();
-        var lines = r.log.Skip(Math.Max(0, r.log.Count - 5)).ToList();
-        for (int i = 0; i < lines.Count; i++) Text(feed, lines[i], "feed-line").EnableInClassList("last", i == lines.Count - 1);
+    // Bouton rond façon casino : pastille coloree + libelle dessous.
+    void RoundAction(VisualElement parent, string icon, string label, string cls, bool enabled, Action a)
+    {
+        var box = Div(parent, "round-action");
+        var b = Btn(box, icon, a, "round-act", cls);
+        b.SetEnabled(enabled);
+        Text(box, label, "round-label-txt");
+    }
+
+    void RefreshBlackjack()
+    {
+        var b = game.bj;
+        playersBar.Clear();
+        roundLabel.text = "";
+        Feed(b.log);
+
+        bjButtons.Clear();
+        bjLeft.Clear();
+        bjRight.Clear();
+        betLabel.text = "";
+        bool mine = !game.busy && game.MyTurn && !b.Finished;
+        var cur = b.Current;
+        var me = game.Online && game.mySeat >= 0 ? b.players[game.mySeat] : cur ?? b.players[0];
+        balance.text = $"Solde : <b>{me.chips}</b>";
+        betInfo.text = $"Mise : <b>{me.hands.Sum(h => h.bet)}</b>";
+        roundInfo.text = b.Finished ? "Partie terminée" : $"Manche <b>{Math.Min(b.round, b.rounds)}/{b.rounds}</b>";
+        string who = cur != null ? $"<color={Hex(Board.Colors[cur.seat])}>{cur.name}</color>" : "";
+        bjAction.style.display = DisplayStyle.None;
+        if (game.busy || cur == null) { bjTurn.text = ""; return; }
+        if (!mine) { bjTurn.text = $"Au tour de {who}..."; return; }
+
+        switch (b.phase)
+        {
+            case BJPhase.Bet:
+                bjAction.style.display = DisplayStyle.Flex;
+                betAmount = Mathf.Clamp(betAmount, Blackjack.MinBet, cur.chips / Blackjack.MinBet * Blackjack.MinBet);
+                bjTurn.text = $"{who}, faites vos jeux !";
+                betLabel.text = $"Mise : {betAmount}";
+                foreach (int v in new[] { 10, 50, 100, 500 })
+                {
+                    int add = v;
+                    var chip = Btn(bjButtons, "", () => { betAmount = Math.Min(betAmount + add, cur.chips / 10 * 10); Sound.I.Play("bj_chip1"); Refresh(); }, "chip-btn");
+                    chip.style.backgroundImage = Resources.Load<Texture2D>("Casino/chip_" + v);
+                    chip.SetEnabled(betAmount + v <= cur.chips);
+                }
+                Btn(bjButtons, "Effacer", () => { betAmount = Blackjack.MinBet; Refresh(); }, "ghost", "small");
+                Btn(bjButtons, "Miser", () => game.Act("bet|" + betAmount), "green", "small");
+                break;
+            case BJPhase.Insurance:
+                bjTurn.text = $"{who}, le croupier montre un As. Assurance ({b.InsuranceCost(cur)} jetons) ?";
+                RoundAction(bjLeft, "Non", "PAS D'ASSURANCE", "act-red", true, () => game.Act("ins|0"));
+                RoundAction(bjRight, "Oui", "ASSURANCE", "act-green", true, () => game.Act("ins|1"));
+                break;
+            case BJPhase.Play:
+                var h = b.ActiveHand;
+                string handTxt = cur.hands.Count > 1 ? $" (main {cur.hands.IndexOf(h) + 1}/{cur.hands.Count})" : "";
+                bjTurn.text = $"À toi, {who}{handTxt}";
+                RoundAction(bjLeft, "x2", "DOUBLER", "act-blue", b.CanDouble(h, cur), () => game.Act("double"));
+                RoundAction(bjLeft, "<>", "SÉPARER", "act-blue", b.CanSplit(h, cur), () => game.Act("split"));
+                RoundAction(bjRight, "=", "RESTER", "act-red", true, () => game.Act("stand"));
+                RoundAction(bjRight, "+", "TIRER", "act-green", true, () => game.Act("hit"));
+                break;
+        }
+    }
+
+    // Etiquettes flottantes : valeur des mains, et medaillons des joueurs a leur place.
+    public void UpdateBubbles(IEnumerable<(Vector3 pos, string text, Color col)> items, Camera cam, Table table)
+    {
+        var b = game.bj;
+        if (seatTags.childCount != b.players.Count)
+        {
+            seatTags.Clear();
+            foreach (var p in b.players)
+            {
+                var tag = Div(seatTags, "seat-tag");
+                tag.pickingMode = PickingMode.Ignore;
+                Portrait(tag, Avatar(p.seat), null, 62).style.borderTopColor = Board.Colors[p.seat];
+                var col = Div(tag);
+                Text(col, p.name, "seat-name");
+                Text(col, "", "seat-chips");
+            }
+        }
+        for (int i = 0; i < b.players.Count && seatTags.panel != null; i++)
+        {
+            var tag = seatTags[i];
+            var p = RuntimePanelUtils.CameraTransformWorldToPanel(seatTags.panel, table.SeatTagPos(i), cam);
+            tag.style.left = p.x;
+            tag.style.top = p.y;
+            tag.EnableInClassList("active", b.Actor == i);
+            ((Label)tag[1][1]).text = b.players[i].broke ? "ruiné" : b.players[i].chips.ToString();
+            var por = tag[0];
+            por.style.borderTopColor = por.style.borderBottomColor = por.style.borderLeftColor = por.style.borderRightColor = Board.Colors[i];
+        }
+        UpdateValueBadges(items, cam);
+    }
+
+    void UpdateValueBadges(IEnumerable<(Vector3 pos, string text, Color col)> items, Camera cam)
+    {
+        var list = items.ToList();
+        while (bubbles.childCount < list.Count) Text(bubbles, "", "bubble", "badge");
+        for (int i = 0; i < bubbles.childCount; i++)
+        {
+            var l = (Label)bubbles[i];
+            if (i >= list.Count || bubbles.panel == null) { l.style.display = DisplayStyle.None; continue; }
+            var p = RuntimePanelUtils.CameraTransformWorldToPanel(bubbles.panel, list[i].pos, cam);
+            l.style.display = DisplayStyle.Flex;
+            l.text = list[i].text;
+            l.style.left = p.x;
+            l.style.top = p.y;
+            l.style.borderBottomColor = list[i].col;
+        }
     }
 
     // --- Pause & victoire -------------------------------------------------------------
+    Label winTitle, winSub;
+    Button replayBtn;
+
     void BuildPause()
     {
         pause = Screen("dim");
@@ -535,7 +717,7 @@ public class Ui : MonoBehaviour
         Text(panel, "Pause", "panel-title");
         Btn(panel, "Reprendre", Back, "green");
         Btn(panel, "Paramètres", () => { SelectTab(tab); Go(settingsScreen); });
-        Btn(panel, "Règles", () => Go(rulesScreen));
+        Btn(panel, "Règles", () => { RefreshRules(); Go(rulesScreen); });
         Btn(panel, "Menu principal", () => game.ToMenu(), "ghost");
     }
 
@@ -549,6 +731,7 @@ public class Ui : MonoBehaviour
         panel.style.alignItems = Align.Center;
         winTitle = Text(panel, "", "panel-title", "win-title");
         winSub = Text(panel, "", "p");
+        winSub.style.unityTextAlign = TextAnchor.MiddleCenter;
         var row = Div(panel, "row");
         row.style.marginTop = 20;
         Btn(row, "Menu principal", () => game.ToMenu(), "ghost").style.width = 360;
@@ -559,12 +742,113 @@ public class Ui : MonoBehaviour
 
     public void ShowVictory()
     {
-        var w = game.rules.players[game.rules.winner];
-        winTitle.text = $"{w.name} gagne !";
-        winTitle.style.color = Board.Colors[w.color];
-        winSub.text = "Ses trois lapins festoient au potager.";
+        if (game.rules != null)
+        {
+            var w = game.rules.players[game.rules.winner];
+            winTitle.text = $"{w.name} gagne !";
+            winTitle.style.color = Board.Colors[w.color];
+            winSub.text = "Ses trois lapins festoient au potager.";
+        }
+        else
+        {
+            var ranking = game.bj.players.OrderByDescending(p => p.chips).ToList();
+            winTitle.text = $"{ranking[0].name} gagne !";
+            winTitle.style.color = Board.Colors[ranking[0].seat];
+            winSub.text = string.Join("\n", ranking.Select((p, i) => $"{i + 1}.  {p.name}  —  {p.chips} jetons"));
+        }
         replayBtn.style.display = !game.Online || game.net.IsHost ? DisplayStyle.Flex : DisplayStyle.None;
         current = null;
         Go(victory, false);
+    }
+
+    // --- En ligne -----------------------------------------------------------------------
+    VisualElement lobbyList, lobbyOptions, myPortraitBox;
+    TextField onlineName, codeField;
+    Label onlineStatus, lobbyCode, lobbyStatus, onlineTitle, lobbyGame;
+    Button startBtn;
+
+    void BuildOnline()
+    {
+        onlineScreen = Screen();
+        var panel = Div(onlineScreen, "panel");
+        panel.style.width = 900;
+        onlineTitle = Text(panel, "Jouer en ligne", "panel-title");
+        Text(panel, "Toi", "h2");
+        var me = Div(panel, "row");
+        myPortraitBox = Div(me);
+        onlineName = Add(me, new TextField { value = PlayerPrefs.GetString("cc-name", "Joueur"), maxLength = 16 }, "name-field");
+        onlineName.style.marginLeft = 14;
+        Text(panel, "Créer une partie", "h2");
+        Text(panel, "Tu recevras un code à donner à tes amis (jusqu'à 4 joueurs).", "p");
+        Btn(panel, "Héberger une partie", () => { SaveName(); game.net.Host(onlineName.value, game.gameId, game.option); }, "green");
+        Text(panel, "Rejoindre une partie", "h2");
+        var row = Div(panel, "row");
+        codeField = Add(row, new TextField { maxLength = 8 }, "name-field");
+        var join = Btn(row, "Rejoindre", () => { SaveName(); game.net.Join(codeField.value, onlineName.value); }, "small");
+        join.style.marginLeft = 12;
+        join.style.width = 240;
+        onlineStatus = Text(panel, "", "p", "status");
+        var back = Btn(panel, "Retour", Back, "ghost", "small");
+        back.style.width = 240;
+        back.style.alignSelf = Align.FlexStart;
+    }
+
+    void SaveName() => PlayerPrefs.SetString("cc-name", onlineName.value);
+
+    void BuildLobby()
+    {
+        lobbyScreen = Screen();
+        var panel = Div(lobbyScreen, "panel");
+        panel.style.width = 1100;
+        Text(panel, "Salon", "panel-title");
+        lobbyGame = Text(panel, "", "h2");
+        lobbyGame.style.unityTextAlign = TextAnchor.MiddleCenter;
+        var cr = Div(panel, "row");
+        cr.style.justifyContent = Justify.Center;
+        Text(cr, "Code :", "h2");
+        lobbyCode = Text(cr, "", "code");
+        var cp = Btn(cr, "Copier", () => GUIUtility.systemCopyBuffer = game.net.Code, "ghost", "small");
+        cp.style.width = 180;
+        cp.style.marginLeft = 16;
+        Text(panel, "Joueurs", "h2");
+        lobbyList = Div(panel);
+        Text(panel, "Options", "h2");
+        lobbyOptions = Div(panel, "row");
+        lobbyStatus = Text(panel, "", "p", "status");
+        var bottom = Div(panel, "row", "spread");
+        bottom.style.marginTop = 16;
+        Btn(bottom, "Quitter", Back, "ghost", "small").style.width = 240;
+        startBtn = Btn(bottom, "Lancer la partie !", () => game.net.StartMatch(), "green");
+        startBtn.style.width = 420;
+    }
+
+    public void RefreshOnline()
+    {
+        var n = game.net;
+        onlineTitle.text = "En ligne : " + Games.Name(game.gameId);
+        myPortraitBox.Clear();
+        Portrait(myPortraitBox, game.myAvatar, () => OpenPicker(a => { game.SetMyAvatar(a); RefreshOnline(); }), 64);
+        onlineStatus.text = n.Status;
+        if (n.InGame) return;
+        if (n.Active && n.Lobby.Count > 0 && current == onlineScreen) Go(lobbyScreen);
+        if (!n.Active && current == lobbyScreen) Go(onlineScreen, false);
+        lobbyGame.text = Games.Name(n.LobbyGame);
+        lobbyCode.text = n.Code;
+        lobbyStatus.text = n.IsHost ? (n.Lobby.Count < 2 ? "En attente d'au moins un autre joueur..." : "Tout le monde est là ? Lance la partie !") : "En attente de l'hôte...";
+        lobbyList.Clear();
+        for (int i = 0; i < n.Lobby.Count; i++)
+        {
+            var row = Div(lobbyList, "player-row");
+            Portrait(row, i < n.LobbyAvatars.Count ? n.LobbyAvatars[i] : "Casual_Male", null, 52);
+            Div(row, "chip").style.backgroundColor = Board.Colors[i];
+            Text(row, n.Lobby[i] + (i == game.mySeat ? "  (toi)" : "") + (i == 0 ? "  · hôte" : ""), "p").style.marginBottom = 0;
+        }
+        var g0 = game.gameId;
+        game.gameId = n.LobbyGame;
+        OptionCards(lobbyOptions, n.LobbyOption, v => n.SetOption(v));
+        game.gameId = g0;
+        lobbyOptions.SetEnabled(n.IsHost);
+        startBtn.style.display = n.IsHost ? DisplayStyle.Flex : DisplayStyle.None;
+        startBtn.SetEnabled(n.Lobby.Count >= 2);
     }
 }
