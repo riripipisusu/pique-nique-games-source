@@ -196,14 +196,15 @@ Toggle:checked .unity-toggle__checkmark { background-color: rgb(110, 190, 75); }
 .pause-btn { position: absolute; top: 18px; right: 22px; }
 
 .action {
-    position: absolute; bottom: 26px; left: 50%; translate: -50% 0;
-    width: 700px; align-items: center;
-    padding: 20px 30px 24px 30px;
+    position: absolute; bottom: 20px; left: 50%; translate: -50% 0;
+    flex-direction: row; align-items: center;
+    padding: 12px 24px 14px 18px;
 }
-.turn { font-size: 34px; -unity-text-align: middle-center; margin-bottom: 8px; }
+.action-col { align-items: center; }
+.turn { font-size: 28px; -unity-text-align: middle-center; margin-bottom: 2px; }
 .card {
-    width: 190px; height: 250px; margin: 6px 0 14px 0;
-    border-radius: 22px; border-width: 5px; border-bottom-width: 11px; border-color: rgb(91, 58, 34);
+    width: 100px; height: 134px; margin: 0 20px 0 0;
+    border-radius: 16px; border-width: 4px; border-bottom-width: 8px; border-color: rgb(91, 58, 34);
     background-color: rgb(255, 255, 255);
     align-items: center; justify-content: center;
     scale: 1 1; rotate: 0deg;
@@ -211,12 +212,12 @@ Toggle:checked .unity-toggle__checkmark { background-color: rgb(110, 190, 75); }
 }
 .card.flip { scale: 0 1; rotate: -8deg; }
 .card.carrot-card { background-color: rgb(255, 214, 160); }
-.card-value { font-size: 110px; -unity-font-style: bold; color: rgb(240, 138, 36); -unity-text-outline-width: 3px; -unity-text-outline-color: rgb(91, 58, 34); }
-.card.carrot-card .card-value { font-size: 44px; }
-.card-sub { font-size: 24px; color: rgb(110, 80, 50); -unity-text-align: middle-center; white-space: normal; }
+.card-value { font-size: 66px; -unity-font-style: bold; color: rgb(240, 138, 36); -unity-text-outline-width: 3px; -unity-text-outline-color: rgb(91, 58, 34); }
+.card.carrot-card .card-value { font-size: 22px; -unity-text-align: middle-center; }
+.card-sub { font-size: 15px; color: rgb(110, 80, 50); -unity-text-align: middle-center; white-space: normal; }
 .rabbit-row { flex-direction: row; justify-content: center; }
-.rabbit-row Button.btn { width: 200px; margin: 0 8px; white-space: normal; font-size: 24px; height: 92px; }
-.deck { font-size: 20px; color: rgb(140, 110, 80); margin-top: 8px; }
+.rabbit-row Button.btn { width: 170px; margin: 4px 6px; white-space: normal; font-size: 21px; height: 72px; border-bottom-width: 7px; }
+.deck { font-size: 17px; color: rgb(140, 110, 80); margin-top: 2px; }
 
 .feed { position: absolute; bottom: 26px; left: 26px; width: 520px; padding: 18px 24px; }
 .feed-line { font-size: 21px; white-space: normal; margin: 2px 0; color: rgb(110, 80, 50); }

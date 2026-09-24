@@ -224,7 +224,7 @@ public class Board : MonoBehaviour
         if (rules.mode == Mode.Ameliore)
         {
             bool outer = i <= Rules.OuterRing;
-            a = outer ? (i - 1) * 24f : (i - 16) * 36f + 12f;
+            a = 225 + (outer ? (i - 1) * 24f : (i - 16) * 36f + 12f);  // case 1 face a l'enclos
             r = outer ? 11f : 6.6f;
         }
         else

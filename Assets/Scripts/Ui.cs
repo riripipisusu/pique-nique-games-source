@@ -318,14 +318,15 @@ public class Ui : MonoBehaviour
         feed = Div(hud, "panel", "feed");
 
         action = Div(hud, "panel", "action");
-        turn = Text(action, "", "turn");
         card = Div(action, "card", "flip");
         cardValue = Text(card, "", "card-value");
         cardSub = Text(card, "", "card-sub");
-        drawBtn = Btn(action, "Piocher une carte", () => game.Draw());
-        drawBtn.style.width = 460;
-        rabbitRow = Div(action, "rabbit-row");
-        deck = Text(action, "", "deck");
+        var col = Div(action, "action-col");
+        turn = Text(col, "", "turn");
+        drawBtn = Btn(col, "Piocher une carte", () => game.Draw(), "small");
+        drawBtn.style.width = 360;
+        rabbitRow = Div(col, "rabbit-row");
+        deck = Text(col, "", "deck");
 
         banner = Text(hud, "", "banner");
         banner.pickingMode = PickingMode.Ignore;
@@ -392,7 +393,7 @@ public class Ui : MonoBehaviour
         }
 
         bool mine = !game.busy && !r.Over;
-        drawBtn.style.display = r.drawn == null && !r.Over ? DisplayStyle.Flex : DisplayStyle.None;
+        drawBtn.style.display = r.drawn == null && mine ? DisplayStyle.Flex : DisplayStyle.None;
         drawBtn.SetEnabled(mine);
         var name = $"<color={Hex(Board.Colors[r.Current.color])}>{r.Current.name}</color>";
         turn.text = r.Over ? "Partie terminée !" : game.busy ? "..." : r.drawn == null ? $"Au tour de <b>{name}</b>" : $"{name}, quel lapin avance ?";
@@ -403,7 +404,7 @@ public class Ui : MonoBehaviour
                 int idx = k;
                 int pos = r.Current.rabbits[k];
                 string where = pos == 0 ? "départ" : pos >= r.summit ? "potager" : "case " + pos;
-                var b = Btn(rabbitRow, $"[{k + 1}] Lapin {k + 1}\n{where}", () => game.Move(idx));
+                var b = Btn(rabbitRow, $"Lapin {k + 1}\n<size=17>{where}</size>", () => game.Move(idx));
                 b.SetEnabled(r.CanMove(k));
                 b.style.backgroundColor = Color.Lerp(Board.Colors[r.Current.color], Color.white, 0.1f);
             }
