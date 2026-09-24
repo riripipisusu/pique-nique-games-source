@@ -278,15 +278,23 @@ public class Board : MonoBehaviour
         {
             var p = TileXZ(i);
             float g = HillY(p.magnitude);
-            Prim(PrimitiveType.Cylinder, p + Vector3.up * (g + 0.02f), new Vector3(1.25f, 0.02f, 1.25f), Hex("2b1d12"), root, 0);
-            var s = Spawn(i % 3 == 0 ? "stump_round" : "stump_roundDetailed", p, 1, i * 47, root);
-            var b = BoundsOf(s);
-            s.transform.localScale *= 2.1f / b.size.x;
-            b = BoundsOf(s);
-            s.transform.position += Vector3.up * (g - 0.35f - b.min.y);
-            tops[i] = BoundsOf(s).max.y;
-            stumps[i] = s.transform;
-            stumpBase[i] = s.transform.position;
+            // Trou (noir) + case pavee encastree dans la colline, comme sur le plateau d'origine.
+            Prim(PrimitiveType.Cylinder, p + Vector3.up * (g + 0.01f), new Vector3(2.05f, 0.03f, 2.05f), Hex("4a7a2c"), root, 0);
+            Prim(PrimitiveType.Cylinder, p + Vector3.up * (g + 0.02f), new Vector3(1.75f, 0.03f, 1.75f), Hex("1d140c"), root, 0);
+            var s = new GameObject("case" + i).transform;
+            s.SetParent(root);
+            s.position = p + Vector3.up * (g + 0.08f);
+            Prim(PrimitiveType.Cylinder, Vector3.down * 0.9f, new Vector3(1.7f, 0.95f, 1.7f), Hex("d9a45a"), s);
+            Prim(PrimitiveType.Cylinder, Vector3.up * 0.01f, new Vector3(1.45f, 0.02f, 1.45f), Hex("eab86b"), s);
+            for (int c = 0; c < 7; c++)
+            {
+                float ca = c * 51.4f * Mathf.Deg2Rad + i;
+                var cp = c == 0 ? Vector3.zero : new Vector3(Mathf.Cos(ca), 0, Mathf.Sin(ca)) * 0.45f;
+                Prim(PrimitiveType.Cylinder, cp + Vector3.up * 0.025f, new Vector3(0.38f, 0.015f, 0.38f), Hex("f2c885"), s);
+            }
+            tops[i] = s.position.y + 0.04f;
+            stumps[i] = s;
+            stumpBase[i] = s.position;
 
             var label = new GameObject("n" + i).AddComponent<TextMesh>();
             label.font = font;
@@ -296,7 +304,7 @@ public class Board : MonoBehaviour
             label.characterSize = 0.11f;
             label.anchor = TextAnchor.MiddleCenter;
             label.color = Hex("5b3a22");
-            label.transform.SetParent(s.transform, true);
+            label.transform.SetParent(s, true);
             label.transform.position = p + Vector3.up * (tops[i] + 0.06f);
             labels[i] = label.transform;
 
@@ -308,22 +316,30 @@ public class Board : MonoBehaviour
             }
         }
 
-        // Potager au sommet, et la grosse carotte qu'on tourne
-        Prim(PrimitiveType.Cylinder, new Vector3(0, HillH - 0.05f, 0), new Vector3(5.6f, 0.1f, 5.6f), Hex("7a4f2c"), root);
-        for (int k = 0; k < 8; k++)
-        {
-            float a = k * 45 + 22.5f;
-            var p = Quaternion.Euler(0, a, 0) * Vector3.forward * 2.5f + Vector3.up * HillH;
-            Spawn(k % 2 == 0 ? "crop_carrot" : "crop_turnip", p, 2.2f, a, root);
-        }
+        BuildLadders();
+
+        // La grosse carotte plantee au sommet : corps orange strie, couronne de fanes, manivelle.
         carrot = new GameObject("Carotte").transform;
         carrot.SetParent(root);
         carrot.position = new Vector3(0, HillH, 0);
-        var big = Spawn("crop_carrot", carrot.position, 1, 0, carrot);
-        var bb = BoundsOf(big);
-        big.transform.localScale *= 3.4f / bb.size.y;
-        bb = BoundsOf(big);
-        big.transform.position += new Vector3(carrot.position.x - bb.center.x, carrot.position.y - bb.min.y - 0.3f, carrot.position.z - bb.center.z);
+        Prim(PrimitiveType.Cylinder, Vector3.up * 0.2f, new Vector3(3.2f, 1.4f, 3.2f), Hex("f07f1a"), carrot, 0.35f);
+        for (int k = 0; k < 4; k++)
+            Prim(PrimitiveType.Cylinder, Vector3.up * (-0.6f + k * 0.45f), new Vector3(3.26f, 0.04f, 3.26f), Hex("c9600f"), carrot);
+        Prim(PrimitiveType.Cylinder, Vector3.up * 1.62f, new Vector3(2.7f, 0.03f, 2.7f), Hex("f7a04a"), carrot, 0.35f);
+        for (int k = 0; k < 16; k++)
+        {
+            float a = k * 22.5f * Mathf.Deg2Rad;
+            Prim(PrimitiveType.Capsule, new Vector3(Mathf.Cos(a) * 1.35f, 1.85f, Mathf.Sin(a) * 1.35f), new Vector3(0.42f, 0.32f, 0.42f), Hex("3aa55a"), carrot, 0.3f);
+        }
+        for (int k = 0; k < 5; k++)
+        {
+            float a = k * 72f;
+            var leaf = Prim(PrimitiveType.Capsule, Vector3.zero, new Vector3(0.22f, 0.9f, 0.08f), Hex("47b865"), carrot, 0.3f);
+            leaf.transform.localRotation = Quaternion.Euler(0, a, 22);
+            leaf.transform.localPosition = leaf.transform.localRotation * Vector3.up * 0.9f + Vector3.up * 1.6f;
+        }
+        var crank = Prim(PrimitiveType.Cube, new Vector3(1.75f, 0.9f, 0), new Vector3(0.25f, 1.1f, 0.35f), Hex("6b4426"), carrot);
+        crank.transform.localRotation = Quaternion.Euler(0, 0, -15);
 
         bunnies = new Bunny[rules.players.Count, Rules.RabbitsPerPlayer];
         for (int p = 0; p < rules.players.Count; p++)
@@ -331,6 +347,46 @@ public class Board : MonoBehaviour
                 bunnies[p, k] = MakeBunny(Colors[rules.players[p].color]);
         PlaceStumps();
         Sync();
+    }
+
+    // Petites echelles moulees entre les cases qui se suivent (et depuis l'enclos, et vers la carotte).
+    void BuildLadders()
+    {
+        var links = new List<(Vector3 a, float ra, Vector3 b, float rb)>();
+        var summit = Vector3.zero;
+        int last = rules.summit - 1;
+        links.Add((new Vector3(PenCenter.x, 0, PenCenter.z), 5f, TileXZ(1), 1f));
+        for (int i = 1; i < last; i++) links.Add((TileXZ(i), 1f, TileXZ(i + 1), 1f));
+        links.Add((TileXZ(last), 1f, summit, 1.9f));
+
+        var rung = Hex("2e7a30");
+        foreach (var (a, ra, b, rb) in links)
+        {
+            var d = b - a;
+            float len = d.magnitude - ra - rb;
+            if (len < 0.3f) continue;
+            d.Normalize();
+            var side = Vector3.Cross(Vector3.up, d) * 0.45f;
+            var rot = Quaternion.LookRotation(d);
+            int n = Mathf.Max(2, Mathf.RoundToInt(len / 0.38f));
+            Vector3 prevL = default, prevR = default;
+            for (int k = 0; k <= n; k++)
+            {
+                var p = a + d * (ra + len * k / n);
+                p.y = Ground(p.x, p.z) + 0.05f;
+                var r = Prim(PrimitiveType.Cube, p, new Vector3(0.95f, 0.08f, 0.13f), rung, root);
+                r.transform.rotation = rot;
+                var L = p + side; L.y = Ground(L.x, L.z) + 0.09f;
+                var R = p - side; R.y = Ground(R.x, R.z) + 0.09f;
+                if (k > 0)
+                    foreach (var (u, v) in new[] { (prevL, L), (prevR, R) })
+                    {
+                        var rail = Prim(PrimitiveType.Cube, (u + v) / 2, new Vector3(0.1f, 0.12f, (v - u).magnitude + 0.05f), rung, root);
+                        rail.transform.rotation = Quaternion.LookRotation(v - u);
+                    }
+                prevL = L; prevR = R;
+            }
+        }
     }
 
     Bunny MakeBunny(Color c)
