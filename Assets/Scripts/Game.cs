@@ -30,6 +30,7 @@ public class Game : MonoBehaviour
     Table table;
     public RouletteView rview;
     public QuizView qview;
+    Light quizLight;
     Hub hub;
     Ui ui;
     Camera cam;
@@ -432,6 +433,19 @@ public class Game : MonoBehaviour
             StartCoroutine(Run(rview.Play(first, s => ui.Say(s)), null));
         }
         Casino(g != GameId.Croque);
+        // Plateau TV : tout est eclaire de face, uniformement (lumiere directionnelle propre au quiz).
+        if (g == GameId.Quiz) RenderSettings.ambientLight = Board.Hex("9a8f8a");
+        if (!quizLight)
+        {
+            quizLight = new GameObject("LumiereQuiz").AddComponent<Light>();
+            quizLight.type = LightType.Directional;
+            quizLight.color = Board.Hex("fff1e0");
+            quizLight.intensity = 1.5f;
+            quizLight.shadows = LightShadows.Soft;
+            quizLight.shadowStrength = 0.45f;
+            quizLight.transform.rotation = Quaternion.Euler(32, 12, 0);   // de face, legerement de cote
+        }
+        quizLight.enabled = g == GameId.Quiz;
         snapCam = true;
         Sound.I.Music(g == GameId.Croque ? "music_game" : g == GameId.Quiz ? "music_menu" : "music_blackjack");
     }
@@ -628,6 +642,7 @@ public class Game : MonoBehaviour
         busy = false;
         MenuBackdrop();
         Casino(false);
+        if (quizLight) quizLight.enabled = false;
         snapCam = true;
         pitch = 14;
         dist = 6.5f;

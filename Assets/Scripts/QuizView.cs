@@ -21,6 +21,8 @@ public class QuizView : MonoBehaviour
     readonly List<Podium> seats = new List<Podium>();
     Quiz quiz;
     Vector2 screenSize = new Vector2(ScreenW, ScreenH);
+    float screenAspect = 16 / 9f;
+    bool fillsFace;   // (garde pour essai : image peinte sur la dalle trapezoidale, abandonne car deformee)
     public float reveal = 1;          // 0 = image cachee au maximum, 1 = nette
     public bool pixelated;
     public string imageUrl;
@@ -69,31 +71,40 @@ public class QuizView : MonoBehaviour
         var mats = tv.sharedMaterials;
         int slot = System.Array.FindIndex(mats, m => m && m.name.StartsWith("Material_009"));
         if (slot < 0) slot = mats.Length - 1;
-        var off = new Material(lit) { color = Board.Hex("241533") };
-        mats[slot] = off;
+        // La dalle du modele reste noire ; l'image, rectangulaire et a ses proportions, se pose dessus.
+        mats[slot] = new Material(lit) { color = Board.Hex("120c1c") };
         tv.sharedMaterials = mats;
-        var sb = mesh.GetSubMesh(slot).bounds;   // repere du mesh
+        var sb = mesh.GetSubMesh(slot).bounds;
         Vector3 c0 = tv.transform.TransformPoint(sb.center), ext = tv.transform.TransformVector(sb.extents);
-        float h = Mathf.Abs(ext.y) * 2 * 0.94f, wMax = Mathf.Abs(ext.x) * 2 * 0.9f;
-        float w = Mathf.Min(wMax, h * 16 / 9f); h = w * 9 / 16f;
-        screenSize = new Vector2(w, h);
-        screen = Box(PrimitiveType.Quad, transform.InverseTransformPoint(c0) + new Vector3(0, 0, -Mathf.Abs(ext.z) - 0.03f), new Vector3(w, h, 1), screenMat, transform);
+        // Dalle rectangulaire (ecran redresse dans Blender) : l'image l'occupe au maximum, a ses proportions.
+        screenSize = new Vector2(Mathf.Abs(ext.x) * 2 * 0.96f, Mathf.Abs(ext.y) * 2 * 0.95f);
+        screen = Box(PrimitiveType.Quad, transform.InverseTransformPoint(c0) + new Vector3(0, 0, -Mathf.Abs(ext.z) - 0.03f), new Vector3(screenSize.x, screenSize.y, 1), screenMat, transform);
         screen.GetComponent<Renderer>().shadowCastingMode = UnityEngine.Rendering.ShadowCastingMode.Off;
 
-        // Lumieres de plateau : face chaude, contres colores, eclairage general doux.
-        Spot(new Vector3(0, 7.5f, -9), new Vector3(0, 1.5f, -1.5f), Board.Hex("fff1d6"), 45, 60);
-        Spot(new Vector3(-7, 6, -5), new Vector3(-2, 1, -2), Board.Hex("ff7ad0"), 25, 50);
-        Spot(new Vector3(7, 6, -5), new Vector3(2, 1, -2), Board.Hex("7ad8ff"), 25, 50);
-        Spot(new Vector3(0, 5.6f, -2), new Vector3(0, 3, 2), Board.Hex("ffe0b8"), 18, 80);
-        foreach (var x in new[] { -5f, 5f })
+        // Lumieres : chaque projecteur du modele (positions reprises du fichier Blender) eclaire la scene.
+        // Repere du plateau tourne = (x, z, y) de Blender.
+        var rail = new[] { (-5.76f, "fff3e0"), (-4.64f, "ffd6f0"), (-3.58f, "fff3e0"), (3.56f, "ff6fb0"), (4.63f, "e6ff7a"), (5.76f, "ffe07a") };
+        foreach (var (x, hex) in rail)
+            StageLight(new Vector3(x, 4.7f, -0.3f), new Vector3(x * 0.35f, 0.3f, -2.6f), Board.Hex(hex), 34, 58, x == -4.64f || x == 4.63f);
+        foreach (var x in new[] { -5.86f, 5.86f })   // projecteurs au sol : vers les pupitres et le fond
+            StageLight(new Vector3(x, 0.9f, -3.8f), new Vector3(-x * 0.25f, 2.6f, 1.5f), Board.Hex("ffe2c0"), 35, 75, false);
+        // Rideaux et fond de scene : lavage doux depuis la rampe.
+        foreach (var x in new[] { -6.5f, 6.5f }) StageLight(new Vector3(x * 0.6f, 5.2f, -1.2f), new Vector3(x, 2.5f, 1.5f), Board.Hex("ffd8ee"), 20, 80, false);
+        StageLight(new Vector3(0, 5.2f, -1.5f), new Vector3(0, 3.2f, 2.2f), Board.Hex("fff0da"), 16, 90, false);
+        // Face douce depuis la salle, pour que les visages ne soient pas dans le noir.
+        StageLight(new Vector3(0, 6, -12), new Vector3(0, 1.8f, -2), Board.Hex("fff4e8"), 14, 55, false);
+        // Eclairage general : toute la scene (joueurs des bords, rideaux, mur du fond) est lisible.
+        foreach (var (x, y, z, r, k) in new[] { (-6f, 3.5f, -3f, 9f, 1.6f), (0f, 3.5f, -3f, 9f, 1.2f), (6f, 3.5f, -3f, 9f, 1.6f),
+                                                  (-7.5f, 4.5f, 1f, 9f, 1.6f), (7.5f, 4.5f, 1f, 9f, 1.6f), (0f, 7f, 1.5f, 12f, 1.8f) })
         {
             var l = new GameObject("ambiance").AddComponent<Light>();
             l.transform.SetParent(transform, false);
-            l.transform.localPosition = new Vector3(x, 4, -4);
-            l.type = LightType.Point; l.range = 14; l.intensity = 2.2f; l.color = Board.Hex("ffe6d0");
+            l.transform.localPosition = new Vector3(x, y, z);
+            l.type = LightType.Point; l.range = r; l.intensity = k; l.color = Board.Hex("ffe6d0");
         }
-        camFrom = new Vector3(0, 3.4f, -11.2f);
-        camAt = new Vector3(0, 2.25f, 0);
+        // Camera haute : les pupitres passent sous l'ecran geant au lieu de le masquer.
+        camFrom = new Vector3(0, 5.6f, -10.2f);
+        camAt = new Vector3(0, 1.75f, 0);   // le haut de l'image s'arrete a la rampe de projecteurs
         podiums = new GameObject("pupitres").transform;
         podiums.SetParent(transform, false);
     }
@@ -122,6 +133,21 @@ public class QuizView : MonoBehaviour
         g.transform.localRotation = Quaternion.Euler(0, rotY, 0);
         g.transform.localScale = Vector3.one * scale;
         return g;
+    }
+
+    void StageLight(Vector3 pos, Vector3 at, Color c, float intensity, float angle, bool shadows)
+    {
+        var l = new GameObject("projecteur").AddComponent<Light>();
+        l.transform.SetParent(transform, false);
+        l.transform.localPosition = pos;
+        l.transform.LookAt(transform.TransformPoint(at));
+        l.type = LightType.Spot;
+        l.spotAngle = angle;
+        l.innerSpotAngle = angle * 0.55f;
+        l.range = 18;
+        l.intensity = intensity;
+        l.color = c;
+        l.shadows = shadows ? LightShadows.Soft : LightShadows.None;
     }
 
     void Spot(Vector3 pos, Vector3 at, Color c, float intensity, float angle = 40)
@@ -217,7 +243,7 @@ public class QuizView : MonoBehaviour
         float spacing = Mathf.Min(1.5f, 11.4f / n), scale = Mathf.Min(1f, spacing / 1.45f);
         float x = (i - (n - 1) / 2f) * spacing;
         var root = p.root;
-        root.localPosition = new Vector3(x, 0.12f, -2.3f + x * x * 0.035f);
+        root.localPosition = new Vector3(x, 0.12f, -3.0f + x * x * 0.03f);
         root.localRotation = Quaternion.Euler(0, x * 2.2f, 0);
         var stand = Instantiate(standTemplate.gameObject, stage);
         stand.SetActive(true);
@@ -362,9 +388,10 @@ public class QuizView : MonoBehaviour
             RenderTexture.active = display;
             GL.Clear(false, true, Board.Hex("1b1030"));
             RenderTexture.active = prev;
-            screen.localScale = new Vector3(screenSize.x, screenSize.y, 1);
+            if (!fillsFace) screen.localScale = new Vector3(screenSize.x, screenSize.y, 1);
             return;
         }
+        if (fillsFace) { Obscure(tex, reveal, pixelated); return; }
         // L'image garde ses proportions dans l'ecran 16:9.
         float aspect = tex.width / (float)tex.height;
         float w = screenSize.x, h = screenSize.x / aspect;
@@ -373,21 +400,29 @@ public class QuizView : MonoBehaviour
         Obscure(tex, reveal, pixelated);
     }
 
+    void Crop(Texture src, RenderTexture dst)
+    {
+        if (!fillsFace) { Graphics.Blit(src, dst); return; }
+        float a = src.width / (float)src.height;
+        var scale = a > screenAspect ? new Vector2(screenAspect / a, 1) : new Vector2(1, a / screenAspect);
+        Graphics.Blit(src, dst, scale, (Vector2.one - scale) / 2);
+    }
+
     // Degradation progressive : gros pixels (jusqu'a 1/64) ou flou (reduction puis agrandissement lisse).
     void Obscure(Texture src, float k, bool pixels)
     {
         // 128 -> 1, en restant brouille plus longtemps au debut (courbe en k^1.5).
         float amount = Mathf.Pow(2, 7f * (1 - Mathf.Pow(Mathf.Clamp01(k), 1.5f)));
-        if (amount <= 1.05f) { Graphics.Blit(src, display); return; }
+        if (amount <= 1.05f) { Crop(src, display); return; }
         if (pixels)
         {
             // Pixels carres a l'ecran : la grille suit les proportions de l'image (etiree ensuite sur l'ecran).
-            float aspect = src.width / (float)src.height;
+            float aspect = fillsFace ? screenAspect : src.width / (float)src.height;
             int cols = Mathf.Max(2, Mathf.RoundToInt(display.width / amount));
             int rows = Mathf.Max(2, Mathf.RoundToInt(cols / aspect));
             var grid = RenderTexture.GetTemporary(cols, rows, 0);
             grid.filterMode = FilterMode.Point;
-            Graphics.Blit(src, grid);
+            Crop(src, grid);
             Graphics.Blit(grid, display);
             RenderTexture.ReleaseTemporary(grid);
             return;
@@ -395,7 +430,7 @@ public class QuizView : MonoBehaviour
         int w = Mathf.Max(1, Mathf.RoundToInt(display.width / amount)), h = Mathf.Max(1, Mathf.RoundToInt(display.height / amount));
         var small = RenderTexture.GetTemporary(w, h, 0);
         small.filterMode = FilterMode.Bilinear;
-        Graphics.Blit(src, small);
+        Crop(src, small);
         // Remontee par paliers : un flou doux au lieu de gros blocs.
         var cur = small;
         while (cur.width * 2 < display.width)
