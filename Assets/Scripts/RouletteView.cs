@@ -242,6 +242,8 @@ public class RouletteView : MonoBehaviour
         roll.volume = Sound.I.SfxVolume;
         roll.time = 0;
         roll.Play();
+        int bounces = 0;
+        bool settled = false;
         while (t < duration)
         {
             t += Time.deltaTime;
@@ -261,12 +263,16 @@ public class RouletteView : MonoBehaviour
             else if (k < 0.8f)
             {
                 float u = Mathf.InverseLerp(0.62f, 0.8f, k);                                     // roule et rebondit sur les numeros
+                // La bille touche les numeros quand sin(5 pi u) repasse par 0 : un choc enregistre par contact.
+                int contact = Mathf.FloorToInt(u * 5);
+                if (contact > bounces && contact <= 4) { bounces = contact; Sound.I.Play("rt_bounce" + contact, 1 - 0.15f * (contact - 1), 0.04f); }
                 r = Mathf.Lerp(NumR, 0.262f, u) + Mathf.Sin(u * 17 + bounceSeed) * 0.012f * (1 - u);
                 y = NumY + Mathf.Abs(Mathf.Sin(u * Mathf.PI * 5)) * 0.022f * (1 - u);
             }
             else
             {
                 float d = Mathf.SmoothStep(0, 1, Mathf.InverseLerp(0.8f, settle, k));            // tombe dans la case
+                if (!settled) { settled = true; Sound.I.Play("rt_settle", 0.9f, 0.03f); }
                 r = Mathf.Lerp(0.262f, PocketR, d); y = Mathf.Lerp(NumY, PocketY, d) + Mathf.Sin(d * Mathf.PI) * 0.01f;
             }
             PlaceBall(wheelYaw + rel, r, y);
