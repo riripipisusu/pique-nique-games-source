@@ -197,6 +197,20 @@ public class Game : MonoBehaviour
         IEnumerator Shot(string n) { yield return new WaitForEndOfFrame(); var tex = ScreenCapture.CaptureScreenshotAsTexture(); System.IO.File.WriteAllBytes(System.IO.Path.Combine(dir, n + ".png"), tex.EncodeToPNG()); Destroy(tex); }
         IEnumerator Fps(string n) { int f = Time.frameCount; float t = Time.realtimeSinceStartup; yield return new WaitForSecondsRealtime(3); System.IO.File.AppendAllText(System.IO.Path.Combine(dir, "fps.txt"), $"{n}: {(Time.frameCount - f) / (Time.realtimeSinceStartup - t):0} fps" + System.Environment.NewLine); }
         yield return new WaitForSeconds(6); yield return Shot("1-titre"); yield return Fps("titre");
+        if (Array.IndexOf(Environment.GetCommandLineArgs(), "-quizbots") >= 0)
+        {
+            SelectGame(GameId.Quiz);
+            ui.OpenForTest("setup"); yield return new WaitForSeconds(1); yield return Shot("b0-setup");
+            quizBots = 4; option = 0;
+            StartQuizWithBots();
+            yield return new WaitForSeconds(3); introSkip = true;
+            while (!ui.DialogueShown) yield return null;
+            ui.DialogueKey(true); ui.DialogueKey(false);
+            while (qz.phase != QPhase.Guess) yield return null;
+            yield return new WaitForSeconds(15); yield return Shot("b1-bots");
+            Application.Quit();
+            yield break;
+        }
         if (Array.IndexOf(Environment.GetCommandLineArgs(), "-quiz") >= 0)
         {
             // Partie hors ligne a 4 : on joue les propositions des autres a la main.
@@ -514,6 +528,49 @@ public class Game : MonoBehaviour
         ui.Say($"{n} est parti : l'hôte joue pour lui.", 3.5f);
     }
 
+    // --- TV Time hors ligne : moi contre des bots ------------------------------------------
+    // Chaque bot a un "niveau" : a chaque image il trouve (ou non) a un moment tire au hasard,
+    // et tente une ou deux mauvaises reponses avant. Seulement hors ligne.
+    public int quizBots = 3;
+    static readonly string[] BotNames = { "Robo-Léa", "Bip-Bop", "Tchou-Tchou", "Mr Zap", "Pixel", "Gigi-Bot", "Watt", "Nova", "Boulon" };
+    static readonly string[] BotAvatars = { "Ami_Caramel", "Ami_Brun", "Ami_Platine", "Ami_Brune", "Ami_Roux", "Cowboy_Male", "Witch", "Ninja_Male_Hair", "Chef_Female" };
+    readonly List<(int seat, float at, string text)> botPlan = new List<(int, float, string)>();
+
+    public void StartQuizWithBots()
+    {
+        var n = new List<string> { PlayerPrefs.GetString("cc-name", "Joueur") };
+        var av = new List<string> { myAvatar };
+        for (int i = 0; i < quizBots; i++) { n.Add(BotNames[i]); av.Add(BotAvatars[i]); }
+        StartGame(GameId.Quiz, option, n, UnityEngine.Random.Range(0, int.MaxValue), av);
+    }
+
+    void PlanBots()
+    {
+        botPlan.Clear();
+        if (Online || qz == null) return;
+        var rng = new System.Random(qz.round * 977 + 13);
+        var wrongPool = Quiz.Pool.Where(q => q.c == qz.Current.c && q != qz.Current).Select(q => q.d).ToList();
+        for (int seat = 1; seat < qz.players.Count; seat++)
+        {
+            float skill = 0.35f + 0.1f * (seat % 4);   // entre 35 et 65 % de bonnes reponses
+            int wrongs = rng.Next(3);
+            for (int w = 0; w < wrongs && wrongPool.Count > 0; w++)
+                botPlan.Add((seat, 2 + (float)rng.NextDouble() * 12, wrongPool[rng.Next(wrongPool.Count)]));
+            if (rng.NextDouble() < skill) botPlan.Add((seat, 4 + (float)rng.NextDouble() * 14, qz.Current.a[0]));
+        }
+    }
+
+    void RunBots()
+    {
+        if (Online || qz == null || qz.phase != QPhase.Guess || botPlan.Count == 0) return;
+        float t = Time.time - quizPhaseStart;
+        foreach (var b in botPlan.Where(b => b.at <= t).ToList())
+        {
+            botPlan.Remove(b);
+            if (!qz.players[b.seat].found) ApplyQuiz(new[] { "guess", b.seat.ToString(), QuizElapsedMs.ToString(), b.text });
+        }
+    }
+
     // --- Generique TV Time : une seule fois par session de jeu -------------------------------
     static bool tvIntroSeen;
     public bool introSkip;
@@ -627,6 +684,7 @@ public class Game : MonoBehaviour
             switch (e.type)
             {
                 case QEv.Question:
+                    PlanBots();
                     quizPhaseStart = Time.time;
                     qview.imageUrl = qz.Current.u;
                     qview.pixelated = qz.Pixelated(qz.round);
@@ -785,7 +843,7 @@ public class Game : MonoBehaviour
         {
             // L'image se devoile en 18 s ; seul (hors ligne), c'est ce PC qui pilote les phases.
             if (qz.phase == QPhase.Guess) qview.reveal = Mathf.Clamp01((Time.time - quizPhaseStart) / 18f);
-            if (!Online && Idle && !paused && !qz.Finished) { var tick = QuizTick(qz); if (tick != null) Apply(tick); }
+            if (!Online && Idle && !paused && !qz.Finished) { RunBots(); var tick = QuizTick(qz); if (tick != null) Apply(tick); }
         }
         if (inGame && !busy && pending.Count > 0 && Match != null && !Match.Finished)
         {

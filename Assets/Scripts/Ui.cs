@@ -201,7 +201,8 @@ public partial class Ui : MonoBehaviour
     }
 
     // --- Preparation d'une partie (options + joueurs) -------------------------------------
-    VisualElement setupOptions, playerList, localTitle, localBtn;
+    VisualElement setupOptions, playerList, localTitle, localBtn, botsRow;
+    Label botsLabel;
     Label setupTitle;
     Button addPlayer;
 
@@ -228,6 +229,16 @@ public partial class Ui : MonoBehaviour
         Btn(bottom, "Jouer en ligne", () => { RefreshOnline(); Go(onlineScreen); }, "small").style.width = 300;
         localBtn = Btn(bottom, "Jouer sur ce PC !", () => game.StartGame(), "green");
         localBtn.style.width = 380;
+        // Quiz : partie hors ligne contre des bots (pour s'entrainer ou tester sans second PC).
+        botsRow = Div(panel, "row");
+        botsRow.style.marginTop = 10;
+        botsRow.style.alignItems = Align.Center;
+        Text(botsRow, "Hors ligne contre des bots :", "h2").style.marginTop = 0;
+        botsLabel = Text(botsRow, "", "bet-label");
+        botsLabel.style.marginLeft = 16; botsLabel.style.marginRight = 16;
+        Btn(botsRow, "−", () => { game.quizBots = Mathf.Max(1, game.quizBots - 1); RefreshSetup(); }, "ghost", "small").style.width = 70;
+        Btn(botsRow, "+", () => { game.quizBots = Mathf.Min(Quiz.MaxPlayers - 1, game.quizBots + 1); RefreshSetup(); }, "ghost", "small").style.width = 70;
+        Btn(botsRow, "Jouer contre les bots", () => game.StartQuizWithBots(), "green", "small").style.width = 340;
     }
 
     void OptionCards(VisualElement parent, int current, Action<int> pick)
@@ -274,6 +285,8 @@ public partial class Ui : MonoBehaviour
         bool local = game.gameId != GameId.Quiz;
         foreach (var e in new[] { localTitle, playerList, localBtn }) e.style.display = local ? DisplayStyle.Flex : DisplayStyle.None;
         if (!local) addPlayer.style.display = DisplayStyle.None;
+        botsRow.style.display = local ? DisplayStyle.None : DisplayStyle.Flex;
+        botsLabel.text = game.quizBots + (game.quizBots > 1 ? " bots" : " bot");
     }
 
     // --- Choix du personnage ---------------------------------------------------------------
