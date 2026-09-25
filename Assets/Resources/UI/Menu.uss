@@ -481,10 +481,10 @@ Button.chip-btn.rt-chipbtn.rt-sel { scale: 1.18 1.18; translate: 0 -6px; }
 /* Ecran des pupitres du quiz (rendu dans une texture de 360 x 288) */
 .pod {
     background-color: rgb(20, 78, 190); border-width: 10px; border-radius: 0; align-items: center; justify-content: space-between;
-    background-image: none; padding: 10px 8px 12px 8px;
+    background-image: none; padding: 6px 10px 8px 10px;
 }
 .pod-name { font-size: 44px; -unity-font-style: bold; color: rgb(255, 255, 255); margin: 0; -unity-text-align: middle-center; }
-.pod-score { font-size: 118px; -unity-font-style: bold; color: rgb(255, 255, 255); margin: -18px 0 -14px 0; -unity-text-align: middle-center; }
-.pod-band { width: 100%; height: 56px; border-radius: 28px; background-color: rgb(238, 242, 250); align-items: center; justify-content: center; }
+.pod-score { font-size: 96px; -unity-font-style: bold; color: rgb(255, 255, 255); margin: -18px 0 -14px 0; -unity-text-align: middle-center; }
+.pod-band { width: 100%; height: 46px; border-radius: 23px; background-color: rgb(238, 242, 250); align-items: center; justify-content: center; }
 .pod-band.found { background-color: rgb(190, 245, 205); }
 .pod-strip { font-size: 34px; -unity-font-style: bold; margin: 0; -unity-text-align: middle-center; }

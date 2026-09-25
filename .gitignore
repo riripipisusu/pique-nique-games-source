@@ -34,3 +34,11 @@
 # Cles API du quiz : jamais commitees
 /Tools/quiz_keys.json
 /Tools/quiz_cache/
+/Assets/PolygonCity/
+/Assets/PolygonCity.meta
+/Assets/PolygonNightclubs/
+/Assets/PolygonNightclubs.meta
+/Assets/PolygonNightClub/
+/Assets/PolygonNightClub.meta
+/Assets/Stage/
+/Assets/Stage.meta

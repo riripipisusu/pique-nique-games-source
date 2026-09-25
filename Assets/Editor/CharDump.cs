@@ -192,3 +192,28 @@ public static class Measure
         }
     }
 }
+public static class StageShot
+{
+    // Vue de face du plateau importe depuis Blender : -executeMethod StageShot.Run -out <png>
+    public static void Run()
+    {
+        ShaderUtil.allowAsyncCompilation = false;
+        UnityEditor.SceneManagement.EditorSceneManager.NewScene(UnityEditor.SceneManagement.NewSceneSetup.DefaultGameObjects);
+        var g = (GameObject)Object.Instantiate(AssetDatabase.LoadAssetAtPath<GameObject>("Assets/Stage/TennaStage.fbx"));
+        foreach (var t in g.GetComponentsInChildren<Transform>())
+        {
+            var r = t.GetComponent<Renderer>();
+            Debug.Log($"SCENE {t.name} pos {t.position} rot {t.eulerAngles} scale {t.lossyScale} " + (r ? $"bounds {r.bounds.center} size {r.bounds.size} mats {string.Join(",", r.sharedMaterials.Select(m => m ? m.name + ":" + m.shader.name : "null"))}" : ""));
+        }
+        var cam = Camera.main;
+        cam.transform.SetPositionAndRotation(new Vector3(0, 3.6f, 16), Quaternion.Euler(5, 180, 0));
+        cam.fieldOfView = 45;
+        var args = System.Environment.GetCommandLineArgs();
+        var rt = new RenderTexture(1280, 720, 24);
+        cam.targetTexture = rt; cam.Render(); cam.Render();
+        RenderTexture.active = rt;
+        var tex = new Texture2D(1280, 720, TextureFormat.RGB24, false);
+        tex.ReadPixels(new Rect(0, 0, 1280, 720), 0, 0);
+        System.IO.File.WriteAllBytes(args[System.Array.IndexOf(args, "-out") + 1], tex.EncodeToPNG());
+    }
+}

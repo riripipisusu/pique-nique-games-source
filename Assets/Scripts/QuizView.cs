@@ -20,6 +20,7 @@ public class QuizView : MonoBehaviour
     readonly HashSet<string> loading = new HashSet<string>();
     readonly List<Podium> seats = new List<Podium>();
     Quiz quiz;
+    Vector2 screenSize = new Vector2(ScreenW, ScreenH);
     public float reveal = 1;          // 0 = image cachee au maximum, 1 = nette
     public bool pixelated;
     public string imageUrl;
@@ -32,8 +33,7 @@ public class QuizView : MonoBehaviour
     Font font;
 
     // Recul suffisant pour voir les joueurs entiers derriere leurs pupitres, l'ecran au-dessus.
-    public Pose CamPose => new Pose(transform.TransformPoint(new Vector3(0, 2.9f, -7.2f)),
-        Quaternion.LookRotation(transform.TransformDirection(new Vector3(0, -0.02f, 1))));
+    public Pose CamPose => new Pose(transform.TransformPoint(camFrom), Quaternion.LookRotation(transform.TransformDirection(camAt - camFrom)));
 
     // Image telechargee (ou abandonnee apres echec : on n'attend pas indefiniment).
     public bool Ready(string url) { Preload(url); return images.ContainsKey(url) || failed.Contains(url); }
@@ -48,7 +48,54 @@ public class QuizView : MonoBehaviour
         screenMat = new Material(Resources.Load<Material>("QuizScreen"));
         display = new RenderTexture(1024, 1024, 0) { name = "EcranQuiz" };
         screenMat.SetTexture("_BaseMap", display);
-        BuildSet();
+        if (Synty.I && Synty.I.stage) BuildStage(); else BuildSet();
+    }
+
+    // --- Plateau "tenna stage" (modele Blender) ------------------------------------------
+    Transform stage, standTemplate;
+    Vector3 camFrom = new Vector3(0, 2.9f, -7.2f), camAt = new Vector3(0, 2.9f - 0.144f, 0);
+
+    void BuildStage()
+    {
+        // Le modele regarde vers +z : on le tourne pour que le public (la camera) soit cote -z.
+        stage = Instantiate(Synty.I.stage, transform).transform;
+        stage.localRotation = Quaternion.Euler(0, 180, 0);
+        foreach (Transform c in stage)
+            if (c.name.StartsWith("gamestand")) { if (c.name == "gamestand.003") standTemplate = c; c.gameObject.SetActive(false); }
+
+        // Ecran geant : la dalle rose est remplacee par l'image du quiz, en 16:9 dans le cadre.
+        var tv = stage.Find("big tv").GetComponent<MeshRenderer>();
+        var mesh = tv.GetComponent<MeshFilter>().sharedMesh;
+        var mats = tv.sharedMaterials;
+        int slot = System.Array.FindIndex(mats, m => m && m.name.StartsWith("Material_009"));
+        if (slot < 0) slot = mats.Length - 1;
+        var off = new Material(lit) { color = Board.Hex("241533") };
+        mats[slot] = off;
+        tv.sharedMaterials = mats;
+        var sb = mesh.GetSubMesh(slot).bounds;   // repere du mesh
+        Vector3 c0 = tv.transform.TransformPoint(sb.center), ext = tv.transform.TransformVector(sb.extents);
+        float h = Mathf.Abs(ext.y) * 2 * 0.94f, wMax = Mathf.Abs(ext.x) * 2 * 0.9f;
+        float w = Mathf.Min(wMax, h * 16 / 9f); h = w * 9 / 16f;
+        screenSize = new Vector2(w, h);
+        screen = Box(PrimitiveType.Quad, transform.InverseTransformPoint(c0) + new Vector3(0, 0, -Mathf.Abs(ext.z) - 0.03f), new Vector3(w, h, 1), screenMat, transform);
+        screen.GetComponent<Renderer>().shadowCastingMode = UnityEngine.Rendering.ShadowCastingMode.Off;
+
+        // Lumieres de plateau : face chaude, contres colores, eclairage general doux.
+        Spot(new Vector3(0, 7.5f, -9), new Vector3(0, 1.5f, -1.5f), Board.Hex("fff1d6"), 45, 60);
+        Spot(new Vector3(-7, 6, -5), new Vector3(-2, 1, -2), Board.Hex("ff7ad0"), 25, 50);
+        Spot(new Vector3(7, 6, -5), new Vector3(2, 1, -2), Board.Hex("7ad8ff"), 25, 50);
+        Spot(new Vector3(0, 5.6f, -2), new Vector3(0, 3, 2), Board.Hex("ffe0b8"), 18, 80);
+        foreach (var x in new[] { -5f, 5f })
+        {
+            var l = new GameObject("ambiance").AddComponent<Light>();
+            l.transform.SetParent(transform, false);
+            l.transform.localPosition = new Vector3(x, 4, -4);
+            l.type = LightType.Point; l.range = 14; l.intensity = 2.2f; l.color = Board.Hex("ffe6d0");
+        }
+        camFrom = new Vector3(0, 3.4f, -11.2f);
+        camAt = new Vector3(0, 2.25f, 0);
+        podiums = new GameObject("pupitres").transform;
+        podiums.SetParent(transform, false);
     }
 
     Material Color(string hex, float smooth = 0.3f) { var m = new Material(lit) { color = Board.Hex(hex) }; m.SetFloat("_Smoothness", smooth); return m; }
@@ -137,6 +184,12 @@ public class QuizView : MonoBehaviour
             root.localRotation = Quaternion.Euler(0, -x * 2.5f, 0);
             var col = Board.Colors[i % Board.Colors.Length];
             var p = new Podium { root = root, color = col, glow = Glow(col, 1.2f) };
+            if (standTemplate)
+            {
+                StagePodium(p, i, n, q.players[i].name, col, avatars.Count > i ? avatars[i] : "Casual_Male");
+                seats.Add(p);
+                continue;
+            }
             // Pupitre facon plateau TV : la face avant EST un ecran (texture dessinee par l'interface) avec
             // prenom, score et bande de reponse (derniere proposition ou "Trouvé !"), cadre a la couleur du joueur.
             float w = Mathf.Min(1.25f, spacing * 0.86f);
@@ -156,6 +209,40 @@ public class QuizView : MonoBehaviour
             p.head.localPosition = new Vector3(0, 0.4f + size + 0.25f, 0.62f);
             seats.Add(p);
         }
+    }
+
+    // Pupitres du modele Blender, en arc sur le devant de la scene ; le joueur se tient derriere.
+    void StagePodium(Podium p, int i, int n, string player, Color col, string avatar)
+    {
+        float spacing = Mathf.Min(1.5f, 11.4f / n), scale = Mathf.Min(1f, spacing / 1.45f);
+        float x = (i - (n - 1) / 2f) * spacing;
+        var root = p.root;
+        root.localPosition = new Vector3(x, 0.12f, -2.3f + x * x * 0.035f);
+        root.localRotation = Quaternion.Euler(0, x * 2.2f, 0);
+        var stand = Instantiate(standTemplate.gameObject, stage);
+        stand.SetActive(true);
+        stand.transform.localScale = standTemplate.localScale * scale;
+        // Recentrage : le pied du pupitre sur le point voulu.
+        var r = stand.GetComponent<Renderer>();
+        var b = r.bounds;
+        stand.transform.position += root.position - new Vector3(b.center.x, b.min.y, b.center.z);
+        stand.transform.SetParent(root, true);
+        stand.transform.RotateAround(root.position, Vector3.up, x * 2.2f);
+        // Ecran du pupitre : texture dessinee par l'interface (prenom, score, bande de reponse).
+        var rt = new RenderTexture(720, 440, 0) { name = "pupitre", useMipMap = true, autoGenerateMips = true, anisoLevel = 8 };
+        var face = new Material(Resources.Load<Material>("QuizScreen"));
+        face.SetTexture("_BaseMap", rt);
+        var mats = r.sharedMaterials;
+        for (int k = 0; k < mats.Length; k++) if (mats[k] && mats[k].name.StartsWith("sign")) mats[k] = face;
+        r.sharedMaterials = mats;
+        p.panel = r;
+        BuildPodiumUi(p, rt, player, col);
+        float size = 1.62f * Mathf.Lerp(0.9f, 1f, scale);
+        // Petite estrade derriere le pupitre (cachee par lui) : on voit le joueur jusqu'aux epaules.
+        Chars.Spawn(avatar, root, new Vector3(0, 0.38f, 1.0f * scale), 180, out p.an, size);
+        p.head = new GameObject("tete").transform;
+        p.head.SetParent(root, false);
+        p.head.localPosition = new Vector3(0, 0.38f + size + 0.25f, 1.0f * scale);
     }
 
     // Interface d'un pupitre rendue dans sa texture (police et styles du jeu : Resources/UI/Menu.uss, classes .pod-*).
@@ -253,6 +340,7 @@ public class QuizView : MonoBehaviour
     {
         var p = seats[seat];
         var c = found ? Board.Hex("3fe07a") : p.color;
+        p.screenUi.style.backgroundColor = found ? Board.Hex("1c8a45") : Board.Hex("144ebe");
         p.glow.color = c;
         p.glow.SetColor("_EmissionColor", c * (found ? 3f : 1.2f));
         p.band.EnableInClassList("found", found);
@@ -274,13 +362,13 @@ public class QuizView : MonoBehaviour
             RenderTexture.active = display;
             GL.Clear(false, true, Board.Hex("1b1030"));
             RenderTexture.active = prev;
-            screen.localScale = new Vector3(ScreenW, ScreenH, 1);
+            screen.localScale = new Vector3(screenSize.x, screenSize.y, 1);
             return;
         }
         // L'image garde ses proportions dans l'ecran 16:9.
         float aspect = tex.width / (float)tex.height;
-        float w = ScreenW, h = ScreenW / aspect;
-        if (h > ScreenH) { h = ScreenH; w = ScreenH * aspect; }
+        float w = screenSize.x, h = screenSize.x / aspect;
+        if (h > screenSize.y) { h = screenSize.y; w = screenSize.y * aspect; }
         screen.localScale = new Vector3(w, h, 1);
         Obscure(tex, reveal, pixelated);
     }
