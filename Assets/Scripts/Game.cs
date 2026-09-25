@@ -587,7 +587,7 @@ public class Game : MonoBehaviour
         if (!tvIntroSeen) yield return TvIntro();
         if (!tvRulesSeen.Contains(gameId) && qview.HasTenna) yield return TennaRules(gameId);
         Sound.I.PauseMusic(false);
-        Sound.I.Music("music_quiz");
+        Sound.I.Music("music_quiz_game");   // musique de partie (TV_GAME)
         quizPhaseStart = Time.time;
         busy = false;
         ui.Refresh();
@@ -610,7 +610,8 @@ public class Game : MonoBehaviour
     {
         tvRulesSeen.Add(g);
         if (!TennaLines.TryGetValue(g, out var lines)) yield break;
-        Sound.I.PauseMusic(true);
+        Sound.I.PauseMusic(false);
+        Sound.I.Music("music_quiz");   // TV Time pendant que Tenna presente
         tvCloseUp = true;
         ui.HideIntro();
         var box = ui.ShowDialogue();
