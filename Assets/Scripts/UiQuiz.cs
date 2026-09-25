@@ -51,6 +51,34 @@ public partial class Ui
 
     int Me => Mathf.Max(0, game.mySeat);
 
+    // Generique TV Time en plein ecran (image a ses proportions sur fond noir).
+    // Clic, Espace ou Entree : "Passer l'introduction ?" (video en pause) ; Oui la coupe, Non ou Echap la reprend.
+    VisualElement intro, introAsk;
+    public bool IntroShown => intro != null;
+    public bool IntroAsking => introAsk != null && introAsk.style.display == DisplayStyle.Flex;
+    public void ShowIntro(RenderTexture rt)
+    {
+        intro = Div(root, "intro");
+        var img = Div(intro, "intro-video");
+        img.style.backgroundImage = Background.FromRenderTexture(rt);
+        Text(intro, "Clic ou Espace pour passer", "intro-skip");
+        introAsk = Div(intro, "panel", "intro-ask");
+        Text(introAsk, "Passer l'introduction ?", "panel-title");
+        var row = Div(introAsk, "row");
+        Btn(row, "Non", () => AskSkip(false), "ghost").style.width = 220;
+        Btn(row, "Oui, passer", () => { game.introSkip = true; }, "green").style.width = 260;
+        introAsk.style.display = DisplayStyle.None;
+        img.RegisterCallback<PointerDownEvent>(_ => AskSkip(true));
+    }
+    void AskSkip(bool ask) { if (introAsk != null) introAsk.style.display = ask ? DisplayStyle.Flex : DisplayStyle.None; }
+    public void IntroKey(bool escape)
+    {
+        if (!IntroAsking) { if (!escape) AskSkip(true); }
+        else if (escape) AskSkip(false);
+        else game.introSkip = true;
+    }
+    public void HideIntro() { intro?.RemoveFromHierarchy(); intro = null; introAsk = null; }
+
     public void QuizQuestion()
     {
         var q = game.qz;

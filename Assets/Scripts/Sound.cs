@@ -43,6 +43,7 @@ public class Sound : MonoBehaviour
 
     void Update()
     {
+        if (held) return;
         if (next != null && music.volume <= 0.001f)
         {
             music.clip = next;
@@ -71,6 +72,10 @@ public class Sound : MonoBehaviour
     }
 
     public float SfxVolume => s.sfx;
+    public float MasterVolume => s.mute ? 0 : s.master;
+    // Coupe la musique (generique video) : rien ne la relance tant que held est vrai, meme un changement de morceau.
+    bool held;
+    public void PauseMusic(bool pause) { held = pause; if (pause) music.Pause(); else music.UnPause(); }
 
     public void UI(string n) { if (clips.TryGetValue(n, out var c)) ui.PlayOneShot(c); }
 }

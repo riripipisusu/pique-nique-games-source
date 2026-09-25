@@ -206,6 +206,9 @@ public class Game : MonoBehaviour
             SelectGame(GameId.Quiz);
             option = 2;
             StartGame();
+            yield return new WaitForSeconds(3f); yield return Shot("q0-generique");
+            ui.IntroKey(false); yield return new WaitForSeconds(0.5f); yield return Shot("q0b-passer");
+            ui.IntroKey(false);
             yield return new WaitForSeconds(1.5f); yield return Shot("q1-intro");
             while (qz.phase != QPhase.Guess) yield return null;
             yield return new WaitForSeconds(1.2f);
@@ -430,6 +433,7 @@ public class Game : MonoBehaviour
             quizPhaseStart = Time.time;
             ui.ShowHud();
             ui.Say("Tenez-vous prêts !");
+            if (!tvIntroSeen) StartCoroutine(TvIntro());
         }
         else if (g == GameId.Croque)
         {
@@ -475,7 +479,8 @@ public class Game : MonoBehaviour
         }
         quizLight.enabled = g == GameId.Quiz;
         snapCam = true;
-        Sound.I.Music(g == GameId.Croque ? "music_game" : g == GameId.Quiz ? "music_quiz" : "music_blackjack");
+        if (!(g == GameId.Quiz && !tvIntroSeen))   // TV Time : la musique demarre apres le generique
+            Sound.I.Music(g == GameId.Croque ? "music_game" : g == GameId.Quiz ? "music_quiz" : "music_blackjack");
     }
 
     // Ambiance : prairie ensoleillee ou salle de casino fermee aux lumieres chaudes.
@@ -504,6 +509,52 @@ public class Game : MonoBehaviour
     {
         string n = rules?.players[seat].name ?? bj?.players[seat].name ?? rt?.players[seat].name ?? qz.players[seat].name;
         ui.Say($"{n} est parti : l'hôte joue pour lui.", 3.5f);
+    }
+
+    // --- Generique TV Time : une seule fois par session de jeu -------------------------------
+    static bool tvIntroSeen;
+    public bool introSkip;
+
+    IEnumerator TvIntro()
+    {
+        tvIntroSeen = true;
+        string path = System.IO.Path.Combine(Application.streamingAssetsPath, "tvtime_intro.mp4");
+        if (!System.IO.File.Exists(path)) { Sound.I.Music("music_quiz"); yield break; }
+        busy = true;   // la partie attend la fin du generique (l'hote ne lance pas la premiere image)
+        introSkip = false;
+        Sound.I.PauseMusic(true);
+        var rt = new RenderTexture(640, 480, 0);
+        ui.ShowIntro(rt);   // ecran noir tout de suite : le plateau n'apparait qu'apres le generique
+        var go = new GameObject("GeneriqueTV");
+        var vp = go.AddComponent<UnityEngine.Video.VideoPlayer>();
+        vp.url = path;
+        vp.renderMode = UnityEngine.Video.VideoRenderMode.RenderTexture;
+        vp.targetTexture = rt;
+        vp.isLooping = false;
+        vp.audioOutputMode = UnityEngine.Video.VideoAudioOutputMode.Direct;
+        vp.SetDirectAudioVolume(0, Mathf.Clamp01(Sound.I.MasterVolume * Mathf.Max(settings.music, 0.6f)));
+        vp.Prepare();
+        float wait = Time.realtimeSinceStartup + 5;
+        while (!vp.isPrepared && Time.realtimeSinceStartup < wait) yield return null;
+        if (vp.isPrepared)
+        {
+            vp.Play();
+            yield return null;
+            // Pendant la question "Passer ?", la video est en pause.
+            while (!introSkip && (vp.isPlaying || vp.isPaused || vp.frame < 2))
+            {
+                if (ui.IntroAsking != vp.isPaused) { if (ui.IntroAsking) vp.Pause(); else vp.Play(); }
+                yield return null;
+            }
+        }
+        ui.HideIntro();
+        Destroy(go);
+        rt.Release();
+        Sound.I.PauseMusic(false);
+        Sound.I.Music("music_quiz");
+        quizPhaseStart = Time.time;
+        busy = false;
+        ui.Refresh();
     }
 
     // --- Quiz ------------------------------------------------------------------------------
@@ -698,6 +749,7 @@ public class Game : MonoBehaviour
             ui.Refresh();
         }
         if (!Focused) return;
+        if (ui.IntroShown && (Input.GetKeyDown(KeyCode.Space) || Input.GetKeyDown(KeyCode.Escape) || Input.GetKeyDown(KeyCode.Return))) { ui.IntroKey(Input.GetKeyDown(KeyCode.Escape)); return; }
         if (Input.GetKeyDown(KeyCode.Escape))
         {
             if (ui.InSubMenu) ui.Back();

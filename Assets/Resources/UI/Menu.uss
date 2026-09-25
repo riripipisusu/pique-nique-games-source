@@ -498,3 +498,11 @@ Button.chip-btn.rt-chipbtn.rt-sel { scale: 1.18 1.18; translate: 0 -6px; }
 .cat-board .game-cat-title { color: rgb(95, 158, 60); }
 .cat-casino .game-cat-title { color: rgb(160, 40, 50); }
 .cat-tv .game-cat-title { color: rgb(110, 60, 190); }
+
+/* Generique TV Time */
+.intro { position: absolute; left: 0; right: 0; top: 0; bottom: 0; background-color: rgb(0, 0, 0); }
+.intro-video { flex-grow: 1; -unity-background-scale-mode: scale-to-fit; }
+.intro-skip { position: absolute; right: 30px; bottom: 20px; font-size: 20px; color: rgba(255, 255, 255, 0.55); }
+.intro-ask { position: absolute; left: 50%; top: 50%; translate: -50% -50%; align-items: center; padding: 26px 40px; }
+.intro-ask > .row { justify-content: center; }
+.intro-ask Button { margin: 0 10px; }
