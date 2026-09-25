@@ -112,6 +112,8 @@ public class Game : MonoBehaviour
         net.Changed += ui.RefreshOnline;
 
         ApplySettings();
+        StartCoroutine(TerrainReady());
+        if (PlayerPrefs.GetInt("auto-quality-3", 0) == 0 && Array.IndexOf(Environment.GetCommandLineArgs(), "-autotest") < 0) StartCoroutine(AutoQuality());
         ui.ShowTitle();
         Sound.I.Music("music_menu");
         var args = Environment.GetCommandLineArgs();
@@ -340,6 +342,32 @@ public class Game : MonoBehaviour
         bj = null;
         rt = null;
         board.Build(r);
+    }
+
+    // Le paysage arrive en scene additive, une image apres : on lui applique alors le niveau de detail.
+    IEnumerator TerrainReady()
+    {
+        while (!FindFirstObjectByType<Terrain>()) yield return null;
+        settings.ApplyTerrain();
+    }
+
+    // Premier lancement de la v3 : si le PC n'arrive pas a 50 images/s sur l'accueil (meme paysage que
+    // Croque-Carotte), on baisse la qualite d'un cran, jusqu'a deux fois. Une seule fois par PC.
+    IEnumerator AutoQuality()
+    {
+        yield return new WaitForSecondsRealtime(4);
+        for (int pass = 0; pass < 2 && settings.quality > 0; pass++)
+        {
+            int f = Time.frameCount; float t = Time.realtimeSinceStartup;
+            yield return new WaitForSecondsRealtime(5);
+            float fps = (Time.frameCount - f) / (Time.realtimeSinceStartup - t);
+            Debug.Log($"Qualite auto : {fps:0} images/s en qualite {settings.quality}");
+            if (fps >= 50) break;
+            settings.Preset(Math.Min(settings.quality, 3) - 1);
+            ApplySettings();
+        }
+        PlayerPrefs.SetInt("auto-quality-3", 1);
+        PlayerPrefs.Save();
     }
 
     public void ApplySettings()

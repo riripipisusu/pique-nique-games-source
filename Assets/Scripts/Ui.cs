@@ -164,14 +164,24 @@ public partial class Ui : MonoBehaviour
         var panel = Div(games, "panel");
         panel.style.width = 1800;
         Text(panel, "À quoi on joue ?", "panel-title");
-        var row = Div(panel, "row");
-        GameCard(row, GameId.Croque, "Croque-Carotte", "2 à 4 joueurs  ·  Course de lapins",
+        // Les jeux par categorie : un bloc titre par famille, ses cartes dessous.
+        var row = Div(panel, "row", "game-cats");
+        VisualElement Cat(string title, string cls)
+        {
+            var c = Div(row, "game-cat", cls);
+            Text(c, title, "game-cat-title");
+            return Div(c, "row");
+        }
+        var board = Cat("Jeux de société", "cat-board");
+        GameCard(board, GameId.Croque, "Croque-Carotte", "2 à 4 joueurs  ·  Course de lapins",
             "Grimpe la montagne jusqu'au potager... mais gare aux trous quand la carotte tourne !", "game-croque");
-        GameCard(row, GameId.Blackjack, "Blackjack", "2 à 4 joueurs  ·  Cartes",
+        var casino = Cat("Casino", "cat-casino");
+        GameCard(casino, GameId.Blackjack, "Blackjack", "2 à 4 joueurs  ·  Cartes",
             "Approche-toi de 21 sans dépasser et bats le croupier. Le plus riche après les manches gagne.", "game-bj");
-        GameCard(row, GameId.Roulette, "Roulette", "1 à 4 joueurs  ·  Casino",
+        GameCard(casino, GameId.Roulette, "Roulette", "1 à 4 joueurs  ·  Casino",
             "Roulette française : pleins, chevaux, carrés, rouge ou noir... Le plus riche après les coups gagne.", "game-rt");
-        GameCard(row, GameId.Quiz, "Quiz d'images", "1 à 8 joueurs  ·  En ligne",
+        var tv = Cat("TV Time", "cat-tv");
+        GameCard(tv, GameId.Quiz, "Quiz d'images", "1 à 10 joueurs  ·  En ligne",
             "Une image floutée se dévoile : films, jeux, drapeaux, pochettes... Le premier à 100 points gagne.", "game-qz");
         var back = Btn(panel, "Retour", Back, "ghost", "small");
         back.style.width = 260;

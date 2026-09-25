@@ -488,3 +488,13 @@ Button.chip-btn.rt-chipbtn.rt-sel { scale: 1.18 1.18; translate: 0 -6px; }
 .pod-band { width: 100%; height: 46px; border-radius: 23px; background-color: rgb(238, 242, 250); align-items: center; justify-content: center; }
 .pod-band.found { background-color: rgb(190, 245, 205); }
 .pod-strip { font-size: 34px; -unity-font-style: bold; margin: 0; -unity-text-align: middle-center; }
+
+/* Choix du jeu : familles de jeux */
+.game-cats { align-items: stretch; justify-content: center; }
+.game-cat { padding: 10px 8px 14px 8px; margin: 0 7px; border-radius: 24px; background-color: rgba(91, 58, 34, 0.08); }
+.game-cat > .row { flex-grow: 1; align-items: stretch; }
+.game-cat .game-card { width: 380px; flex-basis: 380px; flex-grow: 0; flex-shrink: 0; margin: 0 6px; }
+.game-cat-title { font-size: 30px; -unity-font-style: bold; margin: 0 0 10px 14px; color: rgb(91, 58, 34); }
+.cat-board .game-cat-title { color: rgb(95, 158, 60); }
+.cat-casino .game-cat-title { color: rgb(160, 40, 50); }
+.cat-tv .game-cat-title { color: rgb(110, 60, 190); }

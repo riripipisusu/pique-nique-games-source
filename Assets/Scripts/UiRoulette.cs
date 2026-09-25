@@ -177,7 +177,9 @@ public partial class Ui
             Text(col, p.broke ? "ruiné" : $"{p.chips} jetons" + (jail > 0 ? $"  ·  {jail} en prison" : ""), "seat-chips");
         }
         rtHistory.Clear();
-        foreach (var n in r.history.Skip(Math.Max(0, r.history.Count - 12)).Reverse())
+        // Pendant le lancer, le numero tire n'est pas encore connu des joueurs : on ne l'affiche qu'apres.
+        var shown = game.busy && r.history.Count > 0 ? r.history.Take(r.history.Count - 1).ToList() : r.history;
+        foreach (var n in shown.Skip(Math.Max(0, shown.Count - 12)).Reverse())
             Text(rtHistory, n.ToString(), "rt-hist", n == 0 ? "green" : Roulette.IsRed(n) ? "red" : "black");
 
         string who = cur != null ? $"<color={Hex(Board.Colors[cur.seat])}>{cur.name}</color>" : "";

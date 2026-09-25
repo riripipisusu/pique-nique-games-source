@@ -45,6 +45,19 @@ public class Settings
         renderScale = new[] { 0.7f, 0.85f, 1f, 1f }[q];
     }
 
+    // Foret et herbe du paysage : le plus gros cout sur les PC modestes.
+    public void ApplyTerrain()
+    {
+        var t = UnityEngine.Object.FindFirstObjectByType<Terrain>();
+        if (!t) return;
+        t.treeDistance = new[] { 160f, 240f, 300f, 360f }[detail];
+        t.treeBillboardDistance = new[] { 30f, 60f, 120f, 360f }[detail];
+        t.treeMaximumFullLODCount = new[] { 20, 50, 100, 200 }[detail];
+        t.detailObjectDistance = new[] { 25f, 45f, 70f, 85f }[detail];
+        t.detailObjectDensity = new[] { 0.35f, 0.6f, 1f, 1f }[detail];
+        t.heightmapPixelError = new[] { 10f, 6f, 3f, 2f }[detail];
+    }
+
     public void Apply(Camera cam, Light sun)
     {
         var urp = (UniversalRenderPipelineAsset)GraphicsSettings.currentRenderPipeline;
@@ -55,6 +68,7 @@ public class Settings
         urp.shadowCascadeCount = shadows < 3 ? 2 : 4;
         urp.mainLightShadowmapResolution = new[] { 512, 1024, 2048, 4096 }[shadows];
         sun.shadows = shadows == 0 ? LightShadows.None : LightShadows.Soft;
+        ApplyTerrain();
         cam.GetUniversalAdditionalCameraData().renderPostProcessing = post;
         QualitySettings.vSyncCount = vsync ? 1 : 0;
         Application.targetFrameRate = vsync || Fps[fpsCap] == 0 ? -1 : Fps[fpsCap];
