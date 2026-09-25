@@ -363,7 +363,8 @@ public static class Setup
                 var p = a.Current;
                 var bets = Enumerable.Range(0, rng.Next(4)).Select(_ => keys[rng.Next(keys.Length)]).Select(k => $"{(Roulette.IsSimple(k) ? k + ":-" : k)}:{10 * (1 + rng.Next(5))}");
                 string[] act = { "bets", string.Join(";", bets) };
-                if (!a.TryApply(act)) { act = a.Bot(); if (!a.TryApply(act)) throw new System.Exception("roulette : action bot refusee " + act[1]); }
+                if (!a.TryApply(act)) { act = a.Bot(); b.Bot(); if (!a.TryApply(act)) throw new System.Exception("roulette : action bot refusee " + act[1]); }
+                else if (n % 3 == 0) a.Bot();   // appeler Bot sur une seule copie ne doit rien changer (hote vs invites)
                 b.TryApply(act);
                 foreach (var q in a.players) if (q.chips < 0) throw new System.Exception("roulette : jetons negatifs");
             }

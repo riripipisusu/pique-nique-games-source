@@ -246,8 +246,10 @@ public class Roulette : IMatch
     {
         var p = Current;
         if (p == null) return null;
-        var pick = new[] { "R", "N", "PA", "IM", "MA", "PS" }[rng.Next(6)];
-        int amt = Math.Min(p.chips / MinBet * MinBet, MinBet * (1 + rng.Next(5)));
+        // Hasard propre au bot : le tirage de la partie ne doit pas avancer, sinon les PC en ligne divergent.
+        var r = new Random(round * 31 + p.seat);
+        var pick = new[] { "R", "N", "PA", "IM", "MA", "PS" }[r.Next(6)];
+        int amt = Math.Min(p.chips / MinBet * MinBet, MinBet * (1 + r.Next(5)));
         return amt < MinBet ? new[] { "bets", "" } : new[] { "bets", $"{pick}:-:{amt}" };
     }
 }
