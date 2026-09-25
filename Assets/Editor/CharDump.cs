@@ -174,3 +174,21 @@ public static class WheelProfile
         Debug.Log(sb.ToString());
     }
 }
+public static class Measure
+{
+    // Dimensions et point de pivot de prefabs : -executeMethod Measure.Run -names A,B,C
+    public static void Run()
+    {
+        var args = System.Environment.GetCommandLineArgs();
+        foreach (var n in args[System.Array.IndexOf(args, "-names") + 1].Split(','))
+        {
+            var path = AssetDatabase.FindAssets(n + " t:Prefab").Select(AssetDatabase.GUIDToAssetPath).FirstOrDefault(p => System.IO.Path.GetFileNameWithoutExtension(p) == n);
+            if (path == null) { Debug.Log("MESURE " + n + " absent"); continue; }
+            var g = (GameObject)Object.Instantiate(AssetDatabase.LoadAssetAtPath<GameObject>(path));
+            var rs = g.GetComponentsInChildren<Renderer>();
+            var b = rs[0].bounds; foreach (var r in rs) b.Encapsulate(r.bounds);
+            Debug.Log($"MESURE {n} taille {b.size.x:0.00}x{b.size.y:0.00}x{b.size.z:0.00} min {b.min.x:0.00},{b.min.y:0.00},{b.min.z:0.00} max {b.max.x:0.00},{b.max.y:0.00},{b.max.z:0.00}");
+            Object.DestroyImmediate(g);
+        }
+    }
+}

@@ -52,7 +52,6 @@ public class Table : MonoBehaviour
             Prop(table, Vector3.zero, 0, other);
             Chars.Spawn(dealer, other, roulette ? new Vector3(0.1f, 0, -1.25f) : new Vector3(0, 0, 1.3f), roulette ? 0 : 180, out var an);
             if (roulette) { RouletteSpot = other; RouletteDealer = an; }
-            Prop("SM_Prop_Chandelier_01", new Vector3(0, 5.15f, 0), 0, other);
         }
     }
 
@@ -207,48 +206,86 @@ public class Table : MonoBehaviour
 
     Material ChipSide(int value) => Color(value switch { 5 => "ebebeb", 10 => "d8423a", 50 => "2f6fd6", 100 => "26262a", _ => "8a4fd0" }, 0.45f);
 
+    // Grande salle en pieces modulaires Synty (murs et dalles de 2.5 m) : 30 x 27.5 m, 6 m sous plafond.
+    // Repere : table de blackjack a l'origine, les cameras de jeu regardent vers +z (fond de la salle).
+    const float X0 = -15, X1 = 15, Z0 = -12.5f, Z1 = 15, Tile = 2.5f, Height = 6;
+
+    // Rangee de murs de `start` dans la direction `dir` (parcours anti-horaire : l'interieur est a gauche).
+    void WallRun(Vector3 start, Vector3 dir, int n)
+    {
+        float rot = -Mathf.Atan2(dir.z, dir.x) * Mathf.Rad2Deg;
+        for (int i = 0; i < n; i++)
+        {
+            var pivot = start + dir * Tile * (i + 1);
+            Prop("SM_Bld_Casino_Wall_0" + (i % 3 == 1 ? 5 : 4), pivot, rot, transform);
+            Prop("SM_Bld_Casino_Wall_01", pivot + Vector3.up * 3, rot, transform);
+        }
+    }
+
     void BuildRoom()
     {
         var t = transform;
-        Part(Cube(), new Vector3(0, -0.05f, 1), new Vector3(24, 0.1f, 20), Tex("Casino/carpet", false, 10), t);
-        Part(Cube(), new Vector3(0, 5.2f, 1), new Vector3(24, 0.1f, 20), Color("1a1210", 0.2f), t);
-        var wood = Color("3b2419", 0.35f);
-        var gold = Color("d9b25a", 0.8f, 1);
-        var dark = Color("1a0f0b", 0.3f);
-        foreach (var (pos, size) in new[] { (new Vector3(0, 2.6f, 8), new Vector3(24, 5.2f, 0.2f)), (new Vector3(0, 2.6f, -7), new Vector3(24, 5.2f, 0.2f)),
-                                            (new Vector3(-9, 2.6f, 1), new Vector3(0.2f, 5.2f, 20)), (new Vector3(9, 2.6f, 1), new Vector3(0.2f, 5.2f, 20)) })
+        Part(Cube(), new Vector3(0, -0.05f, (Z0 + Z1) / 2), new Vector3(X1 - X0, 0.1f, Z1 - Z0), Tex("Casino/carpet", false, 14), t);
+        WallRun(new Vector3(X0, 0, Z0), Vector3.right, 12);
+        WallRun(new Vector3(X1, 0, Z0), Vector3.forward, 11);
+        WallRun(new Vector3(X1, 0, Z1), Vector3.left, 12);
+        WallRun(new Vector3(X0, 0, Z1), Vector3.back, 11);
+        for (int ix = 0; ix < 12; ix++)
+            for (int iz = 0; iz < 11; iz++)
+                Prop("SM_Bld_Ceiling_0" + ((ix + iz) % 2 == 0 ? 2 : 3), new Vector3(X0 + Tile * (ix + 1), Height, Z0 + Tile * iz), 0, t);
+
+        // Fond : fontaine murale, sculptures, ecrans et neons ; machines a sous de part et d'autre.
+        Prop("SM_Prop_Wall_Fountain_01", new Vector3(0, 0, Z1), 180, t);
+        foreach (var x in new[] { -4.2f, 4.2f }) Prop("SM_Prop_CasinoSculpture_0" + (x < 0 ? 1 : 2), new Vector3(x, 0, Z1 - 0.8f), 180, t);
+        foreach (var x in new[] { -9.5f, 9.5f }) Prop("SM_Prop_ScreenWall_01", new Vector3(x, 4.4f, Z1 - 0.3f), 180, t);
+        for (int bank = 0; bank < 2; bank++)
+            for (int i = 0; i < 7; i++)
+            {
+                float x = (bank == 0 ? -12.6f : 5.4f) + i * 1.02f;
+                Prop("SM_Prop_Slot_Machine_0" + ((i + bank) % 4 + 1), new Vector3(x, 0, 11.6f), 180, t);
+                Prop("SM_Prop_Bar_Stool_01", new Vector3(x, 0, 10.5f), 180, t);
+            }
+        string[] neons = { "01", "03", "05", "07", "09", "11", "13", "15" };
+        for (int i = 0; i < neons.Length; i++)
+            Prop("SM_Prop_Casino_Neon_" + neons[i], new Vector3((i < 4 ? -13.2f : 7.5f) + (i % 4) * 1.6f, 2.9f, Z1 - 0.15f), 180, t, 1, false);
+
+        // Gauche : grand bar circulaire et sa lumiere.
+        Prop("SM_Prop_Bar_Round_01", new Vector3(-11, 0, -3.5f), 90, t, 0.8f);
+        Light(new Vector3(-11, 4.5f, -2), 9, 3f, false);
+
+        // Droite : scene a rideau, roue de la fortune, table de craps, statue.
+        Prop("SM_Bld_Stage_01", new Vector3(X1, 0, 3), -90, t);
+        Prop("SM_Bld_Curtain_Closed_01", new Vector3(X1 - 0.3f, 0.5f, 5.5f), -90, t);
+        foreach (var z in new[] { 0.5f, 5.5f }) Prop("SM_Prop_Light_Stage_Spot_01", new Vector3(10.5f, 5.8f, z), 90, t);
+        Prop("SM_Prop_Fortune_Wheel_01", new Vector3(X1 - 0.6f, 0, -6), -90, t);
+        Prop("SM_Prop_Craps_Table_01", new Vector3(9, 0, -5.5f), 90, t);
+        Prop("SM_Prop_Statue_Pegasus_01", new Vector3(-12, 0, 9.5f), 135, t);
+        // Centre : fontaine entre les tables et le fond de salle.
+        Prop("SM_Prop_Fountain_01", new Vector3(0, 0, 7.8f), 0, t, 0.9f);
+
+        // Colonnes, lustres, plantes, decors lumineux des murs lateraux.
+        foreach (var x in new[] { -7.5f, 7.5f })
+            foreach (var z in new[] { -7f, 0.5f, 8f })
+            {
+                var col = Prop("SM_Prop_Pillar_01", new Vector3(x, 0, z), 0, t);   // colonne sculptee etiree jusqu'au plafond
+                if (col) col.transform.localScale = new Vector3(1.3f, Height / 3f, 1.3f);
+            }
+        foreach (var (x, z) in new[] { (0f, -0.6f), (-7.5f, 4f), (7.5f, 4f), (0f, 8f), (-11f, -3.5f), (11f, -3f) })
+            Prop("SM_Prop_Chandelier_01", new Vector3(x, Height - 0.05f, z), 0, t, 1, false);
+        foreach (var (x, z) in new[] { (-14.2f, 13.6f), (14.2f, 13.6f), (-14.2f, -11.5f), (14.2f, -11.5f), (-5.5f, 13.8f), (5.5f, 13.8f) })
+            Prop("SM_Prop_Pot_Plants_0" + (1 + (int)Mathf.Abs(x + z) % 4), new Vector3(x, 0, z), 0, t);
+        for (int i = 0; i < 3; i++)
         {
-            Part(Cube(), pos, size, wood, t);
-            var trim = new Vector3(size.x > 1 ? size.x : 0.26f, 0.06f, size.z > 1 ? size.z : 0.26f);
-            Part(Cube(), new Vector3(pos.x, 3.0f, pos.z), trim, gold, t);
-            Part(Cube(), new Vector3(pos.x, 0.15f, pos.z), new Vector3(trim.x, 0.3f, trim.z), dark, t);
+            Prop("SM_Prop_Casino_Sign_Decor_0" + (i + 1), new Vector3(X0 + 0.25f, 3.6f, -6 + i * 7), 90, t, 0.7f, false);
+            Prop("SM_Prop_Casino_Sign_Decor_0" + (i + 2), new Vector3(X1 - 0.25f, 3.6f, -8 + i * 7), -90, t, 0.7f, false);
         }
-        foreach (var p in new[] { new Vector3(-4, 2.6f, 7.85f), new Vector3(0, 2.6f, 7.85f), new Vector3(4, 2.6f, 7.85f), new Vector3(-8.85f, 2.6f, 0), new Vector3(8.85f, 2.6f, 0), new Vector3(-8.85f, 2.6f, 4), new Vector3(8.85f, 2.6f, 4) })
-        {
-            Part(cyl, p, new Vector3(0.18f, 0.12f, 0.18f), Glow("ffcf7a"), t);
-            Light(p + Vector3.up * 0.1f, 4f, 1.6f, false);
-        }
-        Part(cyl, new Vector3(0, 3.1f, -0.4f), new Vector3(1.4f, 0.05f, 0.8f), gold, t);
+
+        // Eclairage chaud : lampe de la table de blackjack, lustres, fond de salle.
+        Part(cyl, new Vector3(0, 3.1f, -0.4f), new Vector3(1.4f, 0.05f, 0.8f), Color("d9b25a", 0.8f, 1), t);
         Part(cyl, new Vector3(0, 3.04f, -0.4f), new Vector3(1.2f, 0.03f, 0.65f), Glow("ffe2a8"), t);
         Light(new Vector3(0, 2.8f, -0.5f), 6, 4.5f, true);
         Light(new Vector3(0, 2.4f, -1.8f), 5, 0.8f, false);
-        foreach (var x in new[] { -5.2f, 5.2f }) Light(new Vector3(x, 2.6f, 3), 5, 1.6f, false);
-
-        // Decor Synty : machines a sous au fond, colonnes, tableaux, plantes, lustre au-dessus de la table.
-        for (int i = 0; i < 12; i++)
-        {
-            float x = i < 6 ? -8.2f + i * 0.95f : 3.45f + (i - 6) * 0.95f;
-            Prop("SM_Prop_Slot_Machine_0" + (i % 4 + 1), new Vector3(x, 0, 7.3f), 180, t);
-            Prop("SM_Prop_Bar_Stool_01", new Vector3(x, 0, 6.4f), 180, t);
-        }
-        foreach (var z in new[] { -4.5f, -0.5f, 3.5f })
-            foreach (var x in new[] { -8.45f, 8.45f }) Prop("SM_Prop_Pillar_01", new Vector3(x, 0, z), 0, t);
-        Prop("SM_Prop_Wall_Art_01", new Vector3(-8.85f, 2.2f, 1.5f), 90, t);
-        Prop("SM_Prop_Wall_Art_02", new Vector3(8.85f, 2.2f, 1.5f), -90, t);
-        Prop("SM_Prop_Wall_Art_03", new Vector3(0, 2.4f, 7.85f), 180, t);
-        foreach (var (x, z) in new[] { (-8.2f, -6.3f), (8.2f, -6.3f), (-8.2f, 7.3f), (8.2f, 7.3f), (-2.6f, 7.3f), (2.6f, 7.3f) })
-            Prop("SM_Prop_Pot_Plants_0" + (1 + (int)Mathf.Abs(x + z) % 4), new Vector3(x, 0, z), 0, t);
-        Prop("SM_Prop_Chandelier_01", new Vector3(0, 5.15f, -0.6f), 0, t, 1, false);
+        foreach (var (x, z) in new[] { (-5.2f, 3.6f), (5.2f, 3.6f), (0f, 11f), (9f, -4f), (12f, 3f) }) Light(new Vector3(x, 4.2f, z), 9, 2.4f, false);
     }
 
     void Light(Vector3 pos, float range, float intensity, bool shadows)

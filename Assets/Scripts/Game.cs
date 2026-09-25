@@ -189,6 +189,32 @@ public class Game : MonoBehaviour
         IEnumerator Shot(string n) { yield return new WaitForEndOfFrame(); var tex = ScreenCapture.CaptureScreenshotAsTexture(); System.IO.File.WriteAllBytes(System.IO.Path.Combine(dir, n + ".png"), tex.EncodeToPNG()); Destroy(tex); }
         IEnumerator Fps(string n) { int f = Time.frameCount; float t = Time.realtimeSinceStartup; yield return new WaitForSecondsRealtime(3); System.IO.File.AppendAllText(System.IO.Path.Combine(dir, "fps.txt"), $"{n}: {(Time.frameCount - f) / (Time.realtimeSinceStartup - t):0} fps" + System.Environment.NewLine); }
         yield return new WaitForSeconds(6); yield return Shot("1-titre"); yield return Fps("titre");
+        if (Array.IndexOf(Environment.GetCommandLineArgs(), "-casinotour") >= 0)
+        {
+            SelectGame(GameId.Roulette);
+            StartGame();
+            yield return new WaitForSeconds(2);
+            var views = new (string n, Vector3 from, Vector3 at)[]
+            {
+                ("c1-blackjack", new Vector3(0, 2.1f, -3.2f), new Vector3(0, 1.4f, 6)),
+                ("c2-large-gauche", new Vector3(-13.5f, 4.8f, -11), new Vector3(3, 1, 7)),
+                ("c3-large-droite", new Vector3(13.5f, 4.8f, -11), new Vector3(-3, 1, 7)),
+                ("c4-depuis-fond", new Vector3(0, 4.5f, 12.5f), new Vector3(0, 1, -6)),
+            };
+            foreach (var v in views)
+            {
+                Vector3 a = table.transform.TransformPoint(v.from), b = table.transform.TransformPoint(v.at);
+                tour = new Pose(a, Quaternion.LookRotation(b - a));
+                yield return null; yield return null;
+                yield return Shot(v.n);
+            }
+            tour = null;
+            yield return null;
+            yield return Shot("c5-roulette");
+            yield return Fps("casino");
+            Application.Quit();
+            yield break;
+        }
         if (Array.IndexOf(Environment.GetCommandLineArgs(), "-roulette") >= 0)
         {
             names.Clear(); names.AddRange(new[] { "Anastasia", "Léo", "Camille" });
@@ -368,7 +394,7 @@ public class Game : MonoBehaviour
         sun.enabled = !on;
         RenderSettings.fog = !on;
         RenderSettings.ambientMode = on ? AmbientMode.Flat : AmbientMode.Trilight;
-        RenderSettings.ambientLight = Board.Hex("2e2420");
+        RenderSettings.ambientLight = Board.Hex("52423a");
     }
 
     // Action choisie par le joueur local : jouee tout de suite, ou envoyee a l'hote en ligne.
@@ -534,6 +560,7 @@ public class Game : MonoBehaviour
     }
 
     // Test automatique : la fenetre prend le focus au lancement, mais la souris appartient a l'utilisatrice.
+    Pose? tour;   // test automatique : camera placee a la main
     static readonly bool Testing = Array.IndexOf(Environment.GetCommandLineArgs(), "-autotest") >= 0;
     static bool Focused => Application.isFocused && !Testing;
 
@@ -543,6 +570,7 @@ public class Game : MonoBehaviour
         if (!inGame) yaw += 3.5f * dt;
         // Fenetre sans le focus (autre jeu, autre ecran) : la souris et le clavier ne sont pas pour nous.
         bool focus = Focused;
+        if (tour.HasValue) { cam.transform.SetPositionAndRotation(tour.Value.position, tour.Value.rotation); return; }
         // Roulette : camera fixe a la place du joueur, plan de dessus pendant le lancer ; les mises se posent au clic sur le tapis.
         if (inGame && rt != null)
         {

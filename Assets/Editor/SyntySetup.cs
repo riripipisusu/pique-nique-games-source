@@ -13,7 +13,12 @@ public static class SyntySetup
     static readonly string[] CasinoProps =
     {
         "SM_Prop_Blackjack_Table_01", "SM_Prop_Roulette_Table_01", "SM_Prop_Poker_Table_01", "SM_Prop_Chair_03", "SM_Prop_Slot_Machine_0",
-        "SM_Prop_Chandelier_01", "SM_Prop_Pillar_01", "SM_Prop_Pot_Plants_0", "SM_Prop_Wall_Art_0", "SM_Prop_Casino_Neon_0", "SM_Prop_Bar_Stool_01",
+        "SM_Prop_Chandelier_01", "SM_Prop_Pillar_0", "SM_Prop_Fountain_01", "SM_Prop_Pot_Plants_0", "SM_Prop_Wall_Art_0", "SM_Prop_Casino_Neon_", "SM_Prop_Bar_Stool_01",
+        "SM_Bld_Casino_Wall_0", "SM_Bld_Ceiling_0", "SM_Bld_Pillar_Lights_01", "SM_Prop_Bar_Round_01", "SM_Prop_Bar_Bottle_0", "SM_Prop_Bar_Glass_0",
+        "SM_Prop_Couch_Suite_01", "SM_Bld_Stage_01", "SM_Bld_Curtain_Closed_01", "SM_Prop_Light_Stage_Spot_01", "SM_Prop_Statue_Pegasus_01",
+        "SM_Prop_CasinoSculpture_0", "SM_Prop_Casino_Sign_Decor_0", "SM_Prop_Slot_Stand", "SM_Prop_Craps_Table_01", "SM_Prop_Stanchion_01",
+        "SM_Prop_Fortune_Wheel_01", "SM_Prop_ScreenWall_01", "SM_Prop_Wall_Fountain_01", "SM_Prop_Win_Sign_01", "SM_Prop_Casino_Dice_Sign_01",
+        "SM_Prop_Ceiling_Clock_01", "SM_Item_Casino_Chip_Pile_0",
     };
 
     [MenuItem("Pique-Nique/Registre Synty")]
