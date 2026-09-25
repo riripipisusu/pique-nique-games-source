@@ -23,8 +23,8 @@ def get(url, params=None, headers=None, method="GET", data=None, pause=0.0, cach
         return json.load(open(path, encoding="utf-8"))
     for attempt in range(5):
         r = S.request(method, url, params=params, headers=headers, data=data, timeout=30)
-        if r.status_code == 429:
-            time.sleep(float(r.headers.get("Retry-After", 2 + attempt * 2))); continue
+        if r.status_code == 429 or r.status_code >= 500:   # limite de debit ou panne passagere : on retente
+            time.sleep(float(r.headers.get("Retry-After", 2 + attempt * 3))); continue
         if r.status_code == 404:
             return None
         r.raise_for_status()
@@ -33,7 +33,8 @@ def get(url, params=None, headers=None, method="GET", data=None, pause=0.0, cach
             json.dump(out, open(path, "w", encoding="utf-8"))
         time.sleep(pause)
         return out
-    raise RuntimeError("trop de 429 : " + url)
+    print("  abandon (serveur indisponible) :", url[:90])
+    return None
 
 # --- Reponses ---------------------------------------------------------------------------
 STOP = {"the", "a", "an", "of", "le", "la", "les", "de", "du", "des", "l", "un", "une", "and", "et", "d", "in", "to", "on"}

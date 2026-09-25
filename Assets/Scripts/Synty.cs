@@ -8,7 +8,7 @@ public class Synty : ScriptableObject
     public GameObject[] prefabs;
     public Material sky, ground, water;
     public VolumeProfile post;
-    public GameObject stage;      // plateau du quiz (Assets/Stage, importe de Blender)
+    public GameObject stage, tenna;      // plateau du quiz (Assets/Stage, importe de Blender)
     public TerrainLayer[] layers; // herbe, herbe 2, herbe fleurie, boue, mousse, feuilles mortes
 
     static Synty inst;

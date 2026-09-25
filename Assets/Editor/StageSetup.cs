@@ -23,6 +23,58 @@ public static class StageSetup
         ["Material.019"] = "f06a9a",   // pupitres : corps
     };
 
+    // Tenna (rig de ThatAverageJoe, version Sketchfab) : animation d'attente en boucle (Legacy),
+    // texture cuite du corps, ecran-visage emissif, expressions en blend shapes (Pog, Smile, Hmmm).
+    public static GameObject Tenna()
+    {
+        const string fbxPath = Dir + "Tenna/Tenna.fbx";
+        if (!File.Exists(fbxPath)) return null;
+        var imp = (ModelImporter)AssetImporter.GetAtPath(fbxPath);
+        if (imp.animationType != ModelImporterAnimationType.Legacy)
+        {
+            imp.animationType = ModelImporterAnimationType.Legacy;
+            var clips = imp.defaultClipAnimations;
+            foreach (var c in clips) { c.wrapMode = WrapMode.Loop; c.loopTime = true; }
+            imp.clipAnimations = clips;
+            imp.SaveAndReimport();
+        }
+        var go = (GameObject)PrefabUtility.InstantiatePrefab(AssetDatabase.LoadAssetAtPath<GameObject>(fbxPath));
+        var body = MatAt(Dir + "Tenna/Tenna_Body.mat", m =>
+        {
+            m.SetTexture("_BaseMap", AssetDatabase.LoadAssetAtPath<Texture2D>(Dir + "Tenna/Tenna_Sketchfab_BakedTexture.png"));
+            m.SetColor("_BaseColor", Color.white);
+            m.SetFloat("_Smoothness", 0.3f);
+        });
+        var face = MatAt(Dir + "Tenna/Tenna_Face.mat", m =>
+        {
+            // Planche de visages (tenna_facesheet) : l'ecran du visage affiche la case prevue par les UV du modele.
+            var sheet = AssetDatabase.LoadAssetAtPath<Texture2D>(Dir + "Tenna/tenna_facesheet.jpeg");
+            m.SetTexture("_BaseMap", sheet);
+            m.SetColor("_BaseColor", Color.white);
+            m.EnableKeyword("_EMISSION");
+            m.SetTexture("_EmissionMap", sheet);
+            m.SetColor("_EmissionColor", Color.white * 0.8f);
+        });
+        foreach (var r in go.GetComponentsInChildren<SkinnedMeshRenderer>())
+            r.sharedMaterials = r.sharedMaterials.Select(m => m && m.name.StartsWith("Face") ? face : body).ToArray();
+        var anim = go.GetComponent<Animation>() ?? go.AddComponent<Animation>();
+        var clip = AssetDatabase.LoadAllAssetsAtPath(fbxPath).OfType<AnimationClip>().FirstOrDefault(c => !c.name.StartsWith("__preview"));
+        if (clip) { anim.clip = clip; anim.AddClip(clip, clip.name); anim.playAutomatically = true; anim.wrapMode = WrapMode.Loop; }
+        var prefab = PrefabUtility.SaveAsPrefabAsset(go, Dir + "Tenna/Tenna.prefab");
+        Object.DestroyImmediate(go);
+        Debug.Log("TENNA OK, animation : " + (clip ? clip.name + " " + clip.length + " s" : "aucune"));
+        return prefab;
+    }
+
+    static Material MatAt(string path, System.Action<Material> init)
+    {
+        var m = AssetDatabase.LoadAssetAtPath<Material>(path);
+        if (!m) { m = new Material(Shader.Find("Universal Render Pipeline/Lit")); AssetDatabase.CreateAsset(m, path); }
+        init(m);
+        EditorUtility.SetDirty(m);
+        return m;
+    }
+
     [System.Serializable] class MatInfo { public float[] @base, emit; public float emitk; public string tex; }
 
     public static GameObject Run()

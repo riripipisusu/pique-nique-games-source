@@ -217,3 +217,12 @@ public static class StageShot
         System.IO.File.WriteAllBytes(args[System.Array.IndexOf(args, "-out") + 1], tex.EncodeToPNG());
     }
 }
+public static class TennaDump
+{
+    public static void Run()
+    {
+        foreach (var a in AssetDatabase.LoadAllAssetsAtPath("Assets/Stage/Tenna/Tenna.fbx")) Debug.Log("SOUS " + a.GetType().Name + " " + a.name);
+        var imp = (ModelImporter)AssetImporter.GetAtPath("Assets/Stage/Tenna/Tenna.fbx");
+        Debug.Log("SOUS takes " + string.Join(",", imp.importedTakeInfos.Select(t => t.name + " " + t.startTime + "-" + t.stopTime)) + " anim=" + imp.importAnimation + " type=" + imp.animationType);
+    }
+}

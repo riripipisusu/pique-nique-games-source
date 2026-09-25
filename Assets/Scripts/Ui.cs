@@ -130,7 +130,7 @@ public partial class Ui : MonoBehaviour
         Btn(col, "Jouer", () => Go(games));
         Btn(col, "Paramètres", () => { SelectTab(tab); Go(settingsScreen); }, "green");
         Btn(col, "Quitter", Application.Quit, "ghost");
-        Text(title, $"v{Application.version}  ·  Décors Synty Studios · Modèles Kenney & Quaternius (CC0)  ·  Sons de roulette : Pixabay · Musiques : MMAudio, Geoff Harvey (Pixabay), « A Conversation with Saul » de Matthew Pablo (CC-BY 3.0)", "credits");
+        Text(title, $"v{Application.version}  ·  Décors Synty Studios · Modèles Kenney & Quaternius (CC0)  ·  Tenna : rig de ThatAverageJoe · Sons de roulette : Pixabay · Musiques : MMAudio, Geoff Harvey (Pixabay), « A Conversation with Saul » de Matthew Pablo (CC-BY 3.0)", "credits");
         updateCard = Div(title, "panel", "update-card");
         updateCard.style.display = DisplayStyle.None;
         updateText = Text(updateCard, "", "p");

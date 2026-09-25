@@ -131,6 +131,7 @@ public class QuizView : MonoBehaviour
         }
         // Camera haute : les pupitres passent sous l'ecran geant au lieu de le masquer.
         camFrom = camFromStage;
+        SpawnTenna();
         camAt = new Vector3(0, 1.75f, 0);   // le haut de l'image s'arrete a la rampe de projecteurs
         podiums = new GameObject("pupitres").transform;
         podiums.SetParent(transform, false);
@@ -160,6 +161,68 @@ public class QuizView : MonoBehaviour
         g.transform.localRotation = Quaternion.Euler(0, rotY, 0);
         g.transform.localScale = Vector3.one * scale;
         return g;
+    }
+
+    // --- Tenna, le presentateur (rig de ThatAverageJoe) ----------------------------------
+    SkinnedMeshRenderer tennaFace;
+    readonly Dictionary<int, float> faceWeights = new Dictionary<int, float>();
+
+    void SpawnTenna()
+    {
+        if (!Synty.I.tenna) { Debug.LogWarning("Tenna absent du registre"); return; }
+        var t = Instantiate(Synty.I.tenna, transform).transform;
+        t.name = "Tenna";
+        // Taille reelle mesuree sur le maillage pose, en coordonnees du monde (les bornes du skin et
+        // les echelles internes du rig ne sont pas fiables) ; on ramene Tenna a 2.35 m, pieds au sol.
+        float WorldHeight(out float footY)
+        {
+            var smr = t.GetComponentInChildren<SkinnedMeshRenderer>();
+            var baked = new Mesh(); smr.BakeMesh(baked, true);
+            float lo = float.MaxValue, hi = float.MinValue;
+            foreach (var v in baked.vertices) { float y = smr.transform.TransformPoint(v).y; lo = Mathf.Min(lo, y); hi = Mathf.Max(hi, y); }
+            Destroy(baked);
+            footY = lo;
+            return hi - lo;
+        }
+        // Sur le devant de la scene, cote cour, tourne vers le public.
+        t.localPosition = new Vector3(-5.2f, 0.12f, -2.2f);   // a gauche des pupitres, bien visible
+        t.localRotation = Quaternion.Euler(0, 170, 0);
+        t.localScale *= 2.35f / Mathf.Max(0.001f, WorldHeight(out _));
+        WorldHeight(out float foot);
+        t.position += Vector3.up * (transform.TransformPoint(new Vector3(0, 0.12f, 0)).y - foot);
+        foreach (var smr in t.GetComponentsInChildren<SkinnedMeshRenderer>()) smr.updateWhenOffscreen = true;
+        StartCoroutine(TennaDebug(t));
+        tennaFace = t.GetComponentInChildren<SkinnedMeshRenderer>();
+    }
+
+    IEnumerator TennaDebug(Transform t)
+    {
+        yield return null; yield return null;
+        var smr = t.GetComponentInChildren<SkinnedMeshRenderer>();
+        var baked = new Mesh(); smr.BakeMesh(baked, true);
+        var wb = new Bounds(smr.transform.TransformPoint(baked.bounds.center), Vector3.zero);
+        foreach (var v in baked.vertices) wb.Encapsulate(smr.transform.TransformPoint(v));
+        Debug.Log($"TENNA pos {t.position} echelle {t.lossyScale} monde {wb.center} taille {wb.size} anim {(t.GetComponent<Animation>() ? t.GetComponent<Animation>().isPlaying : false)} actif {smr.enabled}/{smr.gameObject.activeInHierarchy}");
+    }
+
+    // Expression du visage-ecran (blend shape) qui retombe doucement : "Pog", "SmileSketchfab", "HmmmSketchfab".
+    public void TennaFace(string shape, float hold = 1.5f)
+    {
+        if (!tennaFace) return;
+        int i = tennaFace.sharedMesh.GetBlendShapeIndex(shape);
+        if (i < 0) return;
+        foreach (var k in faceWeights.Keys.ToList()) faceWeights[k] = 0;
+        faceWeights[i] = 100 + hold * 60;   // au-dela de 100 : tenu un moment avant de retomber
+    }
+
+    void UpdateTennaFace()
+    {
+        if (!tennaFace) return;
+        foreach (var k in faceWeights.Keys.ToList())
+        {
+            faceWeights[k] = Mathf.Max(0, faceWeights[k] - Time.deltaTime * 60);
+            tennaFace.SetBlendShapeWeight(k, Mathf.Min(100, faceWeights[k]));
+        }
     }
 
     void StageLight(Vector3 pos, Vector3 at, Color c, float intensity, float angle, bool shadows)
@@ -267,11 +330,12 @@ public class QuizView : MonoBehaviour
     // Pupitres du modele Blender, en arc sur le devant de la scene ; le joueur se tient derriere.
     void StagePodium(Podium p, int i, int n, string player, Color col, string avatar)
     {
-        float spacing = Mathf.Min(1.5f, 11.4f / n), scale = Mathf.Min(1f, spacing / 1.45f);
-        float x = (i - (n - 1) / 2f) * spacing;
+        // Rangee decalee a droite : la gauche de la scene est a Tenna.
+        float spacing = Mathf.Min(1.45f, 10f / n), scale = Mathf.Min(1f, spacing / 1.45f);
+        float x = (i - (n - 1) / 2f) * spacing + 0.7f;
         var root = p.root;
-        root.localPosition = new Vector3(x, 0.12f, -3.0f + x * x * 0.03f);
-        root.localRotation = Quaternion.Euler(0, x * 2.2f, 0);
+        root.localPosition = new Vector3(x, 0.12f, -3.0f + (x - 0.7f) * (x - 0.7f) * 0.03f);
+        root.localRotation = Quaternion.Euler(0, (x - 0.7f) * 2.2f, 0);
         var stand = Instantiate(standTemplate.gameObject, stage);
         stand.SetActive(true);
         stand.transform.localScale = standTemplate.localScale * scale;
@@ -280,7 +344,7 @@ public class QuizView : MonoBehaviour
         var b = r.bounds;
         stand.transform.position += root.position - new Vector3(b.center.x, b.min.y, b.center.z);
         stand.transform.SetParent(root, true);
-        stand.transform.RotateAround(root.position, Vector3.up, x * 2.2f);
+        stand.transform.RotateAround(root.position, Vector3.up, (x - 0.7f) * 2.2f);
         // Ecran du pupitre : texture dessinee par l'interface (prenom, score, bande de reponse).
         var rt = new RenderTexture(720, 440, 0) { name = "pupitre", useMipMap = true, autoGenerateMips = true, anisoLevel = 8 };
         var face = new Material(Resources.Load<Material>("QuizScreen"));
@@ -407,6 +471,7 @@ public class QuizView : MonoBehaviour
 
     void Update()
     {
+        UpdateTennaFace();
         if (!screen) return;
         if (imageUrl == null || !images.TryGetValue(imageUrl, out var tex))
         {

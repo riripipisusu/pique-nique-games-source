@@ -541,16 +541,19 @@ public class Game : MonoBehaviour
                     break;
                 case QEv.Found:
                     qview.SetFound(e.seat, true);
+                    qview.TennaFace("Pog");
                     Sound.I.Play(e.seat == mySeat || !Online ? "win" : "bj_chip1");
                     ui.QuizFound(e.seat, e.points);
                     break;
                 case QEv.Wrong:
                     qview.Wrong(e.seat);
+                    qview.TennaFace("HmmmSketchfab", 0.6f);
                     ui.QuizWrong(e.seat, e.text);
                     break;
                 case QEv.Reveal:
                     quizPhaseStart = Time.time;
                     qview.reveal = 1;
+                    qview.TennaFace("SmileSketchfab", 3);
                     Sound.I.Play("tick");
                     ui.QuizReveal();
                     break;

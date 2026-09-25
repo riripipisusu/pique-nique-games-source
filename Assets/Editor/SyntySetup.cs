@@ -65,6 +65,7 @@ public static class SyntySetup
             if (m && !m.enableInstancing) { m.enableInstancing = true; EditorUtility.SetDirty(m); }
         }
         if (File.Exists("Assets/Stage/TennaStage.fbx")) reg.stage = StageSetup.Run();
+        reg.tenna = StageSetup.Tenna();
         AssetDatabase.CreateAsset(reg, "Assets/Resources/Synty.asset");
         AssetDatabase.SaveAssets();
         Debug.Log($"SYNTY OK : {reg.prefabs.Length} prefabs, ciel {reg.sky != null}, sol {reg.ground != null}, eau {reg.water != null}, couches {reg.layers.Count(l => l)}");
