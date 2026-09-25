@@ -197,20 +197,19 @@ public class Game : MonoBehaviour
             StartGame();
             yield return new WaitForSeconds(2);
             while (busy) yield return null;
-            yield return Shot("r1-tapis");
+            rview.Highlight("Q:13"); yield return null; yield return Shot("r1-tapis"); rview.Highlight(null);
             Act("bets|P:17:50;C:14-17:20;R:-:100;Q:0:10;D:1:30");
             yield return new WaitForSeconds(0.5f);
             Act("bets|N:-:50;S:3:20");
             yield return new WaitForSeconds(0.8f);
             yield return Shot("r1b-mises");
-            closeUp = true; dist = 1.5f; pitch = 40;
             Act("bets|");
-            yield return new WaitForSeconds(1.8f); yield return Shot("r2a-piste");
+            yield return new WaitForSeconds(1.8f); yield return Shot("r2a-dessus");
             yield return new WaitForSeconds(1.6f); yield return Shot("r2b-numeros");
             yield return new WaitForSeconds(0.9f); yield return Shot("r2c-rebond");
             while (busy) yield return null;
             yield return Shot("r2d-case");
-            closeUp = false; dist = 3.2f; pitch = 50;
+
             yield return Shot("r3-resultat");
             yield return Fps("roulette");
             for (int i = 0; i < 6; i++) { while (busy) yield return null; Act(string.Join("|", Match.Bot())); yield return new WaitForSeconds(0.3f); }
@@ -352,8 +351,6 @@ public class Game : MonoBehaviour
         else
         {
             rt = new Roulette(n, opt, seed);
-            target = rview.Focus;
-            yaw = rview.Yaw;
             dist = 3.2f;
             pitch = 50;
             ui.ShowHud();
@@ -537,7 +534,6 @@ public class Game : MonoBehaviour
     }
 
     // Test automatique : la fenetre prend le focus au lancement, mais la souris appartient a l'utilisatrice.
-    bool closeUp;   // test automatique : camera collee au cylindre de la roulette
     static readonly bool Testing = Array.IndexOf(Environment.GetCommandLineArgs(), "-autotest") >= 0;
     static bool Focused => Application.isFocused && !Testing;
 
@@ -547,6 +543,15 @@ public class Game : MonoBehaviour
         if (!inGame) yaw += 3.5f * dt;
         // Fenetre sans le focus (autre jeu, autre ecran) : la souris et le clavier ne sont pas pour nous.
         bool focus = Focused;
+        // Roulette : camera fixe a la place du joueur, plan de dessus pendant le lancer ; les mises se posent au clic sur le tapis.
+        if (inGame && rt != null)
+        {
+            var pose = rview.TopView ? rview.TopPose : rview.SeatPose;
+            cam.transform.SetPositionAndRotation(pose.position, pose.rotation);
+            if (dof) dof.active = paused;
+            ui.RouletteMouse(cam, focus && !paused);
+            return;
+        }
         if (focus && Input.GetMouseButton(1))
         {
             yaw += Input.GetAxis("Mouse X") * 4 * sens;
@@ -558,7 +563,7 @@ public class Game : MonoBehaviour
         if (focus && inGame && !paused) dist = Mathf.Clamp(dist - Input.mouseScrollDelta.y * (atTable ? 0.6f : 2f), atTable ? 1.5f : 12, atTable ? 3.3f : 55);
 
         Vector3 want;
-        if (atTable) want = bj != null ? table.Focus : closeUp ? rview.WheelPos : rview.Focus;
+        if (atTable) want = table.Focus;
         else
         {
             var home = new Vector3(0, 2.5f, 0);

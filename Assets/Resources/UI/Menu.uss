@@ -376,11 +376,11 @@ Button.btn.chip-btn, Button.btn.chip-btn:active, Button.btn.chip-btn:hover {
 /* --- Roulette --------------------------------------------------------------------- */
 .game-rt .game-art { background-color: rgb(120, 22, 30); border-bottom-width: 12px; border-color: rgb(217, 178, 90); }
 .rt-panel {
-    position: absolute; bottom: 18px; left: 50%; translate: -50% 0; align-items: center;
-    padding: 12px 22px 14px 22px; border-radius: 26px; background-color: rgba(10, 20, 14, 0.86);
+    position: absolute; bottom: 16px; left: 50%; translate: -50% 0; flex-direction: row; align-items: center;
+    padding: 8px 18px; border-radius: 22px; background-color: rgba(10, 20, 14, 0.86);
     border-width: 3px; border-color: rgb(217, 178, 90);
 }
-.rt-panel > .row.spread { width: 100%; margin-bottom: 6px; align-items: center; }
+.rt-panel > .row.spread { align-items: center; }
 .rt-info { font-size: 24px; color: rgb(240, 225, 190); margin-right: 20px; }
 Button.chip-btn.rt-chipbtn { width: 62px; height: 62px; border-radius: 31px; margin: 0 4px; }
 Button.chip-btn.rt-chipbtn.rt-sel { scale: 1.18 1.18; translate: 0 -6px; }
@@ -406,8 +406,12 @@ Button.chip-btn.rt-chipbtn.rt-sel { scale: 1.18 1.18; translate: 0 -6px; }
     font-size: 14px; -unity-font-style: bold; color: rgb(40, 24, 10); background-color: rgb(255, 214, 90);
     border-width: 3px; border-color: rgb(255, 255, 255);
 }
-.rt-prison { font-size: 20px; color: rgb(255, 180, 120); margin-bottom: 4px; }
-.rt-panel Button.btn.small { width: 190px; margin: 0 8px; }
+.rt-prison { position: absolute; bottom: 100%; left: 0; right: 0; -unity-text-align: middle-center; font-size: 20px; color: rgb(255, 180, 120); margin-bottom: 6px; }
+.rt-panel Button.btn.small { width: 150px; margin: 0 5px; font-size: 22px; }
+.rt-tip {
+    position: absolute; padding: 6px 12px; border-radius: 12px; font-size: 20px; color: rgb(255, 240, 200);
+    background-color: rgba(10, 8, 6, 0.85); border-width: 2px; border-color: rgb(217, 178, 90);
+}
 .rt-players { position: absolute; top: 110px; left: 24px; }
 .rt-player {
     flex-direction: row; align-items: center; margin-bottom: 10px; padding: 6px 18px 6px 6px;

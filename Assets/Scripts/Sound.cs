@@ -60,5 +60,17 @@ public class Sound : MonoBehaviour
         sfx.PlayOneShot(c, vol);
     }
 
+    // Son en boucle pilote par l'appelant (volume, hauteur), au volume des effets.
+    public AudioSource Loop(string n)
+    {
+        var a = gameObject.AddComponent<AudioSource>();
+        a.loop = true;
+        a.volume = 0;
+        if (clips.TryGetValue(n, out var c)) { a.clip = c; a.Play(); }
+        return a;
+    }
+
+    public float SfxVolume => s.sfx;
+
     public void UI(string n) { if (clips.TryGetValue(n, out var c)) ui.PlayOneShot(c); }
 }

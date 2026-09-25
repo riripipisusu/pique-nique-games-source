@@ -371,6 +371,11 @@ public static class Setup
             if (a.players.Any(q => q.prison.Count > 0)) throw new System.Exception("roulette : prison non videe en fin de partie");
             if (string.Join("|", a.log) != string.Join("|", b.log)) throw new System.Exception("roulette non deterministe");
         }
+        // Clic sur le tapis : le point d'ancrage de chaque mise doit redonner cette mise.
+        var allKeys = Enumerable.Range(0, 37).Select(n => "P:" + n).Concat(new[] { "C:0-1", "C:0-2", "C:0-3", "T:0a", "T:0b", "Q:0", "D:0", "D:1", "D:2", "L:0", "L:1", "L:2" })
+            .Concat(Roulette.Simple).Concat(Enumerable.Range(1, 33).Select(n => $"C:{n}-{n + 3}")).Concat(Enumerable.Range(1, 35).Where(n => n % 3 != 0).Select(n => $"C:{n}-{n + 1}"))
+            .Concat(Enumerable.Range(1, 32).Where(n => n % 3 != 0).Select(n => "Q:" + n)).Concat(Enumerable.Range(0, 12).Select(r => "T:" + r)).Concat(Enumerable.Range(0, 11).Select(r => "S:" + r));
+        foreach (var k in allKeys) if (Ui.KeyAt(Ui.Anchor(k)) != k) throw new System.Exception($"tapis : {k} lu comme {Ui.KeyAt(Ui.Anchor(k))}");
         if (!Updater.IsNewer("v2.1.0", "2.0.9") || Updater.IsNewer("v2.1.0", "2.1.0") || Updater.IsNewer("v1.9", "2.0")) throw new System.Exception("comparaison de versions");
         Debug.Log("SELFCHECK OK");
     }
