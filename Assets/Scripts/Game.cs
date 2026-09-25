@@ -197,6 +197,21 @@ public class Game : MonoBehaviour
         IEnumerator Shot(string n) { yield return new WaitForEndOfFrame(); var tex = ScreenCapture.CaptureScreenshotAsTexture(); System.IO.File.WriteAllBytes(System.IO.Path.Combine(dir, n + ".png"), tex.EncodeToPNG()); Destroy(tex); }
         IEnumerator Fps(string n) { int f = Time.frameCount; float t = Time.realtimeSinceStartup; yield return new WaitForSecondsRealtime(3); System.IO.File.AppendAllText(System.IO.Path.Combine(dir, "fps.txt"), $"{n}: {(Time.frameCount - f) / (Time.realtimeSinceStartup - t):0} fps" + System.Environment.NewLine); }
         yield return new WaitForSeconds(6); yield return Shot("1-titre"); yield return Fps("titre");
+        if (Array.IndexOf(Environment.GetCommandLineArgs(), "-menutest") >= 0)
+        {
+            foreach (var g in new[] { GameId.Quiz, GameId.Roulette, GameId.Blackjack, GameId.Croque })
+            {
+                SelectGame(g);
+                if (g == GameId.Quiz) StartQuizWithBots(); else StartGame();
+                yield return new WaitForSeconds(g == GameId.Quiz ? 6 : 3);
+                ToMenu();
+                yield return new WaitForSeconds(1.5f);
+                System.IO.File.AppendAllText(System.IO.Path.Combine(dir, "menu.txt"), g + " : " + ui.PickReport() + Environment.NewLine);
+                yield return Shot("m-" + g);
+            }
+            Application.Quit();
+            yield break;
+        }
         if (Array.IndexOf(Environment.GetCommandLineArgs(), "-quizbots") >= 0)
         {
             SelectGame(GameId.Quiz);
@@ -831,6 +846,11 @@ public class Game : MonoBehaviour
         pending.Clear();
         inGame = false;
         busy = false;
+        // Sortie en plein generique ou pendant les regles : on range leurs calques et on rend la musique.
+        ui.HideDialogue();
+        ui.HideIntro();
+        tvCloseUp = false;
+        Sound.I.PauseMusic(false);
         MenuBackdrop();
         Casino(false);
         if (quizLight) quizLight.enabled = false;

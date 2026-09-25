@@ -78,6 +78,20 @@ public partial class Ui : MonoBehaviour
         s.schedule.Execute(() => s.AddToClassList("in")).StartingIn(20);
     }
 
+    // Test : chaque bouton visible du titre est-il bien celui qui recoit un clic en son centre ?
+    public string PickReport()
+    {
+        var sb = new System.Text.StringBuilder();
+        foreach (var b in title.Query<Button>().ToList())
+        {
+            if (b.resolvedStyle.display == DisplayStyle.None || b.worldBound.width < 1) continue;
+            var hit = root.panel.Pick(b.worldBound.center);
+            bool ok = hit == b || (hit != null && b.Contains(hit));
+            sb.Append($"[{b.text}:{(ok ? "ok" : "BLOQUE par " + (hit?.name ?? hit?.GetType().Name ?? "rien"))}] ");
+        }
+        return sb.ToString();
+    }
+
     static void Hide(VisualElement s) { s.AddToClassList("hidden"); s.RemoveFromClassList("in"); }
 
     VisualElement[] All => new[] { title, games, setup, picker, settingsScreen, rulesScreen, hud, pause, victory, onlineScreen, lobbyScreen };

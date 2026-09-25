@@ -400,11 +400,14 @@ public class QuizView : MonoBehaviour
         ps.scale = 2;
         ps.clearColor = true;
         ps.colorClearValue = Board.Hex("0e3a8f");
+        // Ecran decoratif : il ne doit jamais recevoir la souris (sinon il vole les clics des vrais menus).
+        ps.SetScreenToPanelSpaceFunction(_ => new Vector2(float.NaN, float.NaN));
         var go = new GameObject("ecran pupitre");
         go.transform.SetParent(p.root, false);
         var doc = go.AddComponent<UIDocument>();
         doc.panelSettings = ps;
         var r = doc.rootVisualElement;
+        r.pickingMode = PickingMode.Ignore;
         r.styleSheets.Add(Resources.Load<StyleSheet>("UI/Menu"));
         r.AddToClassList("root");
         r.AddToClassList("pod");
