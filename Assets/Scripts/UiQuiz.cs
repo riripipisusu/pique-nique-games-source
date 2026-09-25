@@ -89,13 +89,12 @@ public partial class Ui
         {
             typing = true;
             text.text = "";
-            int blip = 0;
             for (int i = 1; i <= line.Length && typing && !skip; i++)
             {
                 while (ask.style.display == DisplayStyle.Flex && !skip) yield return null;   // en pause pendant la question
                 text.text = line.Substring(0, i);
                 char c = line[i - 1];
-                if (char.IsLetterOrDigit(c) && blip++ % 2 == 0) Sound.I.Play("tenna_voice_" + UnityEngine.Random.Range(1, 11), 0.7f, 0);   // voix de Tenna : une syllabe au hasard
+                if (char.IsLetterOrDigit(c)) Sound.I.Voice("tenna_voice_" + UnityEngine.Random.Range(1, 11), 0.7f);   // syllabe au hasard, seulement si la precedente est finie
                 yield return new WaitForSeconds(c == '.' || c == '!' || c == '?' ? 0.16f : c == ',' ? 0.08f : 0.028f);
             }
             text.text = line;

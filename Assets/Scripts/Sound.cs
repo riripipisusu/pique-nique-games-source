@@ -72,6 +72,17 @@ public class Sound : MonoBehaviour
     }
 
     public float SfxVolume => s.sfx;
+
+    // Voix d'un personnage : une nouvelle syllabe ne part que si la precedente est finie.
+    AudioSource voice;
+    public void Voice(string n, float vol = 1)
+    {
+        if (!voice) voice = gameObject.AddComponent<AudioSource>();
+        if (voice.isPlaying || !clips.TryGetValue(n, out var c)) return;
+        voice.volume = s.sfx * vol;
+        voice.clip = c;
+        voice.Play();
+    }
     public float MasterVolume => s.mute ? 0 : s.master;
     // Coupe la musique (generique video) : rien ne la relance tant que held est vrai, meme un changement de morceau.
     bool held;
