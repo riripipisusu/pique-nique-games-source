@@ -209,6 +209,9 @@ public class Game : MonoBehaviour
             yield return new WaitForSeconds(3f); yield return Shot("q0-generique");
             ui.IntroKey(false); yield return new WaitForSeconds(0.5f); yield return Shot("q0b-passer");
             ui.IntroKey(false);
+            yield return new WaitForSeconds(4f); yield return Shot("q0c-regles");
+            ui.DialogueKey(true); yield return new WaitForSeconds(0.3f); yield return Shot("q0d-passer-regles");
+            ui.DialogueKey(false);
             yield return new WaitForSeconds(1.5f); yield return Shot("q1-intro");
             while (qz.phase != QPhase.Guess) yield return null;
             yield return new WaitForSeconds(1.2f);
@@ -433,7 +436,7 @@ public class Game : MonoBehaviour
             quizPhaseStart = Time.time;
             ui.ShowHud();
             ui.Say("Tenez-vous prêts !");
-            if (!tvIntroSeen) StartCoroutine(TvIntro());
+            StartCoroutine(TvOpening());
         }
         else if (g == GameId.Croque)
         {
@@ -479,7 +482,7 @@ public class Game : MonoBehaviour
         }
         quizLight.enabled = g == GameId.Quiz;
         snapCam = true;
-        if (!(g == GameId.Quiz && !tvIntroSeen))   // TV Time : la musique demarre apres le generique
+        if (g != GameId.Quiz)   // TV Time : la musique demarre apres le generique et les regles
             Sound.I.Music(g == GameId.Croque ? "music_game" : g == GameId.Quiz ? "music_quiz" : "music_blackjack");
     }
 
@@ -515,12 +518,61 @@ public class Game : MonoBehaviour
     static bool tvIntroSeen;
     public bool introSkip;
 
+    // Ouverture d'une partie TV Time : generique (1 fois par session), puis Tenna explique les regles
+    // (1 fois par session et par jeu). La partie attend (busy) : l'hote ne lance pas la premiere image.
+    static readonly HashSet<GameId> tvRulesSeen = new HashSet<GameId>();
+    public bool tvCloseUp;
+
+    IEnumerator TvOpening()
+    {
+        busy = true;
+        if (!tvIntroSeen) yield return TvIntro();
+        if (!tvRulesSeen.Contains(gameId) && qview.HasTenna) yield return TennaRules(gameId);
+        Sound.I.PauseMusic(false);
+        Sound.I.Music("music_quiz");
+        quizPhaseStart = Time.time;
+        busy = false;
+        ui.Refresh();
+    }
+
+    static readonly Dictionary<GameId, (string face, string line)[]> TennaLines = new Dictionary<GameId, (string, string)[]>
+    {
+        [GameId.Quiz] = new[]
+        {
+            ("Pog", "MESDAMES ET MESSIEURS, BIENVENUE SUR LE PLATEAU LE PLUS BRILLANT DE TOUTE LA TÉLÉVISION !"),
+            ("SmileSketchfab", "Le jeu de ce soir : LE QUIZ D'IMAGES ! Une image va apparaître sur mon écran géant... floue, pixelisée, méconnaissable !"),
+            ("HmmmSketchfab", "Mais elle se dévoile petit à petit. Film, série, anime, jeu vidéo, pochette d'album, drapeau, photo ou célébrité : à vous de deviner ce que c'est !"),
+            ("SmileSketchfab", "Tapez votre réponse et validez avec Entrée. Autant d'essais que vous voulez, mais attention : tout le monde voit vos mauvaises réponses !"),
+            ("Pog", "Plus vous êtes rapides, plus vous marquez de points ! Et un petit bonus pour le premier qui trouve !"),
+            ("Pog", "Le premier à 100 points remporte la partie ! RESTEZ BRANCHÉS, ÇA COMMENCE MAINTENANT !"),
+        },
+    };
+
+    IEnumerator TennaRules(GameId g)
+    {
+        tvRulesSeen.Add(g);
+        if (!TennaLines.TryGetValue(g, out var lines)) yield break;
+        Sound.I.PauseMusic(true);
+        tvCloseUp = true;
+        ui.HideIntro();
+        var box = ui.ShowDialogue();
+        foreach (var (face, line) in lines)
+        {
+            if (box.skip) break;
+            qview.TennaFace(face, 2.5f);
+            yield return box.Type(line);
+            while (!box.next && !box.skip) yield return null;
+            box.next = false;
+        }
+        ui.HideDialogue();
+        tvCloseUp = false;
+    }
+
     IEnumerator TvIntro()
     {
         tvIntroSeen = true;
         string path = System.IO.Path.Combine(Application.streamingAssetsPath, "tvtime_intro.mp4");
-        if (!System.IO.File.Exists(path)) { Sound.I.Music("music_quiz"); yield break; }
-        busy = true;   // la partie attend la fin du generique (l'hote ne lance pas la premiere image)
+        if (!System.IO.File.Exists(path)) yield break;
         introSkip = false;
         Sound.I.PauseMusic(true);
         var rt = new RenderTexture(640, 480, 0);
@@ -547,14 +599,8 @@ public class Game : MonoBehaviour
                 yield return null;
             }
         }
-        ui.HideIntro();
         Destroy(go);
         rt.Release();
-        Sound.I.PauseMusic(false);
-        Sound.I.Music("music_quiz");
-        quizPhaseStart = Time.time;
-        busy = false;
-        ui.Refresh();
     }
 
     // --- Quiz ------------------------------------------------------------------------------
@@ -749,6 +795,7 @@ public class Game : MonoBehaviour
             ui.Refresh();
         }
         if (!Focused) return;
+        if (ui.DialogueShown && (Input.GetKeyDown(KeyCode.Space) || Input.GetKeyDown(KeyCode.Escape) || Input.GetKeyDown(KeyCode.Return))) { ui.DialogueKey(Input.GetKeyDown(KeyCode.Escape)); return; }
         if (ui.IntroShown && (Input.GetKeyDown(KeyCode.Space) || Input.GetKeyDown(KeyCode.Escape) || Input.GetKeyDown(KeyCode.Return))) { ui.IntroKey(Input.GetKeyDown(KeyCode.Escape)); return; }
         if (Input.GetKeyDown(KeyCode.Escape))
         {
@@ -786,7 +833,7 @@ public class Game : MonoBehaviour
         if (tour.HasValue) { cam.transform.SetPositionAndRotation(tour.Value.position, tour.Value.rotation); return; }
         if (inGame && qz != null)
         {
-            var qp = qview.CamPose;
+            var qp = tvCloseUp ? qview.TennaPose : qview.CamPose;
             cam.transform.SetPositionAndRotation(qp.position, qp.rotation);
             if (dof) dof.active = paused;
             ui.UpdateQuiz(cam);

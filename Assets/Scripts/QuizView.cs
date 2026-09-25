@@ -165,6 +165,21 @@ public class QuizView : MonoBehaviour
 
     // --- Tenna, le presentateur (rig de ThatAverageJoe) ----------------------------------
     SkinnedMeshRenderer tennaFace;
+    Transform tenna;
+
+    // Gros plan : camera face a Tenna, a hauteur de son ecran-tete, un peu en contre-plongee.
+    public bool HasTenna => tenna;
+    public Pose TennaPose
+    {
+        get
+        {
+            float h = tenna.lossyScale.y / 0.09f * 2.35f / 2.35f;   // echelle relative au reglage d'origine
+            var head = tenna.position + Vector3.up * 2.05f * h;
+            var front = tenna.rotation * Vector3.forward;
+            var from = head + front * 2.6f * h - Vector3.up * 0.35f * h + tenna.rotation * Vector3.right * 0.5f * h;
+            return new Pose(from, Quaternion.LookRotation(head - Vector3.up * 0.25f * h - from));
+        }
+    }
     readonly Dictionary<int, float> faceWeights = new Dictionary<int, float>();
 
     void SpawnTenna()
@@ -204,6 +219,7 @@ public class QuizView : MonoBehaviour
         foreach (var smr in t.GetComponentsInChildren<SkinnedMeshRenderer>()) smr.updateWhenOffscreen = true;
         StartCoroutine(TennaDebug(t));
         tennaFace = t.GetComponentInChildren<SkinnedMeshRenderer>();
+        tenna = t;
     }
 
     IEnumerator TennaDebug(Transform t)

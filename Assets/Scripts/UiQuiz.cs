@@ -1,3 +1,4 @@
+using System.Collections;
 using System.Collections.Generic;
 using System.Linq;
 using UnityEngine;
@@ -77,6 +78,68 @@ public partial class Ui
         else if (escape) AskSkip(false);
         else game.introSkip = true;
     }
+    // Boite de dialogue de Tenna : texte lettre par lettre, un "bip" toutes les deux lettres (voix Deltarune).
+    // Clic / Espace / Entree : finit la phrase, puis passe a la suivante. Echap ou "Passer" : confirmation.
+    public class Dialogue
+    {
+        public Label text, hint;
+        public VisualElement ask;
+        public bool next, skip, typing;
+        public IEnumerator Type(string line)
+        {
+            typing = true;
+            text.text = "";
+            int blip = 0;
+            for (int i = 1; i <= line.Length && typing && !skip; i++)
+            {
+                while (ask.style.display == DisplayStyle.Flex && !skip) yield return null;   // en pause pendant la question
+                text.text = line.Substring(0, i);
+                char c = line[i - 1];
+                if (char.IsLetterOrDigit(c) && blip++ % 2 == 0) Sound.I.Play("tenna_voice_" + UnityEngine.Random.Range(1, 11), 0.7f, 0);   // voix de Tenna : une syllabe au hasard
+                yield return new WaitForSeconds(c == '.' || c == '!' || c == '?' ? 0.16f : c == ',' ? 0.08f : 0.028f);
+            }
+            text.text = line;
+            typing = false;
+            hint.text = "▼";
+        }
+    }
+    Dialogue dialogue;
+    VisualElement dialogueRoot;
+    public bool DialogueShown => dialogueRoot != null;
+
+    public Dialogue ShowDialogue()
+    {
+        dialogueRoot = Div(root, "dlg-layer");
+        var d = new Dialogue();
+        var box = Div(dialogueRoot, "dlg-box");
+        Text(box, "TENNA", "dlg-name");
+        d.text = Text(box, "", "dlg-text");
+        d.hint = Text(box, "", "dlg-hint");
+        var skipBtn = Btn(dialogueRoot, "Passer les règles", () => d.ask.style.display = DisplayStyle.Flex, "ghost", "small", "dlg-skip");
+        d.ask = Div(dialogueRoot, "panel", "intro-ask");
+        Text(d.ask, "Passer les règles ?", "panel-title");
+        var row = Div(d.ask, "row");
+        Btn(row, "Non", () => d.ask.style.display = DisplayStyle.None, "ghost").style.width = 220;
+        Btn(row, "Oui, passer", () => d.skip = true, "green").style.width = 260;
+        d.ask.style.display = DisplayStyle.None;
+        box.RegisterCallback<PointerDownEvent>(_ => DialogueKey(false));
+        dialogue = d;
+        return d;
+    }
+
+    public void DialogueKey(bool escape)
+    {
+        var d = dialogue;
+        if (d == null) return;
+        bool asking = d.ask.style.display == DisplayStyle.Flex;
+        if (escape) { d.ask.style.display = asking ? DisplayStyle.None : DisplayStyle.Flex; return; }
+        if (asking) { d.skip = true; return; }
+        if (d.typing) d.typing = false;
+        else { d.next = true; d.hint.text = ""; }
+    }
+
+    public void HideDialogue() { dialogueRoot?.RemoveFromHierarchy(); dialogueRoot = null; dialogue = null; }
+
     public void HideIntro() { intro?.RemoveFromHierarchy(); intro = null; introAsk = null; }
 
     public void QuizQuestion()

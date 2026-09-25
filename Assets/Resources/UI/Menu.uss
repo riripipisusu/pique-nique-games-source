@@ -506,3 +506,14 @@ Button.chip-btn.rt-chipbtn.rt-sel { scale: 1.18 1.18; translate: 0 -6px; }
 .intro-ask { position: absolute; left: 50%; top: 50%; translate: -50% -50%; align-items: center; padding: 26px 40px; }
 .intro-ask > .row { justify-content: center; }
 .intro-ask Button { margin: 0 10px; }
+
+/* Dialogue de Tenna (facon Deltarune : boite noire, liseré blanc) */
+.dlg-layer { position: absolute; left: 0; right: 0; top: 0; bottom: 0; }
+.dlg-box {
+    position: absolute; left: 50%; bottom: 40px; translate: -50% 0; width: 1400px; min-height: 230px;
+    padding: 22px 34px; background-color: rgb(0, 0, 0); border-width: 6px; border-color: rgb(255, 255, 255); border-radius: 4px;
+}
+.dlg-name { font-size: 26px; -unity-font-style: bold; color: rgb(255, 214, 90); margin: 0 0 8px 0; }
+.dlg-text { font-size: 40px; color: rgb(255, 255, 255); white-space: normal; margin: 0; }
+.dlg-hint { position: absolute; right: 24px; bottom: 10px; font-size: 30px; color: rgb(255, 255, 255); }
+.dlg-skip { position: absolute; top: 24px; right: 110px; width: 260px; }
