@@ -17,6 +17,10 @@ Write-Host "Build de la version $Version..."
 & $unity -batchmode -quit -projectPath $root -executeMethod Setup.Build -logFile "$root\Logs\publish.log" | Out-Null
 if ($LASTEXITCODE -ne 0) { throw "Build echouee, voir Logs\publish.log" }
 
+# Rien a livrer : infos de debogage Burst et restes de l'ancien nom du jeu (Croque-Carotte).
+Get-ChildItem "$root\Build" -Directory -Filter "*DoNotShip*" | Remove-Item -Recurse -Force
+foreach ($old in "CroqueCarotte.exe", "CroqueCarotte_Data") { if (Test-Path "$root\Build\$old") { Remove-Item "$root\Build\$old" -Recurse -Force } }
+
 $zip = "$root\PiqueNiqueGames-Windows.zip"
 if (Test-Path $zip) { [IO.File]::Delete($zip) }
 Compress-Archive -Path "$root\Build\*" -DestinationPath $zip
