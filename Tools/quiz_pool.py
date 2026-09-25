@@ -189,7 +189,7 @@ if category("jeu_video", ["twitch_client_id", "twitch_client_secret"]):
     H = {"Client-ID": KEYS["twitch_client_id"], "Authorization": "Bearer " + tok}
     for offset in range(0, 400, 100):
         body = ("fields name, screenshots.image_id, alternative_names.name, alternative_names.comment, total_rating_count;"
-                " where screenshots != null & total_rating_count > 150 & category = 0; sort total_rating_count desc;"
+                " where screenshots != null & total_rating_count > 150 & game_type = 0; sort total_rating_count desc;"
                 f" limit 100; offset {offset};")
         for g in get("https://api.igdb.com/v4/games", headers=H, method="POST", data=body, pause=0.3):
             shots = [s["image_id"] for s in g.get("screenshots", [])]

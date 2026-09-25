@@ -208,6 +208,7 @@ public class Game : MonoBehaviour
             ui.DialogueKey(true); ui.DialogueKey(false);
             while (qz.phase != QPhase.Guess) yield return null;
             yield return new WaitForSeconds(15); yield return Shot("b1-bots");
+            for (int k = 2; k <= 6; k++) { while (qz.phase != QPhase.Reveal) yield return null; yield return new WaitForSeconds(0.5f); yield return Shot("b" + k + "-" + qz.Current.c); while (qz.phase != QPhase.Guess) yield return null; }
             Application.Quit();
             yield break;
         }
@@ -647,10 +648,13 @@ public class Game : MonoBehaviour
         while (!vp.isPrepared && Time.realtimeSinceStartup < wait) yield return null;
         if (vp.isPrepared)
         {
+            // Fin de video signalee par le lecteur lui-meme (a la fin, il se met en pause : ne surtout pas le relancer).
+            bool ended = false;
+            vp.loopPointReached += _ => ended = true;
             vp.Play();
             yield return null;
             // Pendant la question "Passer ?", la video est en pause.
-            while (!introSkip && (vp.isPlaying || vp.isPaused || vp.frame < 2))
+            while (!introSkip && !ended)
             {
                 if (ui.IntroAsking != vp.isPaused) { if (ui.IntroAsking) vp.Pause(); else vp.Play(); }
                 yield return null;
