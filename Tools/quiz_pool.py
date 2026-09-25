@@ -118,7 +118,8 @@ if category("film", ["tmdb_api_key"]):
     for endpoint in ("/movie/popular", "/movie/top_rated"):
         for page in range(1, 13):
             for m in tmdb(endpoint, language="fr-FR", page=page)["results"]:
-                if m["id"] in seen or m.get("adult"): continue
+                # Pas de documentaires (99) ni de films musicaux / concerts (10402) : on veut des scenes de fiction.
+                if m["id"] in seen or m.get("adult") or {99, 10402} & set(m.get("genre_ids", [])): continue
                 seen.add(m["id"])
                 bd = textless_backdrops("movie", m["id"])
                 if not bd: continue
@@ -165,7 +166,7 @@ def jikan_titles(original, fr):
     return []
 
 if category("serie", ["tmdb_api_key"]):
-    tv_category("serie", 12, without_genres="16", with_original_language="en|fr", vote_count_gte=300)
+    tv_category("serie", 12, without_genres="16,99,10763,10764,10767", with_original_language="en|fr", vote_count_gte=300)
 if category("anime", ["tmdb_api_key"]):
     tv_category("anime", 9, with_genres="16", with_origin_country="JP", vote_count_gte=50)
 
