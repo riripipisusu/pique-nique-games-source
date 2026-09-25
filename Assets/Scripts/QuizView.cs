@@ -37,6 +37,62 @@ public class QuizView : MonoBehaviour
     // Recul suffisant pour voir les joueurs entiers derriere leurs pupitres, l'ecran au-dessus.
     public Pose CamPose => new Pose(transform.TransformPoint(camFrom), Quaternion.LookRotation(transform.TransformDirection(camAt - camFrom)));
 
+    // --- Grand quiz de Tenna : la question (et les propositions en QCM) s'affiche sur l'ecran geant ---
+    RenderTexture questionRt;
+    VisualElement qRoot;
+    Label qText, qAnswer;
+    readonly List<Label> qProps = new List<Label>();
+    bool showingQuestion;
+
+    public void ShowQuestion(QuizQuestion q, bool mcq = false)
+    {
+        showingQuestion = q != null;
+        if (q == null) { if (qRoot != null) qRoot.style.display = DisplayStyle.None; return; }
+        if (qRoot == null) BuildQuestionPanel();
+        qRoot.style.display = DisplayStyle.Flex;
+        qText.text = q.q;
+        qAnswer.text = "";
+        for (int k = 0; k < 4; k++)
+        {
+            qProps[k].style.display = mcq ? DisplayStyle.Flex : DisplayStyle.None;
+            qProps[k].text = mcq ? $"{k + 1}.  {q.p[k]}" : "";
+            qProps[k].RemoveFromClassList("good");
+        }
+    }
+
+    public void RevealAnswer(QuizQuestion q)
+    {
+        if (qRoot == null) return;
+        qAnswer.text = q.d;
+        for (int k = 0; k < 4; k++) qProps[k].EnableInClassList("good", q.p[k] == q.d);
+    }
+
+    void BuildQuestionPanel()
+    {
+        questionRt = new RenderTexture(1600, 900, 0) { name = "question", useMipMap = true, autoGenerateMips = true, anisoLevel = 8 };
+        var baseSettings = Resources.Load<PanelSettings>("UI/Panel");
+        var ps = ScriptableObject.CreateInstance<PanelSettings>();
+        ps.themeStyleSheet = baseSettings.themeStyleSheet;
+        ps.targetTexture = questionRt;
+        ps.scaleMode = PanelScaleMode.ConstantPixelSize;
+        ps.clearColor = true;
+        ps.colorClearValue = Board.Hex("1b1030");
+        ps.SetScreenToPanelSpaceFunction(_ => new Vector2(float.NaN, float.NaN));
+        var go = new GameObject("ecran question");
+        go.transform.SetParent(transform, false);
+        var doc = go.AddComponent<UIDocument>();
+        doc.panelSettings = ps;
+        qRoot = doc.rootVisualElement;
+        qRoot.pickingMode = PickingMode.Ignore;
+        qRoot.styleSheets.Add(Resources.Load<StyleSheet>("UI/Menu"));
+        qRoot.AddToClassList("root");
+        qRoot.AddToClassList("tq");
+        qText = new Label(); qText.AddToClassList("tq-text"); qRoot.Add(qText);
+        var grid = new VisualElement(); grid.AddToClassList("tq-grid"); qRoot.Add(grid);
+        for (int k = 0; k < 4; k++) { var l = new Label(); l.AddToClassList("tq-prop"); l.AddToClassList("choice-" + k); grid.Add(l); qProps.Add(l); }
+        qAnswer = new Label(); qAnswer.AddToClassList("tq-answer"); qRoot.Add(qAnswer);
+    }
+
     // Image telechargee (ou abandonnee apres echec : on n'attend pas indefiniment).
     public bool Ready(string url) { Preload(url); return images.ContainsKey(url) || failed.Contains(url); }
     readonly HashSet<string> failed = new HashSet<string>();
@@ -503,6 +559,7 @@ public class QuizView : MonoBehaviour
     {
         UpdateTennaFace();
         if (!screen) return;
+        if (showingQuestion) { Graphics.Blit(questionRt, display); return; }
         if (imageUrl == null || !images.TryGetValue(imageUrl, out var tex))
         {
             // Pas d'image (intro, chargement) : ecran violet.

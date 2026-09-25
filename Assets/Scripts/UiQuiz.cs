@@ -11,6 +11,8 @@ public partial class Ui
     VisualElement qzHud, qzTags, qzBar, qzBarFill, qzBoard, qzFeed, qzReveal;
     Label qzCategory, qzTimer, qzStatus, qzAnswer, qzCredit;
     TextField qzInput;
+    VisualElement qzChoices;
+    readonly List<Button> qzChoiceBtns = new List<Button>();
 
     void BuildQuizHud()
     {
@@ -42,6 +44,15 @@ public partial class Ui
             qzInput.value = "";
             qzInput.schedule.Execute(() => qzInput.Focus()).StartingIn(10);
         }, TrickleDown.TrickleDown);
+
+        // QCM : 4 boutons de reponse a la place du champ de texte.
+        qzChoices = Div(bottom, "qz-choices");
+        for (int k = 0; k < 4; k++)
+        {
+            int idx = k;
+            var b = Btn(qzChoices, "", () => { if (game.qz != null && game.MyTurn) game.Act("guess|" + game.qz.Current.p[idx]); }, "qz-choice", "choice-" + k);
+            qzChoiceBtns.Add(b);
+        }
 
         qzReveal = Div(qzHud, "panel", "qz-reveal");
         qzReveal.pickingMode = PickingMode.Ignore;
@@ -144,7 +155,16 @@ public partial class Ui
     public void QuizQuestion()
     {
         var q = game.qz;
-        qzCategory.text = $"{Quiz.CategoryName(q.Current.c)}  ·  image {q.round}";
+        qzCategory.text = q.trivia ? $"{q.Current.c}  ·  question {q.round}" : $"{Quiz.CategoryName(q.Current.c)}  ·  image {q.round}";
+        qzInput.style.display = q.Mcq ? DisplayStyle.None : DisplayStyle.Flex;
+        qzChoices.style.display = q.Mcq ? DisplayStyle.Flex : DisplayStyle.None;
+        for (int k = 0; k < 4 && q.Mcq; k++)
+        {
+            var b = qzChoiceBtns[k];
+            b.text = $"{k + 1}.  {q.Current.p[k]}";
+            b.SetEnabled(true);
+            b.RemoveFromClassList("good"); b.RemoveFromClassList("bad"); b.RemoveFromClassList("picked");
+        }
         qzReveal.style.display = DisplayStyle.None;
         qzFeed.Clear();
         qzInput.SetEnabled(true);
@@ -157,24 +177,33 @@ public partial class Ui
         var p = game.qz.players[seat];
         var line = Text(qzFeed, seat == Me ? $"Bien joué ! +{points}" : $"{p.name} a trouvé ! +{points}", "qz-feed-line", "found");
         line.style.color = Board.Colors[seat % Board.Colors.Length];
-        if (seat == Me) { qzInput.SetEnabled(false); qzInput.value = ""; }
+        if (seat == Me) { qzInput.SetEnabled(false); qzInput.value = ""; LockChoices(true); }
         game.qview.Strip(seat, $"Trouvé ! +{points}", Board.Hex("1c7a3c"));
     }
 
     public void QuizWrong(int seat, string text)
     {
         var p = game.qz.players[seat];
-        var line = Text(qzFeed, $"{p.name} : {text}", "qz-feed-line");
+        if (seat == Me && game.qz.Mcq) LockChoices(false);
+        var line = Text(qzFeed, game.qz.Mcq ? (seat == Me ? "Raté !" : $"{p.name} s'est trompé !") : $"{p.name} : {text}", "qz-feed-line");
         line.style.color = Board.Colors[seat % Board.Colors.Length];
         while (qzFeed.childCount > 8) qzFeed.RemoveAt(0);
         game.qview.Strip(seat, text, Board.Hex("b3262b"));
+    }
+
+    // QCM : mes boutons se figent apres ma reponse (vert si juste, rouge si faux).
+    void LockChoices(bool good)
+    {
+        foreach (var b in qzChoiceBtns) b.SetEnabled(false);
     }
 
     public void QuizReveal()
     {
         var q = game.qz.Current;
         qzAnswer.text = q.d;
-        qzCredit.text = string.Join("  ·  ", new[] { q.h, q.cr }.Where(x => !string.IsNullOrEmpty(x)));
+        if (game.qz.Mcq)
+            for (int k = 0; k < 4; k++) qzChoiceBtns[k].EnableInClassList("good", q.p[k] == q.d);
+        qzCredit.text = string.Join("\n", new[] { q.h, q.cr }.Where(x => !string.IsNullOrEmpty(x)));
         qzReveal.style.display = DisplayStyle.Flex;
         qzInput.SetEnabled(false);
         Sound.I.Play(game.qz.players[Me].found ? "bj_chips" : "lose", 0.6f);
@@ -200,8 +229,9 @@ public partial class Ui
             Text(row, p.score.ToString(), "qz-score");
         }
         bool guessing = q.phase == QPhase.Guess;
-        qzStatus.text = q.Finished ? "" : !guessing ? (q.round == 0 ? "La partie commence..." : "Prochaine image...")
-            : q.players[Me].found ? "Trouvé ! Attends les autres..." : "Tape ta réponse puis Entrée";
+        qzStatus.text = q.Finished ? "" : !guessing ? (q.round == 0 ? "La partie commence..." : q.trivia ? "Prochaine question..." : "Prochaine image...")
+            : q.players[Me].found ? "Trouvé ! Attends les autres..." : q.players[Me].locked ? "Raté... attends la prochaine question !"
+            : q.Mcq ? "Choisis ta réponse (clic ou touches 1 à 4)" : "Tape ta réponse puis Entrée";
     }
 
     // Chaque image : chrono, et etiquettes (nom, score, bulle) suivant les pupitres a l'ecran.
@@ -215,7 +245,7 @@ public partial class Ui
         qzBarFill.style.width = Length.Percent(left / (Quiz.RoundMs / 1000f) * 100);
         qzBarFill.EnableInClassList("hurry", left < 5);
         qzTimer.text = Mathf.CeilToInt(left).ToString();
-        if (q.round == 0) qzCategory.text = "Quiz d'images";
+        if (q.round == 0) qzCategory.text = q.trivia ? "Le grand quiz de Tenna" : "Quiz d'images";
 
     }
 }

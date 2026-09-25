@@ -14,6 +14,8 @@ public class QuizQuestion
 {
     public string c, u, d, id, cr, h;
     public string[] a;
+    public string q;          // Grand quiz de Tenna : texte de la question (pas d'image)
+    public string[] p;        // ... et ses 4 propositions (QCM)
 }
 
 [Serializable] class QuizPoolFile { public QuizQuestion[] items; }
@@ -22,7 +24,7 @@ public class QPlayer
 {
     public string name;
     public int seat, score, gained;   // gained : points du tour en cours
-    public bool found;
+    public bool found, locked;   // locked : QCM, mauvaise reponse donnee, plus d'essai pour cette question
     public int foundMs = -1;
 }
 
@@ -51,7 +53,9 @@ public class Quiz : IMatch
     public readonly List<(int seat, string text)> wrong = new List<(int, string)>();
     public QPhase phase = QPhase.Reveal;
     public int round;            // numero de la question affichee (0 = intro)
-    public int mode;             // 0 flou, 1 pixelise, 2 melange
+    public int mode;             // images : 0 flou, 1 pixelise, 2 melange ; questions : 0 QCM, 1 reponse libre
+    public readonly bool trivia; // Grand quiz de Tenna (questions de culture generale)
+    public bool Mcq => trivia && mode == 0;
     public QuizQuestion Current => round > 0 ? order[(round - 1) % order.Count] : null;
     public QuizQuestion Next => order[round % order.Count];
     public bool Pixelated(int r) => mode == 1 || (mode == 2 && (r * 7919 + seed) % 2 == 0);
@@ -59,9 +63,10 @@ public class Quiz : IMatch
     readonly List<QuizQuestion> order;
     readonly int seed;
 
-    public Quiz(IEnumerable<string> names, int mode, int seed, IList<QuizQuestion> pool)
+    public Quiz(IEnumerable<string> names, int mode, int seed, IList<QuizQuestion> pool, bool trivia = false)
     {
         this.mode = mode;
+        this.trivia = trivia;
         this.seed = seed;
         int s = 0;
         foreach (var n in names) players.Add(new QPlayer { name = n, seat = s++ });
@@ -78,9 +83,14 @@ public class Quiz : IMatch
     public static List<QuizQuestion> Pool => pool ??= UnityEngine.JsonUtility.FromJson<QuizPoolFile>(
         "{\"items\":" + UnityEngine.Resources.Load<UnityEngine.TextAsset>("Quiz/pool").text + "}").items.ToList();
 
+    static List<QuizQuestion> triviaPool;
+    // Questions OpenQuizzDB (Tools/trivia_pool.py) : c = theme, q = question, p = propositions, h = anecdote.
+    public static List<QuizQuestion> TriviaPool => triviaPool ??= UnityEngine.JsonUtility.FromJson<QuizPoolFile>(
+        "{\"items\":" + UnityEngine.Resources.Load<UnityEngine.TextAsset>("Quiz/trivia").text + "}").items.ToList();
+
     public int Actor => phase == QPhase.Guess ? Everyone : -1;
     public bool Finished => phase == QPhase.GameOver;
-    public bool AllFound => players.All(p => p.found);
+    public bool AllFound => players.All(p => p.found || p.locked);
     public string[] Bot() => null;
 
     void Emit(QEv t, int seat = -1, int points = 0, int ms = 0, string text = null) =>
@@ -100,7 +110,7 @@ public class Quiz : IMatch
                 round++;
                 phase = QPhase.Guess;
                 wrong.Clear();
-                foreach (var p in players) { p.found = false; p.foundMs = -1; p.gained = 0; }
+                foreach (var p in players) { p.found = false; p.locked = false; p.foundMs = -1; p.gained = 0; }
                 Emit(QEv.Question, text: Current.c);
                 return true;
 
@@ -109,8 +119,10 @@ public class Quiz : IMatch
                     || !int.TryParse(a[2], out int ms)) return false;
                 var pl = players[seat];
                 string text = a[3].Trim();
-                if (pl.found || text.Length == 0 || text.Length > 60) return false;
-                if (Matches(text, Current.a))
+                if (pl.found || pl.locked || text.Length == 0 || text.Length > 60) return false;
+                // QCM : une seule reponse, forcement l'une des 4 propositions ; comparaison exacte.
+                if (Mcq && Array.IndexOf(Current.p, text) < 0) return false;
+                if (Mcq ? text == Current.d : Matches(text, Current.a))
                 {
                     bool first = players.All(p => !p.found);
                     pl.found = true;
@@ -123,7 +135,9 @@ public class Quiz : IMatch
                 else
                 {
                     wrong.Add((seat, text));
-                    Emit(QEv.Wrong, seat, text: text);
+                    if (Mcq) pl.locked = true;
+                    // En QCM on n'affiche pas le choix des autres (ca eliminerait une proposition pour tout le monde).
+                    Emit(QEv.Wrong, seat, text: Mcq ? "" : text);
                 }
                 return true;
 

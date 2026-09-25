@@ -261,7 +261,7 @@ public class Net : MonoBehaviour
 
     public void StartMatch()
     {
-        if (!IsHost || Lobby.Count < (LobbyGame == GameId.Quiz ? 1 : 2)) return;
+        if (!IsHost || Lobby.Count < (Games.TvTime(LobbyGame) ? 1 : 2)) return;
         int seed = UnityEngine.Random.Range(0, int.MaxValue);
         shadow = Games.Create(LobbyGame, LobbyOption, Lobby, seed);
         Broadcast($"start|{LobbyGame}|{LobbyOption}|{seed}|{string.Join(";", Lobby)}|{string.Join(";", LobbyAvatars)}");

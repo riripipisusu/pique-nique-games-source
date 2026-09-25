@@ -517,3 +517,32 @@ Button.chip-btn.rt-chipbtn.rt-sel { scale: 1.18 1.18; translate: 0 -6px; }
 .dlg-text { font-size: 40px; color: rgb(255, 255, 255); white-space: normal; margin: 0; }
 .dlg-hint { position: absolute; right: 24px; bottom: 10px; font-size: 30px; color: rgb(255, 255, 255); }
 .dlg-skip { position: absolute; top: 24px; right: 110px; width: 260px; }
+
+/* --- Le grand quiz de Tenna ------------------------------------------------------- */
+.game-tr .game-art { background-color: rgb(214, 63, 134); border-bottom-width: 12px; border-color: rgb(255, 200, 58); }
+.qz-choices { flex-direction: row; flex-wrap: wrap; justify-content: center; width: 1200px; }
+Button.qz-choice {
+    width: 580px; height: 66px; margin: 5px 8px; font-size: 28px; -unity-font-style: bold; -unity-text-align: middle-left;
+    padding-left: 24px; border-radius: 16px; color: rgb(255, 255, 255); border-width: 3px; border-color: rgb(255, 255, 255);
+}
+Button.qz-choice.choice-0 { background-color: rgb(214, 63, 90); }
+Button.qz-choice.choice-1 { background-color: rgb(52, 120, 220); }
+Button.qz-choice.choice-2 { background-color: rgb(236, 168, 30); }
+Button.qz-choice.choice-3 { background-color: rgb(60, 170, 90); }
+Button.qz-choice:disabled { opacity: 0.55; }
+Button.qz-choice.good { border-color: rgb(255, 240, 120); border-width: 6px; opacity: 1; }
+.qz-bottom { width: 1200px; }
+/* Ecran geant : question ecrite (rendue en 1600 x 900) */
+.tq { background-color: rgb(27, 16, 48); padding: 60px 80px; justify-content: center; align-items: center; }
+.tq-text { font-size: 92px; -unity-font-style: bold; color: rgb(255, 255, 255); white-space: normal; -unity-text-align: middle-center; margin-bottom: 40px; }
+.tq-grid { flex-direction: row; flex-wrap: wrap; justify-content: center; width: 100%; }
+.tq-prop {
+    width: 47%; margin: 12px; padding: 22px 30px; font-size: 62px; -unity-font-style: bold; color: rgb(255, 255, 255);
+    border-radius: 22px; white-space: normal; border-width: 4px; border-color: rgba(255, 255, 255, 0.5);
+}
+.tq-prop.choice-0 { background-color: rgb(214, 63, 90); }
+.tq-prop.choice-1 { background-color: rgb(52, 120, 220); }
+.tq-prop.choice-2 { background-color: rgb(236, 168, 30); }
+.tq-prop.choice-3 { background-color: rgb(60, 170, 90); }
+.tq-prop.good { border-color: rgb(255, 240, 120); border-width: 10px; }
+.tq-answer { font-size: 80px; -unity-font-style: bold; color: rgb(255, 214, 90); margin-top: 30px; }

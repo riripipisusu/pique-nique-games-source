@@ -144,7 +144,7 @@ public partial class Ui : MonoBehaviour
         Btn(col, "Jouer", () => Go(games));
         Btn(col, "Paramètres", () => { SelectTab(tab); Go(settingsScreen); }, "green");
         Btn(col, "Quitter", Application.Quit, "ghost");
-        Text(title, $"v{Application.version}  ·  Décors Synty Studios · Modèles Kenney & Quaternius (CC0)  ·  Tenna : rig de ThatAverageJoe · Sons de roulette : Pixabay · Musiques : MMAudio, Geoff Harvey (Pixabay), « A Conversation with Saul » de Matthew Pablo (CC-BY 3.0)", "credits");
+        Text(title, $"v{Application.version}  ·  Décors Synty Studios · Modèles Kenney & Quaternius (CC0)  ·  Questions : OpenQuizzDB (CC BY-SA) · Tenna : rig de ThatAverageJoe · Sons de roulette : Pixabay · Musiques : MMAudio, Geoff Harvey (Pixabay), « A Conversation with Saul » de Matthew Pablo (CC-BY 3.0)", "credits");
         updateCard = Div(title, "panel", "update-card");
         updateCard.style.display = DisplayStyle.None;
         updateText = Text(updateCard, "", "p");
@@ -197,6 +197,8 @@ public partial class Ui : MonoBehaviour
         var tv = Cat("TV Time", "cat-tv");
         GameCard(tv, GameId.Quiz, "Quiz d'images", "1 à 10 joueurs  ·  En ligne",
             "Une image floutée se dévoile : films, jeux, drapeaux, pochettes... Le premier à 100 points gagne.", "game-qz");
+        GameCard(tv, GameId.Trivia, "Le grand quiz de Tenna", "1 à 10 joueurs  ·  Culture G",
+            "Cinéma, histoire, sciences, sport... En QCM ou en réponse libre, le premier à 100 points gagne.", "game-tr");
         var back = Btn(panel, "Retour", Back, "ghost", "small");
         back.style.width = 260;
         back.style.marginTop = 20;
@@ -260,6 +262,8 @@ public partial class Ui : MonoBehaviour
         parent.Clear();
         var opts = game.gameId == GameId.Croque
             ? new[] { (0, "Classique", "19 cases en spirale. La carotte ouvre 1 à 3 trous au hasard."), (1, "Amélioré", "25 cases, trous selon un cycle secret à deviner.") }
+            : game.gameId == GameId.Trivia
+            ? new[] { (0, "QCM", "4 propositions, une seule réponse : la bonne et vite !"), (1, "Réponse libre", "Tape la réponse toi-même, autant d'essais que tu veux.") }
             : game.gameId == GameId.Quiz
             ? new[] { (0, "Flou", "L'image est floue puis se précise."), (1, "Pixelisé", "De gros pixels qui s'affinent."), (2, "Mélangé", "Flou ou pixels, au hasard à chaque image.") }
             : game.gameId == GameId.Blackjack
@@ -296,7 +300,7 @@ public partial class Ui : MonoBehaviour
         }
         addPlayer.style.display = game.names.Count < Rules.MaxPlayers ? DisplayStyle.Flex : DisplayStyle.None;
         // Le quiz se joue en ligne (chacun tape sur son PC) : pas de joueurs locaux.
-        bool local = game.gameId != GameId.Quiz;
+        bool local = !Games.TvTime(game.gameId);
         foreach (var e in new[] { localTitle, playerList, localBtn }) e.style.display = local ? DisplayStyle.Flex : DisplayStyle.None;
         if (!local) addPlayer.style.display = DisplayStyle.None;
         botsRow.style.display = local ? DisplayStyle.None : DisplayStyle.Flex;
@@ -472,6 +476,14 @@ public partial class Ui : MonoBehaviour
             S("La carte Carotte", "Elle fait tourner la grosse carotte du sommet... et des trous s'ouvrent sous certaines cases ! Les lapins qui s'y trouvent dégringolent jusqu'à l'enclos de départ. Les trous restent ouverts jusqu'au prochain tour de carotte : un lapin qui s'arrête dessus tombe aussi !");
             S("Mode Classique", "19 cases en spirale. Chaque tour de carotte ouvre 1 à 3 trous tirés au hasard, n'importe où à partir de la case 3.");
             S("Mode Amélioré", "25 cases sur deux anneaux. Les trous s'ouvrent un par un, selon un cycle de 25 crans tiré au début de la partie mais qui ne change plus. La carte Double carotte avance de deux crans. Quand un cran est connu, la case menacée s'allume en rouge. Observe, déduis, et place tes lapins là où ça ne tombera pas ! (D'après la vidéo d'Hydrios « Il manque 2 cases à Croque-Carotte ».)");
+        }
+        else if (game.gameId == GameId.Trivia)
+        {
+            S("Le but", "Tenna pose des questions de culture générale : cinéma, histoire, sciences, sport, musique, géographie... Le premier à 100 points gagne.");
+            S("QCM", "Quatre propositions : clique sur la tienne ou appuie sur 1, 2, 3 ou 4. Une seule réponse par question : si tu te trompes, tu attends la suivante.");
+            S("Réponse libre", "Tape ta réponse puis Entrée, autant de fois que tu veux pendant les 20 secondes. Les petites fautes de frappe sont acceptées, et tout le monde voit tes mauvaises réponses !");
+            S("Les points", "Plus tu réponds vite, plus tu gagnes : 10 points tout de suite, 3 à la dernière seconde, et 2 de bonus pour le premier. Après chaque question, Tenna donne la réponse et une petite anecdote.");
+            S("Les questions", "Questions issues d'OpenQuizzDB (openquizzdb.org), sous licence libre CC BY-SA.");
         }
         else if (game.gameId == GameId.Quiz)
         {

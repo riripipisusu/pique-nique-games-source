@@ -212,6 +212,28 @@ public class Game : MonoBehaviour
             Application.Quit();
             yield break;
         }
+        if (Array.IndexOf(Environment.GetCommandLineArgs(), "-trivia") >= 0)
+        {
+            foreach (int mode in new[] { 0, 1 })
+            {
+                SelectGame(GameId.Trivia);
+                ui.OpenForTest("setup"); yield return new WaitForSeconds(1); yield return Shot("t" + mode + "-setup");
+                quizBots = 4; option = mode;
+                StartQuizWithBots();
+                yield return new WaitForSeconds(2); introSkip = true;
+                while (mode == 0 && !ui.DialogueShown) yield return null;
+                if (mode == 0) { yield return new WaitForSeconds(3); yield return Shot("t0-regles"); ui.DialogueKey(true); ui.DialogueKey(false); }
+                while (qz.phase != QPhase.Guess) yield return null;
+                yield return new WaitForSeconds(6); yield return Shot("t" + mode + "-question");
+                if (mode == 0) Act("guess|" + qz.Current.p[0]); else Act("guess|" + qz.Current.d.ToLower());
+                while (qz.phase != QPhase.Reveal) yield return null;
+                yield return new WaitForSeconds(1); yield return Shot("t" + mode + "-reponse");
+                ToMenu();
+                yield return new WaitForSeconds(1);
+            }
+            Application.Quit();
+            yield break;
+        }
         if (Array.IndexOf(Environment.GetCommandLineArgs(), "-quizbots") >= 0)
         {
             SelectGame(GameId.Quiz);
@@ -457,12 +479,13 @@ public class Game : MonoBehaviour
         rt = null;
         rules = null;
         qz = null;
-        if (g == GameId.Quiz)
+        if (Games.TvTime(g))
         {
-            qz = new Quiz(n, opt, seed, Quiz.Pool);
+            qz = g == GameId.Quiz ? new Quiz(n, opt, seed, Quiz.Pool) : new Quiz(n, opt, seed, Quiz.TriviaPool, true);
             qview.Build(qz, av);
             qview.imageUrl = null;
-            qview.Preload(qz.Next.u);
+            qview.ShowQuestion(null);
+            if (!qz.trivia) qview.Preload(qz.Next.u);
             quizPhaseStart = Time.time;
             ui.ShowHud();
             ui.Say("Tenez-vous prêts !");
@@ -499,7 +522,7 @@ public class Game : MonoBehaviour
         }
         Casino(g != GameId.Croque);
         // Plateau TV : tout est eclaire de face, uniformement (lumiere directionnelle propre au quiz).
-        if (g == GameId.Quiz) RenderSettings.ambientLight = Board.Hex("9a8f8a");
+        if (Games.TvTime(g)) RenderSettings.ambientLight = Board.Hex("9a8f8a");
         if (!quizLight)
         {
             quizLight = new GameObject("LumiereQuiz").AddComponent<Light>();
@@ -510,9 +533,9 @@ public class Game : MonoBehaviour
             quizLight.shadowStrength = 0.45f;
             quizLight.transform.rotation = Quaternion.Euler(32, 0, 0);   // pile de face : ombres symetriques
         }
-        quizLight.enabled = g == GameId.Quiz;
+        quizLight.enabled = Games.TvTime(g);
         snapCam = true;
-        if (g != GameId.Quiz)   // TV Time : la musique demarre apres le generique et les regles
+        if (!Games.TvTime(g))   // TV Time : la musique demarre apres le generique et les regles
             Sound.I.Music(g == GameId.Croque ? "music_game" : g == GameId.Quiz ? "music_quiz" : "music_blackjack");
     }
 
@@ -557,7 +580,7 @@ public class Game : MonoBehaviour
         var n = new List<string> { PlayerPrefs.GetString("cc-name", "Joueur") };
         var av = new List<string> { myAvatar };
         for (int i = 0; i < quizBots; i++) { n.Add(BotNames[i]); av.Add(BotAvatars[i]); }
-        StartGame(GameId.Quiz, option, n, UnityEngine.Random.Range(0, int.MaxValue), av);
+        StartGame(gameId, option, n, UnityEngine.Random.Range(0, int.MaxValue), av);
     }
 
     void PlanBots()
@@ -565,14 +588,15 @@ public class Game : MonoBehaviour
         botPlan.Clear();
         if (Online || qz == null) return;
         var rng = new System.Random(qz.round * 977 + 13);
-        var wrongPool = Quiz.Pool.Where(q => q.c == qz.Current.c && q != qz.Current).Select(q => q.d).ToList();
+        var wrongPool = qz.trivia ? qz.Current.p.Where(x => x != qz.Current.d).ToList()
+                                  : Quiz.Pool.Where(q => q.c == qz.Current.c && q != qz.Current).Select(q => q.d).ToList();
         for (int seat = 1; seat < qz.players.Count; seat++)
         {
             float skill = 0.35f + 0.1f * (seat % 4);   // entre 35 et 65 % de bonnes reponses
-            int wrongs = rng.Next(3);
+            int wrongs = qz.Mcq ? (rng.NextDouble() < skill ? 0 : 1) : rng.Next(3);   // QCM : une seule reponse
             for (int w = 0; w < wrongs && wrongPool.Count > 0; w++)
                 botPlan.Add((seat, 2 + (float)rng.NextDouble() * 12, wrongPool[rng.Next(wrongPool.Count)]));
-            if (rng.NextDouble() < skill) botPlan.Add((seat, 4 + (float)rng.NextDouble() * 14, qz.Current.a[0]));
+            if (wrongs == 0 || !qz.Mcq) if (rng.NextDouble() < skill || qz.Mcq) botPlan.Add((seat, 4 + (float)rng.NextDouble() * 14, qz.Current.d));
         }
     }
 
@@ -610,6 +634,14 @@ public class Game : MonoBehaviour
 
     static readonly Dictionary<GameId, (string face, string line)[]> TennaLines = new Dictionary<GameId, (string, string)[]>
     {
+        [GameId.Trivia] = new[]
+        {
+            ("Pog", "MESDAMES ET MESSIEURS, VOICI L'ÉMISSION PHARE DE LA CHAÎNE : LE GRAND QUIZ DE TENNA !"),
+            ("SmileSketchfab", "Une question s'affiche sur mon écran géant. Cinéma, histoire, sciences, sport, musique... TOUT peut tomber !"),
+            ("HmmmSketchfab", "En mode QCM, quatre propositions : choisissez-en UNE, avec la souris ou les touches 1 à 4. Pas de deuxième chance, alors réfléchissez... mais pas trop longtemps !"),
+            ("SmileSketchfab", "En mode réponse libre, tapez votre réponse et validez avec Entrée. Autant d'essais que vous voulez !"),
+            ("Pog", "Plus vous répondez vite, plus vous marquez de points. Le premier à 100 points gagne. À VOS BUZZERS !"),
+        },
         [GameId.Quiz] = new[]
         {
             ("Pog", "MESDAMES ET MESSIEURS, BIENVENUE SUR LE PLATEAU LE PLUS BRILLANT DE TOUTE LA TÉLÉVISION !"),
@@ -689,7 +721,7 @@ public class Game : MonoBehaviour
     public string QuizTick(Quiz q)
     {
         float t = Time.time - quizPhaseStart;
-        if (q.phase == QPhase.Reveal) return t > (q.round == 0 ? 4 : 5.5f) && qview.Ready(q.Next.u) ? "next" : null;
+        if (q.phase == QPhase.Reveal) return t > (q.round == 0 ? 4 : q.trivia ? 7 : 5.5f) && (q.trivia || qview.Ready(q.Next.u)) ? "next" : null;
         if (q.phase != QPhase.Guess) return null;
         if (t * 1000 > Quiz.RoundMs) return "end";
         if (q.AllFound && t > q.players.Max(pl => pl.foundMs) / 1000f + 1.5f) return "end";
@@ -706,10 +738,14 @@ public class Game : MonoBehaviour
                 case QEv.Question:
                     PlanBots();
                     quizPhaseStart = Time.time;
-                    qview.imageUrl = qz.Current.u;
-                    qview.pixelated = qz.Pixelated(qz.round);
-                    qview.reveal = 0;
-                    qview.Preload(qz.Next.u);
+                    if (qz.trivia) qview.ShowQuestion(qz.Current, qz.Mcq);
+                    else
+                    {
+                        qview.imageUrl = qz.Current.u;
+                        qview.pixelated = qz.Pixelated(qz.round);
+                        qview.reveal = 0;
+                        qview.Preload(qz.Next.u);
+                    }
                     for (int i = 0; i < qz.players.Count; i++) qview.SetFound(i, false);
                     Sound.I.Play("open");
                     ui.QuizQuestion();
@@ -728,6 +764,7 @@ public class Game : MonoBehaviour
                 case QEv.Reveal:
                     quizPhaseStart = Time.time;
                     qview.reveal = 1;
+                    if (qz.trivia) qview.RevealAnswer(qz.Current);
                     qview.TennaFace("SmileSketchfab", 3);
                     Sound.I.Play("tick");
                     ui.QuizReveal();
@@ -867,7 +904,7 @@ public class Game : MonoBehaviour
         if (inGame && qz != null)
         {
             // L'image se devoile en 18 s ; seul (hors ligne), c'est ce PC qui pilote les phases.
-            if (qz.phase == QPhase.Guess) qview.reveal = Mathf.Clamp01((Time.time - quizPhaseStart) / 18f);
+            if (qz.phase == QPhase.Guess && !qz.trivia) qview.reveal = Mathf.Clamp01((Time.time - quizPhaseStart) / 18f);
             if (!Online && Idle && !paused && !qz.Finished) { RunBots(); var tick = QuizTick(qz); if (tick != null) Apply(tick); }
         }
         if (inGame && !busy && pending.Count > 0 && Match != null && !Match.Finished)
@@ -886,6 +923,9 @@ public class Game : MonoBehaviour
             else if (inGame && !paused) Pause();
         }
         if (!CanAct) return;
+        if (qz != null && qz.Mcq && qz.phase == QPhase.Guess)
+            for (int k = 0; k < 4; k++)
+                if (Input.GetKeyDown(KeyCode.Alpha1 + k) || Input.GetKeyDown(KeyCode.Keypad1 + k)) Act("guess|" + qz.Current.p[k]);
         if (rules != null)
         {
             if (Input.GetKeyDown(KeyCode.Space)) Draw();
