@@ -6,7 +6,8 @@ using UnityEngine;
 // Monde 3D : terrain, decor, cases, lapins, animations. Lit Rules, ne le modifie jamais.
 public class Board : MonoBehaviour
 {
-    public static readonly Color[] Colors = { Hex("e8483b"), Hex("3b7de0"), Hex("45b35f"), Hex("f0b92a") };
+    // 4 premieres couleurs pour les jeux a 4 ; le quiz monte a 10 joueurs.
+    public static readonly Color[] Colors = { Hex("e8483b"), Hex("3b7de0"), Hex("45b35f"), Hex("f0b92a"), Hex("9b59d6"), Hex("f07e2a"), Hex("e05aa8"), Hex("2ab7b0"), Hex("8d6e4a"), Hex("a3d93b") };
     public static Color Hex(string h) { ColorUtility.TryParseHtmlString("#" + h, out var c); return c; }
 
     const float HillR = 15f, HillH = 5.5f;

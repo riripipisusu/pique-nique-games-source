@@ -426,3 +426,65 @@ Button.chip-btn.rt-chipbtn.rt-sel { scale: 1.18 1.18; translate: 0 -6px; }
 .rt-hist.red { background-color: rgb(190, 32, 36); }
 .rt-hist.black { background-color: rgb(26, 24, 24); }
 .rt-hist.green { background-color: rgb(24, 128, 60); }
+
+/* --- Quiz d'images ------------------------------------------------------------------ */
+.game-qz .game-art { background-color: rgb(58, 28, 110); border-bottom-width: 12px; border-color: rgb(255, 200, 58); }
+.qz-top { position: absolute; top: 16px; left: 50%; translate: -50% 0; width: 760px; align-items: center; }
+.qz-category {
+    font-size: 30px; -unity-font-style: bold; color: rgb(255, 236, 170); padding: 6px 26px; border-radius: 22px;
+    background-color: rgba(20, 10, 40, 0.8); border-width: 2px; border-color: rgb(255, 200, 58);
+}
+.qz-bar { width: 620px; height: 14px; margin-top: 10px; border-radius: 7px; background-color: rgba(20, 10, 40, 0.8); overflow: hidden; }
+.qz-bar-fill { height: 100%; background-color: rgb(120, 220, 255); border-radius: 7px; }
+.qz-bar-fill.hurry { background-color: rgb(255, 90, 90); }
+.qz-timer { font-size: 26px; -unity-font-style: bold; color: rgb(255, 255, 255); margin-top: 2px; -unity-text-outline-width: 1.5px; -unity-text-outline-color: rgb(0, 0, 0); }
+.qz-board { position: absolute; top: 110px; right: 24px; width: 330px; padding: 14px 16px; }
+.qz-row { flex-direction: row; align-items: center; margin: 4px 0; }
+.qz-col { flex-grow: 1; }
+.qz-score-bar { height: 8px; border-radius: 4px; background-color: rgba(0, 0, 0, 0.15); margin-top: 4px; overflow: hidden; }
+.qz-score-fill { height: 100%; border-radius: 4px; }
+.qz-board .seat-name { color: rgb(91, 58, 34); font-size: 22px; }
+.qz-score { font-size: 26px; -unity-font-style: bold; margin-left: 10px; color: rgb(91, 58, 34); }
+.qz-feed { position: absolute; top: 120px; left: 24px; width: 420px; }
+.qz-feed-line {
+    font-size: 22px; -unity-font-style: bold; margin-bottom: 6px; padding: 4px 12px; border-radius: 12px;
+    background-color: rgba(15, 10, 25, 0.8); white-space: normal;
+}
+.qz-feed-line.found { background-color: rgba(20, 60, 30, 0.9); }
+.qz-bottom { position: absolute; bottom: 24px; left: 50%; translate: -50% 0; width: 820px; align-items: center; }
+.qz-status {
+    font-size: 24px; -unity-font-style: bold; color: rgb(255, 245, 220); margin-bottom: 8px; padding: 4px 18px; border-radius: 16px;
+    background-color: rgba(15, 10, 25, 0.85);
+}
+.qz-input { width: 820px; margin: 0; }
+.qz-input > .unity-text-field__input {
+    font-size: 32px; height: 64px; padding: 0 20px; border-radius: 32px; border-width: 4px; border-color: rgb(255, 200, 58);
+    background-color: rgb(255, 250, 235); color: rgb(40, 24, 10);
+}
+.qz-input:disabled > .unity-text-field__input { background-color: rgb(210, 240, 215); border-color: rgb(80, 200, 110); }
+.qz-tag {
+    position: absolute; translate: -50% -50%; align-items: center; padding: 4px 14px; border-radius: 14px;
+    background-color: rgba(15, 10, 25, 0.85); border-bottom-width: 4px;
+}
+.qz-tag-score { font-size: 20px; color: rgb(255, 222, 140); -unity-font-style: bold; }
+.qz-bubble {
+    position: absolute; translate: -50% -100%; max-width: 260px; font-size: 22px; -unity-font-style: bold; white-space: normal;
+    padding: 6px 14px; border-radius: 16px; background-color: rgb(255, 250, 235); color: rgb(160, 40, 40);
+    border-width: 3px; border-color: rgb(220, 70, 70); -unity-text-align: middle-center;
+}
+.qz-bubble.good { color: rgb(30, 120, 60); border-color: rgb(80, 200, 110); }
+.qz-reveal { position: absolute; top: 120px; left: 50%; translate: -50% 0; align-items: center; padding: 14px 40px; min-width: 520px; }
+.qz-reveal-title { font-size: 24px; color: rgb(140, 100, 70); }
+.qz-answer { font-size: 44px; -unity-font-style: bold; color: rgb(240, 138, 36); -unity-text-align: middle-center; white-space: normal; max-width: 900px; }
+.qz-credit { font-size: 18px; color: rgb(140, 100, 70); -unity-text-align: middle-center; white-space: normal; max-width: 900px; }
+
+/* Ecran des pupitres du quiz (rendu dans une texture de 360 x 288) */
+.pod {
+    background-color: rgb(20, 78, 190); border-width: 10px; border-radius: 0; align-items: center; justify-content: space-between;
+    background-image: none; padding: 10px 8px 12px 8px;
+}
+.pod-name { font-size: 44px; -unity-font-style: bold; color: rgb(255, 255, 255); margin: 0; -unity-text-align: middle-center; }
+.pod-score { font-size: 118px; -unity-font-style: bold; color: rgb(255, 255, 255); margin: -18px 0 -14px 0; -unity-text-align: middle-center; }
+.pod-band { width: 100%; height: 56px; border-radius: 28px; background-color: rgb(238, 242, 250); align-items: center; justify-content: center; }
+.pod-band.found { background-color: rgb(190, 245, 205); }
+.pod-strip { font-size: 34px; -unity-font-style: bold; margin: 0; -unity-text-align: middle-center; }

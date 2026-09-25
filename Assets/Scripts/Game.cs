@@ -22,12 +22,14 @@ public class Game : MonoBehaviour
     public Rules rules;
     public Blackjack bj;
     public Roulette rt;
-    public IMatch Match => (IMatch)rules ?? (IMatch)bj ?? rt;
+    public Quiz qz;
+    public IMatch Match => (IMatch)rules ?? (IMatch)bj ?? (IMatch)rt ?? qz;
     public bool busy;
 
     Board board;
     Table table;
     public RouletteView rview;
+    public QuizView qview;
     Hub hub;
     Ui ui;
     Camera cam;
@@ -92,6 +94,7 @@ public class Game : MonoBehaviour
         board = new GameObject("Board").AddComponent<Board>();
         table = new GameObject("Casino").AddComponent<Table>();
         hub = new GameObject("PiqueNique").AddComponent<Hub>();
+        qview = new GameObject("PlateauQuiz").AddComponent<QuizView>();
         rview = table.gameObject.AddComponent<RouletteView>();
         rview.Init(table);
         hub.SetMe(myAvatar);
@@ -123,7 +126,7 @@ public class Game : MonoBehaviour
         if (nt >= 0) ui.StartCoroutine(NetTest(args[nt + 1] == "host", (GameId)Enum.Parse(typeof(GameId), args[nt + 2]), args[nt + 3]));
     }
 
-    public static int DefaultOption(GameId g) => g == GameId.Croque ? 0 : g == GameId.Blackjack ? 10 : 20;
+    public static int DefaultOption(GameId g) => g == GameId.Croque ? 0 : g == GameId.Blackjack ? 10 : g == GameId.Roulette ? 20 : 0;
 
     public void SelectGame(GameId g)
     {
@@ -169,14 +172,16 @@ public class Game : MonoBehaviour
         while (!inGame) yield return null;
         while (applied < 30 && !Match.Finished)
         {
-            if (MyTurn && CanAct) { var a = Match.Bot(); if (a != null) Act(string.Join("|", a)); }
+            if (qz != null && qz.phase == QPhase.Guess && MyTurn && CanAct)
+                Act("guess|" + (UnityEngine.Random.value < 0.5f ? "mauvaise idee" : qz.Current.a[0]));   // quiz : propositions au hasard
+            else if (MyTurn && CanAct) { var a = Match.Bot(); if (a != null) Act(string.Join("|", a)); }
             yield return new WaitForSeconds(0.2f);
         }
         while (busy || (pending.Count > 0 && applied < 30)) yield return null;
         yield return new WaitForEndOfFrame();
         var tex = ScreenCapture.CaptureScreenshotAsTexture();
         System.IO.File.WriteAllBytes(System.IO.Path.Combine(dir, (host ? "host" : "join") + ".png"), tex.EncodeToPNG());
-        var log = rules?.log ?? bj?.log ?? rt.log;
+        var log = rules?.log ?? bj?.log ?? rt?.log ?? qz.log;
         System.IO.File.WriteAllText(System.IO.Path.Combine(dir, (host ? "host" : "join") + ".txt"),
             $"status={net.Status}\nseat={mySeat}\napplied={applied}\n" + string.Join("\n", log));
         yield return new WaitForSeconds(3);
@@ -189,6 +194,37 @@ public class Game : MonoBehaviour
         IEnumerator Shot(string n) { yield return new WaitForEndOfFrame(); var tex = ScreenCapture.CaptureScreenshotAsTexture(); System.IO.File.WriteAllBytes(System.IO.Path.Combine(dir, n + ".png"), tex.EncodeToPNG()); Destroy(tex); }
         IEnumerator Fps(string n) { int f = Time.frameCount; float t = Time.realtimeSinceStartup; yield return new WaitForSecondsRealtime(3); System.IO.File.AppendAllText(System.IO.Path.Combine(dir, "fps.txt"), $"{n}: {(Time.frameCount - f) / (Time.realtimeSinceStartup - t):0} fps" + System.Environment.NewLine); }
         yield return new WaitForSeconds(6); yield return Shot("1-titre"); yield return Fps("titre");
+        if (Array.IndexOf(Environment.GetCommandLineArgs(), "-quiz") >= 0)
+        {
+            // Partie hors ligne a 4 : on joue les propositions des autres a la main.
+            // 10 joueurs : le maximum du quiz.
+            names.Clear(); names.AddRange(new[] { "Anastasia", "Léo", "Camille", "Ana", "Hugo", "Inès", "Tom", "Lina", "Noé", "Zoé" });
+            avatars.Clear(); avatars.AddRange(new[] { "Ami_Caramel", "Ami_Brun", "Ami_Platine", "Ami_Brune", "Ami_Roux", "Casual2_Female", "Cowboy_Male", "Witch", "Ninja_Male_Hair", "Chef_Female" });
+            SelectGame(GameId.Quiz);
+            option = 2;
+            StartGame();
+            yield return new WaitForSeconds(1.5f); yield return Shot("q1-intro");
+            while (qz.phase != QPhase.Guess) yield return null;
+            yield return new WaitForSeconds(1.2f);
+            ApplyQuiz(new[] { "guess", "1", QuizElapsedMs.ToString(), "Portugal" });
+            ApplyQuiz(new[] { "guess", "2", QuizElapsedMs.ToString(), "je sais pas" });
+            yield return new WaitForSeconds(2.5f);
+            ApplyQuiz(new[] { "guess", "3", QuizElapsedMs.ToString(), qz.Current.a[0] });
+            yield return new WaitForSeconds(0.6f); yield return Shot("q2-flou-debut");
+            yield return new WaitForSeconds(6); yield return Shot("q3-milieu");
+            ApplyQuiz(new[] { "guess", "0", QuizElapsedMs.ToString(), qz.Current.a[0].ToLower() + "e" });   // faute de frappe acceptee
+            while (qz.phase != QPhase.Reveal) yield return null;
+            yield return new WaitForSeconds(0.8f); yield return Shot("q4-revelation");
+            while (qz.phase != QPhase.Guess) yield return null;
+            yield return new WaitForSeconds(3); yield return Shot("q5-image2");
+            qz.players[1].score = 96;
+            ApplyQuiz(new[] { "guess", "1", QuizElapsedMs.ToString(), qz.Current.a[0] });
+            while (!qz.Finished) yield return null;
+            yield return new WaitForSeconds(5); yield return Shot("q6-victoire");
+            yield return Fps("quiz");
+            Application.Quit();
+            yield break;
+        }
         if (Array.IndexOf(Environment.GetCommandLineArgs(), "-casinotour") >= 0)
         {
             SelectGame(GameId.Roulette);
@@ -330,7 +366,8 @@ public class Game : MonoBehaviour
     readonly Queue<string> pending = new Queue<string>();
     float waitUntil;
     public bool Online => net.Active && net.InGame;
-    public bool MyTurn => Match != null && Match.Actor >= 0 && (!Online || Match.Actor == mySeat);
+    public bool MyTurn => Match != null && (Match.Actor == Quiz.Everyone ? qz != null && !qz.players[Math.Max(0, mySeat)].found
+                                                    : Match.Actor >= 0 && (!Online || Match.Actor == mySeat));
     public bool Idle => inGame && !busy && pending.Count == 0;
     public bool CanAct => inGame && !busy && !paused && Match != null && !Match.Finished && MyTurn && pending.Count == 0 && Time.time > waitUntil;
 
@@ -354,7 +391,18 @@ public class Game : MonoBehaviour
         bj = null;
         rt = null;
         rules = null;
-        if (g == GameId.Croque)
+        qz = null;
+        if (g == GameId.Quiz)
+        {
+            qz = new Quiz(n, opt, seed, Quiz.Pool);
+            qview.Build(qz, av);
+            qview.imageUrl = null;
+            qview.Preload(qz.Next.u);
+            quizPhaseStart = Time.time;
+            ui.ShowHud();
+            ui.Say("Tenez-vous prêts !");
+        }
+        else if (g == GameId.Croque)
         {
             rules = new Rules(opt == 0 ? Mode.Classique : Mode.Ameliore, n, seed);
             board.Build(rules);
@@ -385,7 +433,7 @@ public class Game : MonoBehaviour
         }
         Casino(g != GameId.Croque);
         snapCam = true;
-        Sound.I.Music(g != GameId.Croque ? "music_blackjack" : "music_game");
+        Sound.I.Music(g == GameId.Croque ? "music_game" : g == GameId.Quiz ? "music_menu" : "music_blackjack");
     }
 
     // Ambiance : prairie ensoleillee ou salle de casino fermee aux lumieres chaudes.
@@ -401,7 +449,7 @@ public class Game : MonoBehaviour
     public void Act(string action)
     {
         if (!CanAct) return;
-        if (Online) { waitUntil = Time.time + 2; net.Act(action); return; }
+        if (Online) { if (qz == null) waitUntil = Time.time + 2; net.Act(action); return; }   // quiz : on peut enchainer les propositions
         Apply(action);
     }
 
@@ -412,13 +460,74 @@ public class Game : MonoBehaviour
 
     public void PlayerLeft(int seat)
     {
-        string n = rules?.players[seat].name ?? bj?.players[seat].name ?? rt.players[seat].name;
+        string n = rules?.players[seat].name ?? bj?.players[seat].name ?? rt?.players[seat].name ?? qz.players[seat].name;
         ui.Say($"{n} est parti : l'hôte joue pour lui.", 3.5f);
     }
+
+    // --- Quiz ------------------------------------------------------------------------------
+    float quizPhaseStart;
+    public int QuizElapsedMs => (int)((Time.time - quizPhaseStart) * 1000);
+
+    // Pilotage des phases par l'hote (ou seul hors ligne) : intro 4 s, 20 s par image (fin anticipee
+    // 1.5 s apres que tout le monde a trouve), 5 s de revelation. On attend que l'image soit arrivee.
+    public string QuizTick(Quiz q)
+    {
+        float t = Time.time - quizPhaseStart;
+        if (q.phase == QPhase.Reveal) return t > (q.round == 0 ? 4 : 5.5f) && qview.Ready(q.Next.u) ? "next" : null;
+        if (q.phase != QPhase.Guess) return null;
+        if (t * 1000 > Quiz.RoundMs) return "end";
+        if (q.AllFound && t > q.players.Max(pl => pl.foundMs) / 1000f + 1.5f) return "end";
+        return null;
+    }
+
+    void ApplyQuiz(string[] p)
+    {
+        if (p[0] == "guess" && p.Length == 2) p = new[] { "guess", Math.Max(0, mySeat).ToString(), QuizElapsedMs.ToString(), p[1] };   // hors ligne
+        if (!qz.TryApply(p)) return;
+        foreach (var e in qz.events)
+            switch (e.type)
+            {
+                case QEv.Question:
+                    quizPhaseStart = Time.time;
+                    qview.imageUrl = qz.Current.u;
+                    qview.pixelated = qz.Pixelated(qz.round);
+                    qview.reveal = 0;
+                    qview.Preload(qz.Next.u);
+                    for (int i = 0; i < qz.players.Count; i++) qview.SetFound(i, false);
+                    Sound.I.Play("open");
+                    ui.QuizQuestion();
+                    break;
+                case QEv.Found:
+                    qview.SetFound(e.seat, true);
+                    Sound.I.Play(e.seat == mySeat || !Online ? "win" : "bj_chip1");
+                    ui.QuizFound(e.seat, e.points);
+                    break;
+                case QEv.Wrong:
+                    qview.Wrong(e.seat);
+                    ui.QuizWrong(e.seat, e.text);
+                    break;
+                case QEv.Reveal:
+                    quizPhaseStart = Time.time;
+                    qview.reveal = 1;
+                    Sound.I.Play("tick");
+                    ui.QuizReveal();
+                    break;
+                case QEv.GameOver:
+                    qview.reveal = 1;
+                    var best = qz.players.Max(pl => pl.score);
+                    foreach (var pl in qz.players.Where(pl => pl.score == best)) qview.Winner(pl.seat);
+                    StartCoroutine(QuizEnd());
+                    break;
+            }
+        ui.Refresh();
+    }
+
+    IEnumerator QuizEnd() { yield return new WaitForSeconds(4); ui.ShowVictory(); }
 
     void Apply(string action)
     {
         var p = action.Split('|');
+        if (qz != null) { ApplyQuiz(p); return; }
         if (rules != null)
         {
             if (p[0] == "draw") DoDraw(); else DoMove(int.Parse(p[1]));
@@ -529,6 +638,12 @@ public class Game : MonoBehaviour
     // --- Boucle ---------------------------------------------------------------------------
     void Update()
     {
+        if (inGame && qz != null)
+        {
+            // L'image se devoile en 18 s ; seul (hors ligne), c'est ce PC qui pilote les phases.
+            if (qz.phase == QPhase.Guess) qview.reveal = Mathf.Clamp01((Time.time - quizPhaseStart) / 18f);
+            if (!Online && Idle && !paused && !qz.Finished) { var tick = QuizTick(qz); if (tick != null) Apply(tick); }
+        }
         if (inGame && !busy && pending.Count > 0 && Match != null && !Match.Finished)
         {
             waitUntil = 0;
@@ -571,6 +686,14 @@ public class Game : MonoBehaviour
         // Fenetre sans le focus (autre jeu, autre ecran) : la souris et le clavier ne sont pas pour nous.
         bool focus = Focused;
         if (tour.HasValue) { cam.transform.SetPositionAndRotation(tour.Value.position, tour.Value.rotation); return; }
+        if (inGame && qz != null)
+        {
+            var qp = qview.CamPose;
+            cam.transform.SetPositionAndRotation(qp.position, qp.rotation);
+            if (dof) dof.active = paused;
+            ui.UpdateQuiz(cam);
+            return;
+        }
         // Roulette : camera fixe a la place du joueur, plan de dessus pendant le lancer ; les mises se posent au clic sur le tapis.
         if (inGame && rt != null)
         {

@@ -1,0 +1,2427 @@
+[
+{
+"c": "drapeau",
+"u": "https://flagcdn.com/w640/ad.png",
+"a": [
+"Andorre",
+"Andorra"
+],
+"d": "Andorre",
+"id": "fc:ad"
+},
+{
+"c": "drapeau",
+"u": "https://flagcdn.com/w640/ae.png",
+"a": [
+"Émirats arabes unis",
+"United Arab Emirates"
+],
+"d": "Émirats arabes unis",
+"id": "fc:ae"
+},
+{
+"c": "drapeau",
+"u": "https://flagcdn.com/w640/af.png",
+"a": [
+"Afghanistan"
+],
+"d": "Afghanistan",
+"id": "fc:af"
+},
+{
+"c": "drapeau",
+"u": "https://flagcdn.com/w640/ag.png",
+"a": [
+"Antigua-et-Barbuda",
+"Antigua and Barbuda"
+],
+"d": "Antigua-et-Barbuda",
+"id": "fc:ag"
+},
+{
+"c": "drapeau",
+"u": "https://flagcdn.com/w640/ai.png",
+"a": [
+"Anguilla"
+],
+"d": "Anguilla",
+"id": "fc:ai"
+},
+{
+"c": "drapeau",
+"u": "https://flagcdn.com/w640/al.png",
+"a": [
+"Albanie",
+"Albania"
+],
+"d": "Albanie",
+"id": "fc:al"
+},
+{
+"c": "drapeau",
+"u": "https://flagcdn.com/w640/am.png",
+"a": [
+"Arménie",
+"Armenia"
+],
+"d": "Arménie",
+"id": "fc:am"
+},
+{
+"c": "drapeau",
+"u": "https://flagcdn.com/w640/ao.png",
+"a": [
+"Angola"
+],
+"d": "Angola",
+"id": "fc:ao"
+},
+{
+"c": "drapeau",
+"u": "https://flagcdn.com/w640/aq.png",
+"a": [
+"Antarctique",
+"Antarctica"
+],
+"d": "Antarctique",
+"id": "fc:aq"
+},
+{
+"c": "drapeau",
+"u": "https://flagcdn.com/w640/ar.png",
+"a": [
+"Argentine",
+"Argentina"
+],
+"d": "Argentine",
+"id": "fc:ar"
+},
+{
+"c": "drapeau",
+"u": "https://flagcdn.com/w640/as.png",
+"a": [
+"Samoa américaines",
+"American Samoa"
+],
+"d": "Samoa américaines",
+"id": "fc:as"
+},
+{
+"c": "drapeau",
+"u": "https://flagcdn.com/w640/at.png",
+"a": [
+"Autriche",
+"Austria"
+],
+"d": "Autriche",
+"id": "fc:at"
+},
+{
+"c": "drapeau",
+"u": "https://flagcdn.com/w640/au.png",
+"a": [
+"Australie",
+"Australia"
+],
+"d": "Australie",
+"id": "fc:au"
+},
+{
+"c": "drapeau",
+"u": "https://flagcdn.com/w640/aw.png",
+"a": [
+"Aruba"
+],
+"d": "Aruba",
+"id": "fc:aw"
+},
+{
+"c": "drapeau",
+"u": "https://flagcdn.com/w640/ax.png",
+"a": [
+"Åland",
+"Åland Islands"
+],
+"d": "Åland",
+"id": "fc:ax"
+},
+{
+"c": "drapeau",
+"u": "https://flagcdn.com/w640/az.png",
+"a": [
+"Azerbaïdjan",
+"Azerbaijan"
+],
+"d": "Azerbaïdjan",
+"id": "fc:az"
+},
+{
+"c": "drapeau",
+"u": "https://flagcdn.com/w640/ba.png",
+"a": [
+"Bosnie-Herzégovine",
+"Bosnia and Herzegovina"
+],
+"d": "Bosnie-Herzégovine",
+"id": "fc:ba"
+},
+{
+"c": "drapeau",
+"u": "https://flagcdn.com/w640/bb.png",
+"a": [
+"Barbade",
+"Barbados"
+],
+"d": "Barbade",
+"id": "fc:bb"
+},
+{
+"c": "drapeau",
+"u": "https://flagcdn.com/w640/bd.png",
+"a": [
+"Bangladesh"
+],
+"d": "Bangladesh",
+"id": "fc:bd"
+},
+{
+"c": "drapeau",
+"u": "https://flagcdn.com/w640/be.png",
+"a": [
+"Belgique",
+"Belgium"
+],
+"d": "Belgique",
+"id": "fc:be"
+},
+{
+"c": "drapeau",
+"u": "https://flagcdn.com/w640/bf.png",
+"a": [
+"Burkina Faso"
+],
+"d": "Burkina Faso",
+"id": "fc:bf"
+},
+{
+"c": "drapeau",
+"u": "https://flagcdn.com/w640/bg.png",
+"a": [
+"Bulgarie",
+"Bulgaria"
+],
+"d": "Bulgarie",
+"id": "fc:bg"
+},
+{
+"c": "drapeau",
+"u": "https://flagcdn.com/w640/bh.png",
+"a": [
+"Bahreïn",
+"Bahrain"
+],
+"d": "Bahreïn",
+"id": "fc:bh"
+},
+{
+"c": "drapeau",
+"u": "https://flagcdn.com/w640/bi.png",
+"a": [
+"Burundi"
+],
+"d": "Burundi",
+"id": "fc:bi"
+},
+{
+"c": "drapeau",
+"u": "https://flagcdn.com/w640/bj.png",
+"a": [
+"Bénin",
+"Benin"
+],
+"d": "Bénin",
+"id": "fc:bj"
+},
+{
+"c": "drapeau",
+"u": "https://flagcdn.com/w640/bl.png",
+"a": [
+"Saint-Barthélemy",
+"Saint Barthélemy"
+],
+"d": "Saint-Barthélemy",
+"id": "fc:bl"
+},
+{
+"c": "drapeau",
+"u": "https://flagcdn.com/w640/bm.png",
+"a": [
+"Bermudes",
+"Bermuda"
+],
+"d": "Bermudes",
+"id": "fc:bm"
+},
+{
+"c": "drapeau",
+"u": "https://flagcdn.com/w640/bn.png",
+"a": [
+"Brunei"
+],
+"d": "Brunei",
+"id": "fc:bn"
+},
+{
+"c": "drapeau",
+"u": "https://flagcdn.com/w640/bo.png",
+"a": [
+"Bolivie",
+"Bolivia"
+],
+"d": "Bolivie",
+"id": "fc:bo"
+},
+{
+"c": "drapeau",
+"u": "https://flagcdn.com/w640/bq.png",
+"a": [
+"Pays-Bas caribéens",
+"Caribbean Netherlands"
+],
+"d": "Pays-Bas caribéens",
+"id": "fc:bq"
+},
+{
+"c": "drapeau",
+"u": "https://flagcdn.com/w640/br.png",
+"a": [
+"Brésil",
+"Brazil"
+],
+"d": "Brésil",
+"id": "fc:br"
+},
+{
+"c": "drapeau",
+"u": "https://flagcdn.com/w640/bs.png",
+"a": [
+"Bahamas"
+],
+"d": "Bahamas",
+"id": "fc:bs"
+},
+{
+"c": "drapeau",
+"u": "https://flagcdn.com/w640/bt.png",
+"a": [
+"Bhoutan",
+"Bhutan"
+],
+"d": "Bhoutan",
+"id": "fc:bt"
+},
+{
+"c": "drapeau",
+"u": "https://flagcdn.com/w640/bv.png",
+"a": [
+"Île Bouvet",
+"Bouvet Island"
+],
+"d": "Île Bouvet",
+"id": "fc:bv"
+},
+{
+"c": "drapeau",
+"u": "https://flagcdn.com/w640/bw.png",
+"a": [
+"Botswana"
+],
+"d": "Botswana",
+"id": "fc:bw"
+},
+{
+"c": "drapeau",
+"u": "https://flagcdn.com/w640/by.png",
+"a": [
+"Biélorussie",
+"Belarus"
+],
+"d": "Biélorussie",
+"id": "fc:by"
+},
+{
+"c": "drapeau",
+"u": "https://flagcdn.com/w640/bz.png",
+"a": [
+"Belize"
+],
+"d": "Belize",
+"id": "fc:bz"
+},
+{
+"c": "drapeau",
+"u": "https://flagcdn.com/w640/ca.png",
+"a": [
+"Canada"
+],
+"d": "Canada",
+"id": "fc:ca"
+},
+{
+"c": "drapeau",
+"u": "https://flagcdn.com/w640/cc.png",
+"a": [
+"Îles Cocos",
+"Cocos (Keeling) Islands"
+],
+"d": "Îles Cocos",
+"id": "fc:cc"
+},
+{
+"c": "drapeau",
+"u": "https://flagcdn.com/w640/cd.png",
+"a": [
+"Congo (Rép. dém.)",
+"DR Congo"
+],
+"d": "Congo (Rép. dém.)",
+"id": "fc:cd"
+},
+{
+"c": "drapeau",
+"u": "https://flagcdn.com/w640/cf.png",
+"a": [
+"République centrafricaine",
+"Central African Republic"
+],
+"d": "République centrafricaine",
+"id": "fc:cf"
+},
+{
+"c": "drapeau",
+"u": "https://flagcdn.com/w640/cg.png",
+"a": [
+"Congo",
+"Republic of the Congo"
+],
+"d": "Congo",
+"id": "fc:cg"
+},
+{
+"c": "drapeau",
+"u": "https://flagcdn.com/w640/ch.png",
+"a": [
+"Suisse",
+"Switzerland"
+],
+"d": "Suisse",
+"id": "fc:ch"
+},
+{
+"c": "drapeau",
+"u": "https://flagcdn.com/w640/ci.png",
+"a": [
+"Côte d'Ivoire",
+"Côte d'Ivoire (Ivory Coast)"
+],
+"d": "Côte d'Ivoire",
+"id": "fc:ci"
+},
+{
+"c": "drapeau",
+"u": "https://flagcdn.com/w640/ck.png",
+"a": [
+"Îles Cook",
+"Cook Islands"
+],
+"d": "Îles Cook",
+"id": "fc:ck"
+},
+{
+"c": "drapeau",
+"u": "https://flagcdn.com/w640/cl.png",
+"a": [
+"Chili",
+"Chile"
+],
+"d": "Chili",
+"id": "fc:cl"
+},
+{
+"c": "drapeau",
+"u": "https://flagcdn.com/w640/cm.png",
+"a": [
+"Cameroun",
+"Cameroon"
+],
+"d": "Cameroun",
+"id": "fc:cm"
+},
+{
+"c": "drapeau",
+"u": "https://flagcdn.com/w640/cn.png",
+"a": [
+"Chine",
+"China"
+],
+"d": "Chine",
+"id": "fc:cn"
+},
+{
+"c": "drapeau",
+"u": "https://flagcdn.com/w640/co.png",
+"a": [
+"Colombie",
+"Colombia"
+],
+"d": "Colombie",
+"id": "fc:co"
+},
+{
+"c": "drapeau",
+"u": "https://flagcdn.com/w640/cr.png",
+"a": [
+"Costa Rica"
+],
+"d": "Costa Rica",
+"id": "fc:cr"
+},
+{
+"c": "drapeau",
+"u": "https://flagcdn.com/w640/cu.png",
+"a": [
+"Cuba"
+],
+"d": "Cuba",
+"id": "fc:cu"
+},
+{
+"c": "drapeau",
+"u": "https://flagcdn.com/w640/cv.png",
+"a": [
+"Cap-Vert",
+"Cape Verde"
+],
+"d": "Cap-Vert",
+"id": "fc:cv"
+},
+{
+"c": "drapeau",
+"u": "https://flagcdn.com/w640/cw.png",
+"a": [
+"Curaçao"
+],
+"d": "Curaçao",
+"id": "fc:cw"
+},
+{
+"c": "drapeau",
+"u": "https://flagcdn.com/w640/cx.png",
+"a": [
+"Île Christmas",
+"Christmas Island"
+],
+"d": "Île Christmas",
+"id": "fc:cx"
+},
+{
+"c": "drapeau",
+"u": "https://flagcdn.com/w640/cy.png",
+"a": [
+"Chypre",
+"Cyprus"
+],
+"d": "Chypre",
+"id": "fc:cy"
+},
+{
+"c": "drapeau",
+"u": "https://flagcdn.com/w640/cz.png",
+"a": [
+"Tchéquie",
+"Czechia"
+],
+"d": "Tchéquie",
+"id": "fc:cz"
+},
+{
+"c": "drapeau",
+"u": "https://flagcdn.com/w640/de.png",
+"a": [
+"Allemagne",
+"Germany"
+],
+"d": "Allemagne",
+"id": "fc:de"
+},
+{
+"c": "drapeau",
+"u": "https://flagcdn.com/w640/dj.png",
+"a": [
+"Djibouti"
+],
+"d": "Djibouti",
+"id": "fc:dj"
+},
+{
+"c": "drapeau",
+"u": "https://flagcdn.com/w640/dk.png",
+"a": [
+"Danemark",
+"Denmark"
+],
+"d": "Danemark",
+"id": "fc:dk"
+},
+{
+"c": "drapeau",
+"u": "https://flagcdn.com/w640/dm.png",
+"a": [
+"Dominique",
+"Dominica"
+],
+"d": "Dominique",
+"id": "fc:dm"
+},
+{
+"c": "drapeau",
+"u": "https://flagcdn.com/w640/do.png",
+"a": [
+"République dominicaine",
+"Dominican Republic"
+],
+"d": "République dominicaine",
+"id": "fc:do"
+},
+{
+"c": "drapeau",
+"u": "https://flagcdn.com/w640/dz.png",
+"a": [
+"Algérie",
+"Algeria"
+],
+"d": "Algérie",
+"id": "fc:dz"
+},
+{
+"c": "drapeau",
+"u": "https://flagcdn.com/w640/ec.png",
+"a": [
+"Équateur",
+"Ecuador"
+],
+"d": "Équateur",
+"id": "fc:ec"
+},
+{
+"c": "drapeau",
+"u": "https://flagcdn.com/w640/ee.png",
+"a": [
+"Estonie",
+"Estonia"
+],
+"d": "Estonie",
+"id": "fc:ee"
+},
+{
+"c": "drapeau",
+"u": "https://flagcdn.com/w640/eg.png",
+"a": [
+"Égypte",
+"Egypt"
+],
+"d": "Égypte",
+"id": "fc:eg"
+},
+{
+"c": "drapeau",
+"u": "https://flagcdn.com/w640/eh.png",
+"a": [
+"Sahara Occidental",
+"Western Sahara"
+],
+"d": "Sahara Occidental",
+"id": "fc:eh"
+},
+{
+"c": "drapeau",
+"u": "https://flagcdn.com/w640/er.png",
+"a": [
+"Érythrée",
+"Eritrea"
+],
+"d": "Érythrée",
+"id": "fc:er"
+},
+{
+"c": "drapeau",
+"u": "https://flagcdn.com/w640/es.png",
+"a": [
+"Espagne",
+"Spain"
+],
+"d": "Espagne",
+"id": "fc:es"
+},
+{
+"c": "drapeau",
+"u": "https://flagcdn.com/w640/et.png",
+"a": [
+"Éthiopie",
+"Ethiopia"
+],
+"d": "Éthiopie",
+"id": "fc:et"
+},
+{
+"c": "drapeau",
+"u": "https://flagcdn.com/w640/fi.png",
+"a": [
+"Finlande",
+"Finland"
+],
+"d": "Finlande",
+"id": "fc:fi"
+},
+{
+"c": "drapeau",
+"u": "https://flagcdn.com/w640/fj.png",
+"a": [
+"Fidji",
+"Fiji"
+],
+"d": "Fidji",
+"id": "fc:fj"
+},
+{
+"c": "drapeau",
+"u": "https://flagcdn.com/w640/fk.png",
+"a": [
+"Îles Malouines",
+"Falkland Islands"
+],
+"d": "Îles Malouines",
+"id": "fc:fk"
+},
+{
+"c": "drapeau",
+"u": "https://flagcdn.com/w640/fm.png",
+"a": [
+"Micronésie",
+"Micronesia"
+],
+"d": "Micronésie",
+"id": "fc:fm"
+},
+{
+"c": "drapeau",
+"u": "https://flagcdn.com/w640/fo.png",
+"a": [
+"Îles Féroé",
+"Faroe Islands"
+],
+"d": "Îles Féroé",
+"id": "fc:fo"
+},
+{
+"c": "drapeau",
+"u": "https://flagcdn.com/w640/fr.png",
+"a": [
+"France"
+],
+"d": "France",
+"id": "fc:fr"
+},
+{
+"c": "drapeau",
+"u": "https://flagcdn.com/w640/ga.png",
+"a": [
+"Gabon"
+],
+"d": "Gabon",
+"id": "fc:ga"
+},
+{
+"c": "drapeau",
+"u": "https://flagcdn.com/w640/gb.png",
+"a": [
+"Royaume-Uni",
+"United Kingdom"
+],
+"d": "Royaume-Uni",
+"id": "fc:gb"
+},
+{
+"c": "drapeau",
+"u": "https://flagcdn.com/w640/gd.png",
+"a": [
+"Grenade",
+"Grenada"
+],
+"d": "Grenade",
+"id": "fc:gd"
+},
+{
+"c": "drapeau",
+"u": "https://flagcdn.com/w640/ge.png",
+"a": [
+"Géorgie",
+"Georgia"
+],
+"d": "Géorgie",
+"id": "fc:ge"
+},
+{
+"c": "drapeau",
+"u": "https://flagcdn.com/w640/gf.png",
+"a": [
+"Guyane",
+"French Guiana"
+],
+"d": "Guyane",
+"id": "fc:gf"
+},
+{
+"c": "drapeau",
+"u": "https://flagcdn.com/w640/gg.png",
+"a": [
+"Guernesey",
+"Guernsey"
+],
+"d": "Guernesey",
+"id": "fc:gg"
+},
+{
+"c": "drapeau",
+"u": "https://flagcdn.com/w640/gh.png",
+"a": [
+"Ghana"
+],
+"d": "Ghana",
+"id": "fc:gh"
+},
+{
+"c": "drapeau",
+"u": "https://flagcdn.com/w640/gi.png",
+"a": [
+"Gibraltar"
+],
+"d": "Gibraltar",
+"id": "fc:gi"
+},
+{
+"c": "drapeau",
+"u": "https://flagcdn.com/w640/gl.png",
+"a": [
+"Groenland",
+"Greenland"
+],
+"d": "Groenland",
+"id": "fc:gl"
+},
+{
+"c": "drapeau",
+"u": "https://flagcdn.com/w640/gm.png",
+"a": [
+"Gambie",
+"Gambia"
+],
+"d": "Gambie",
+"id": "fc:gm"
+},
+{
+"c": "drapeau",
+"u": "https://flagcdn.com/w640/gn.png",
+"a": [
+"Guinée",
+"Guinea"
+],
+"d": "Guinée",
+"id": "fc:gn"
+},
+{
+"c": "drapeau",
+"u": "https://flagcdn.com/w640/gp.png",
+"a": [
+"Guadeloupe"
+],
+"d": "Guadeloupe",
+"id": "fc:gp"
+},
+{
+"c": "drapeau",
+"u": "https://flagcdn.com/w640/gq.png",
+"a": [
+"Guinée équatoriale",
+"Equatorial Guinea"
+],
+"d": "Guinée équatoriale",
+"id": "fc:gq"
+},
+{
+"c": "drapeau",
+"u": "https://flagcdn.com/w640/gr.png",
+"a": [
+"Grèce",
+"Greece"
+],
+"d": "Grèce",
+"id": "fc:gr"
+},
+{
+"c": "drapeau",
+"u": "https://flagcdn.com/w640/gs.png",
+"a": [
+"Géorgie du Sud-et-les Îles Sandwich du Sud",
+"South Georgia"
+],
+"d": "Géorgie du Sud-et-les Îles Sandwich du Sud",
+"id": "fc:gs"
+},
+{
+"c": "drapeau",
+"u": "https://flagcdn.com/w640/gt.png",
+"a": [
+"Guatemala"
+],
+"d": "Guatemala",
+"id": "fc:gt"
+},
+{
+"c": "drapeau",
+"u": "https://flagcdn.com/w640/gu.png",
+"a": [
+"Guam"
+],
+"d": "Guam",
+"id": "fc:gu"
+},
+{
+"c": "drapeau",
+"u": "https://flagcdn.com/w640/gw.png",
+"a": [
+"Guinée-Bissau",
+"Guinea-Bissau"
+],
+"d": "Guinée-Bissau",
+"id": "fc:gw"
+},
+{
+"c": "drapeau",
+"u": "https://flagcdn.com/w640/gy.png",
+"a": [
+"Guyana"
+],
+"d": "Guyana",
+"id": "fc:gy"
+},
+{
+"c": "drapeau",
+"u": "https://flagcdn.com/w640/hk.png",
+"a": [
+"Hong Kong"
+],
+"d": "Hong Kong",
+"id": "fc:hk"
+},
+{
+"c": "drapeau",
+"u": "https://flagcdn.com/w640/hm.png",
+"a": [
+"Îles Heard-et-MacDonald",
+"Heard Island and McDonald Islands"
+],
+"d": "Îles Heard-et-MacDonald",
+"id": "fc:hm"
+},
+{
+"c": "drapeau",
+"u": "https://flagcdn.com/w640/hn.png",
+"a": [
+"Honduras"
+],
+"d": "Honduras",
+"id": "fc:hn"
+},
+{
+"c": "drapeau",
+"u": "https://flagcdn.com/w640/hr.png",
+"a": [
+"Croatie",
+"Croatia"
+],
+"d": "Croatie",
+"id": "fc:hr"
+},
+{
+"c": "drapeau",
+"u": "https://flagcdn.com/w640/ht.png",
+"a": [
+"Haïti",
+"Haiti"
+],
+"d": "Haïti",
+"id": "fc:ht"
+},
+{
+"c": "drapeau",
+"u": "https://flagcdn.com/w640/hu.png",
+"a": [
+"Hongrie",
+"Hungary"
+],
+"d": "Hongrie",
+"id": "fc:hu"
+},
+{
+"c": "drapeau",
+"u": "https://flagcdn.com/w640/id.png",
+"a": [
+"Indonésie",
+"Indonesia"
+],
+"d": "Indonésie",
+"id": "fc:id"
+},
+{
+"c": "drapeau",
+"u": "https://flagcdn.com/w640/ie.png",
+"a": [
+"Irlande",
+"Ireland"
+],
+"d": "Irlande",
+"id": "fc:ie"
+},
+{
+"c": "drapeau",
+"u": "https://flagcdn.com/w640/il.png",
+"a": [
+"Israël",
+"Israel"
+],
+"d": "Israël",
+"id": "fc:il"
+},
+{
+"c": "drapeau",
+"u": "https://flagcdn.com/w640/im.png",
+"a": [
+"Île de Man",
+"Isle of Man"
+],
+"d": "Île de Man",
+"id": "fc:im"
+},
+{
+"c": "drapeau",
+"u": "https://flagcdn.com/w640/in.png",
+"a": [
+"Inde",
+"India"
+],
+"d": "Inde",
+"id": "fc:in"
+},
+{
+"c": "drapeau",
+"u": "https://flagcdn.com/w640/io.png",
+"a": [
+"Territoire britannique de l'océan Indien",
+"British Indian Ocean Territory"
+],
+"d": "Territoire britannique de l'océan Indien",
+"id": "fc:io"
+},
+{
+"c": "drapeau",
+"u": "https://flagcdn.com/w640/iq.png",
+"a": [
+"Irak",
+"Iraq"
+],
+"d": "Irak",
+"id": "fc:iq"
+},
+{
+"c": "drapeau",
+"u": "https://flagcdn.com/w640/ir.png",
+"a": [
+"Iran"
+],
+"d": "Iran",
+"id": "fc:ir"
+},
+{
+"c": "drapeau",
+"u": "https://flagcdn.com/w640/is.png",
+"a": [
+"Islande",
+"Iceland"
+],
+"d": "Islande",
+"id": "fc:is"
+},
+{
+"c": "drapeau",
+"u": "https://flagcdn.com/w640/it.png",
+"a": [
+"Italie",
+"Italy"
+],
+"d": "Italie",
+"id": "fc:it"
+},
+{
+"c": "drapeau",
+"u": "https://flagcdn.com/w640/je.png",
+"a": [
+"Jersey"
+],
+"d": "Jersey",
+"id": "fc:je"
+},
+{
+"c": "drapeau",
+"u": "https://flagcdn.com/w640/jm.png",
+"a": [
+"Jamaïque",
+"Jamaica"
+],
+"d": "Jamaïque",
+"id": "fc:jm"
+},
+{
+"c": "drapeau",
+"u": "https://flagcdn.com/w640/jo.png",
+"a": [
+"Jordanie",
+"Jordan"
+],
+"d": "Jordanie",
+"id": "fc:jo"
+},
+{
+"c": "drapeau",
+"u": "https://flagcdn.com/w640/jp.png",
+"a": [
+"Japon",
+"Japan"
+],
+"d": "Japon",
+"id": "fc:jp"
+},
+{
+"c": "drapeau",
+"u": "https://flagcdn.com/w640/ke.png",
+"a": [
+"Kenya"
+],
+"d": "Kenya",
+"id": "fc:ke"
+},
+{
+"c": "drapeau",
+"u": "https://flagcdn.com/w640/kg.png",
+"a": [
+"Kirghizistan",
+"Kyrgyzstan"
+],
+"d": "Kirghizistan",
+"id": "fc:kg"
+},
+{
+"c": "drapeau",
+"u": "https://flagcdn.com/w640/kh.png",
+"a": [
+"Cambodge",
+"Cambodia"
+],
+"d": "Cambodge",
+"id": "fc:kh"
+},
+{
+"c": "drapeau",
+"u": "https://flagcdn.com/w640/ki.png",
+"a": [
+"Kiribati"
+],
+"d": "Kiribati",
+"id": "fc:ki"
+},
+{
+"c": "drapeau",
+"u": "https://flagcdn.com/w640/km.png",
+"a": [
+"Comores",
+"Comoros"
+],
+"d": "Comores",
+"id": "fc:km"
+},
+{
+"c": "drapeau",
+"u": "https://flagcdn.com/w640/kn.png",
+"a": [
+"Saint-Christophe-et-Niévès",
+"Saint Kitts and Nevis"
+],
+"d": "Saint-Christophe-et-Niévès",
+"id": "fc:kn"
+},
+{
+"c": "drapeau",
+"u": "https://flagcdn.com/w640/kp.png",
+"a": [
+"Corée du Nord",
+"North Korea"
+],
+"d": "Corée du Nord",
+"id": "fc:kp"
+},
+{
+"c": "drapeau",
+"u": "https://flagcdn.com/w640/kr.png",
+"a": [
+"Corée du Sud",
+"South Korea"
+],
+"d": "Corée du Sud",
+"id": "fc:kr"
+},
+{
+"c": "drapeau",
+"u": "https://flagcdn.com/w640/kw.png",
+"a": [
+"Koweït",
+"Kuwait"
+],
+"d": "Koweït",
+"id": "fc:kw"
+},
+{
+"c": "drapeau",
+"u": "https://flagcdn.com/w640/ky.png",
+"a": [
+"Îles Caïmans",
+"Cayman Islands"
+],
+"d": "Îles Caïmans",
+"id": "fc:ky"
+},
+{
+"c": "drapeau",
+"u": "https://flagcdn.com/w640/kz.png",
+"a": [
+"Kazakhstan"
+],
+"d": "Kazakhstan",
+"id": "fc:kz"
+},
+{
+"c": "drapeau",
+"u": "https://flagcdn.com/w640/la.png",
+"a": [
+"Laos"
+],
+"d": "Laos",
+"id": "fc:la"
+},
+{
+"c": "drapeau",
+"u": "https://flagcdn.com/w640/lb.png",
+"a": [
+"Liban",
+"Lebanon"
+],
+"d": "Liban",
+"id": "fc:lb"
+},
+{
+"c": "drapeau",
+"u": "https://flagcdn.com/w640/lc.png",
+"a": [
+"Sainte-Lucie",
+"Saint Lucia"
+],
+"d": "Sainte-Lucie",
+"id": "fc:lc"
+},
+{
+"c": "drapeau",
+"u": "https://flagcdn.com/w640/li.png",
+"a": [
+"Liechtenstein"
+],
+"d": "Liechtenstein",
+"id": "fc:li"
+},
+{
+"c": "drapeau",
+"u": "https://flagcdn.com/w640/lk.png",
+"a": [
+"Sri Lanka"
+],
+"d": "Sri Lanka",
+"id": "fc:lk"
+},
+{
+"c": "drapeau",
+"u": "https://flagcdn.com/w640/lr.png",
+"a": [
+"Liberia"
+],
+"d": "Liberia",
+"id": "fc:lr"
+},
+{
+"c": "drapeau",
+"u": "https://flagcdn.com/w640/ls.png",
+"a": [
+"Lesotho"
+],
+"d": "Lesotho",
+"id": "fc:ls"
+},
+{
+"c": "drapeau",
+"u": "https://flagcdn.com/w640/lt.png",
+"a": [
+"Lituanie",
+"Lithuania"
+],
+"d": "Lituanie",
+"id": "fc:lt"
+},
+{
+"c": "drapeau",
+"u": "https://flagcdn.com/w640/lu.png",
+"a": [
+"Luxembourg"
+],
+"d": "Luxembourg",
+"id": "fc:lu"
+},
+{
+"c": "drapeau",
+"u": "https://flagcdn.com/w640/lv.png",
+"a": [
+"Lettonie",
+"Latvia"
+],
+"d": "Lettonie",
+"id": "fc:lv"
+},
+{
+"c": "drapeau",
+"u": "https://flagcdn.com/w640/ly.png",
+"a": [
+"Libye",
+"Libya"
+],
+"d": "Libye",
+"id": "fc:ly"
+},
+{
+"c": "drapeau",
+"u": "https://flagcdn.com/w640/ma.png",
+"a": [
+"Maroc",
+"Morocco"
+],
+"d": "Maroc",
+"id": "fc:ma"
+},
+{
+"c": "drapeau",
+"u": "https://flagcdn.com/w640/mc.png",
+"a": [
+"Monaco"
+],
+"d": "Monaco",
+"id": "fc:mc"
+},
+{
+"c": "drapeau",
+"u": "https://flagcdn.com/w640/md.png",
+"a": [
+"Moldavie",
+"Moldova"
+],
+"d": "Moldavie",
+"id": "fc:md"
+},
+{
+"c": "drapeau",
+"u": "https://flagcdn.com/w640/me.png",
+"a": [
+"Monténégro",
+"Montenegro"
+],
+"d": "Monténégro",
+"id": "fc:me"
+},
+{
+"c": "drapeau",
+"u": "https://flagcdn.com/w640/mf.png",
+"a": [
+"Saint-Martin (Antilles françaises)",
+"Saint Martin"
+],
+"d": "Saint-Martin (Antilles françaises)",
+"id": "fc:mf"
+},
+{
+"c": "drapeau",
+"u": "https://flagcdn.com/w640/mg.png",
+"a": [
+"Madagascar"
+],
+"d": "Madagascar",
+"id": "fc:mg"
+},
+{
+"c": "drapeau",
+"u": "https://flagcdn.com/w640/mh.png",
+"a": [
+"Îles Marshall",
+"Marshall Islands"
+],
+"d": "Îles Marshall",
+"id": "fc:mh"
+},
+{
+"c": "drapeau",
+"u": "https://flagcdn.com/w640/mk.png",
+"a": [
+"Macédoine du Nord",
+"North Macedonia"
+],
+"d": "Macédoine du Nord",
+"id": "fc:mk"
+},
+{
+"c": "drapeau",
+"u": "https://flagcdn.com/w640/ml.png",
+"a": [
+"Mali"
+],
+"d": "Mali",
+"id": "fc:ml"
+},
+{
+"c": "drapeau",
+"u": "https://flagcdn.com/w640/mm.png",
+"a": [
+"Birmanie",
+"Myanmar"
+],
+"d": "Birmanie",
+"id": "fc:mm"
+},
+{
+"c": "drapeau",
+"u": "https://flagcdn.com/w640/mn.png",
+"a": [
+"Mongolie",
+"Mongolia"
+],
+"d": "Mongolie",
+"id": "fc:mn"
+},
+{
+"c": "drapeau",
+"u": "https://flagcdn.com/w640/mo.png",
+"a": [
+"Macao",
+"Macau"
+],
+"d": "Macao",
+"id": "fc:mo"
+},
+{
+"c": "drapeau",
+"u": "https://flagcdn.com/w640/mp.png",
+"a": [
+"Îles Mariannes du Nord",
+"Northern Mariana Islands"
+],
+"d": "Îles Mariannes du Nord",
+"id": "fc:mp"
+},
+{
+"c": "drapeau",
+"u": "https://flagcdn.com/w640/mq.png",
+"a": [
+"Martinique"
+],
+"d": "Martinique",
+"id": "fc:mq"
+},
+{
+"c": "drapeau",
+"u": "https://flagcdn.com/w640/mr.png",
+"a": [
+"Mauritanie",
+"Mauritania"
+],
+"d": "Mauritanie",
+"id": "fc:mr"
+},
+{
+"c": "drapeau",
+"u": "https://flagcdn.com/w640/ms.png",
+"a": [
+"Montserrat"
+],
+"d": "Montserrat",
+"id": "fc:ms"
+},
+{
+"c": "drapeau",
+"u": "https://flagcdn.com/w640/mt.png",
+"a": [
+"Malte",
+"Malta"
+],
+"d": "Malte",
+"id": "fc:mt"
+},
+{
+"c": "drapeau",
+"u": "https://flagcdn.com/w640/mu.png",
+"a": [
+"Maurice",
+"Mauritius"
+],
+"d": "Maurice",
+"id": "fc:mu"
+},
+{
+"c": "drapeau",
+"u": "https://flagcdn.com/w640/mv.png",
+"a": [
+"Maldives"
+],
+"d": "Maldives",
+"id": "fc:mv"
+},
+{
+"c": "drapeau",
+"u": "https://flagcdn.com/w640/mw.png",
+"a": [
+"Malawi"
+],
+"d": "Malawi",
+"id": "fc:mw"
+},
+{
+"c": "drapeau",
+"u": "https://flagcdn.com/w640/mx.png",
+"a": [
+"Mexique",
+"Mexico"
+],
+"d": "Mexique",
+"id": "fc:mx"
+},
+{
+"c": "drapeau",
+"u": "https://flagcdn.com/w640/my.png",
+"a": [
+"Malaisie",
+"Malaysia"
+],
+"d": "Malaisie",
+"id": "fc:my"
+},
+{
+"c": "drapeau",
+"u": "https://flagcdn.com/w640/mz.png",
+"a": [
+"Mozambique"
+],
+"d": "Mozambique",
+"id": "fc:mz"
+},
+{
+"c": "drapeau",
+"u": "https://flagcdn.com/w640/na.png",
+"a": [
+"Namibie",
+"Namibia"
+],
+"d": "Namibie",
+"id": "fc:na"
+},
+{
+"c": "drapeau",
+"u": "https://flagcdn.com/w640/nc.png",
+"a": [
+"Nouvelle-Calédonie",
+"New Caledonia"
+],
+"d": "Nouvelle-Calédonie",
+"id": "fc:nc"
+},
+{
+"c": "drapeau",
+"u": "https://flagcdn.com/w640/ne.png",
+"a": [
+"Niger"
+],
+"d": "Niger",
+"id": "fc:ne"
+},
+{
+"c": "drapeau",
+"u": "https://flagcdn.com/w640/nf.png",
+"a": [
+"Île Norfolk",
+"Norfolk Island"
+],
+"d": "Île Norfolk",
+"id": "fc:nf"
+},
+{
+"c": "drapeau",
+"u": "https://flagcdn.com/w640/ng.png",
+"a": [
+"Nigeria"
+],
+"d": "Nigeria",
+"id": "fc:ng"
+},
+{
+"c": "drapeau",
+"u": "https://flagcdn.com/w640/ni.png",
+"a": [
+"Nicaragua"
+],
+"d": "Nicaragua",
+"id": "fc:ni"
+},
+{
+"c": "drapeau",
+"u": "https://flagcdn.com/w640/nl.png",
+"a": [
+"Pays-Bas",
+"Netherlands"
+],
+"d": "Pays-Bas",
+"id": "fc:nl"
+},
+{
+"c": "drapeau",
+"u": "https://flagcdn.com/w640/no.png",
+"a": [
+"Norvège",
+"Norway"
+],
+"d": "Norvège",
+"id": "fc:no"
+},
+{
+"c": "drapeau",
+"u": "https://flagcdn.com/w640/np.png",
+"a": [
+"Népal",
+"Nepal"
+],
+"d": "Népal",
+"id": "fc:np"
+},
+{
+"c": "drapeau",
+"u": "https://flagcdn.com/w640/nr.png",
+"a": [
+"Nauru"
+],
+"d": "Nauru",
+"id": "fc:nr"
+},
+{
+"c": "drapeau",
+"u": "https://flagcdn.com/w640/nu.png",
+"a": [
+"Niue"
+],
+"d": "Niue",
+"id": "fc:nu"
+},
+{
+"c": "drapeau",
+"u": "https://flagcdn.com/w640/nz.png",
+"a": [
+"Nouvelle-Zélande",
+"New Zealand"
+],
+"d": "Nouvelle-Zélande",
+"id": "fc:nz"
+},
+{
+"c": "drapeau",
+"u": "https://flagcdn.com/w640/om.png",
+"a": [
+"Oman"
+],
+"d": "Oman",
+"id": "fc:om"
+},
+{
+"c": "drapeau",
+"u": "https://flagcdn.com/w640/pa.png",
+"a": [
+"Panama"
+],
+"d": "Panama",
+"id": "fc:pa"
+},
+{
+"c": "drapeau",
+"u": "https://flagcdn.com/w640/pe.png",
+"a": [
+"Pérou",
+"Peru"
+],
+"d": "Pérou",
+"id": "fc:pe"
+},
+{
+"c": "drapeau",
+"u": "https://flagcdn.com/w640/pf.png",
+"a": [
+"Polynésie française",
+"French Polynesia"
+],
+"d": "Polynésie française",
+"id": "fc:pf"
+},
+{
+"c": "drapeau",
+"u": "https://flagcdn.com/w640/pg.png",
+"a": [
+"Papouasie-Nouvelle-Guinée",
+"Papua New Guinea"
+],
+"d": "Papouasie-Nouvelle-Guinée",
+"id": "fc:pg"
+},
+{
+"c": "drapeau",
+"u": "https://flagcdn.com/w640/ph.png",
+"a": [
+"Philippines"
+],
+"d": "Philippines",
+"id": "fc:ph"
+},
+{
+"c": "drapeau",
+"u": "https://flagcdn.com/w640/pk.png",
+"a": [
+"Pakistan"
+],
+"d": "Pakistan",
+"id": "fc:pk"
+},
+{
+"c": "drapeau",
+"u": "https://flagcdn.com/w640/pl.png",
+"a": [
+"Pologne",
+"Poland"
+],
+"d": "Pologne",
+"id": "fc:pl"
+},
+{
+"c": "drapeau",
+"u": "https://flagcdn.com/w640/pm.png",
+"a": [
+"Saint-Pierre-et-Miquelon",
+"Saint Pierre and Miquelon"
+],
+"d": "Saint-Pierre-et-Miquelon",
+"id": "fc:pm"
+},
+{
+"c": "drapeau",
+"u": "https://flagcdn.com/w640/pn.png",
+"a": [
+"Îles Pitcairn",
+"Pitcairn Islands"
+],
+"d": "Îles Pitcairn",
+"id": "fc:pn"
+},
+{
+"c": "drapeau",
+"u": "https://flagcdn.com/w640/pr.png",
+"a": [
+"Porto Rico",
+"Puerto Rico"
+],
+"d": "Porto Rico",
+"id": "fc:pr"
+},
+{
+"c": "drapeau",
+"u": "https://flagcdn.com/w640/ps.png",
+"a": [
+"Palestine"
+],
+"d": "Palestine",
+"id": "fc:ps"
+},
+{
+"c": "drapeau",
+"u": "https://flagcdn.com/w640/pt.png",
+"a": [
+"Portugal"
+],
+"d": "Portugal",
+"id": "fc:pt"
+},
+{
+"c": "drapeau",
+"u": "https://flagcdn.com/w640/pw.png",
+"a": [
+"Palaos",
+"Palau"
+],
+"d": "Palaos",
+"id": "fc:pw"
+},
+{
+"c": "drapeau",
+"u": "https://flagcdn.com/w640/py.png",
+"a": [
+"Paraguay"
+],
+"d": "Paraguay",
+"id": "fc:py"
+},
+{
+"c": "drapeau",
+"u": "https://flagcdn.com/w640/qa.png",
+"a": [
+"Qatar"
+],
+"d": "Qatar",
+"id": "fc:qa"
+},
+{
+"c": "drapeau",
+"u": "https://flagcdn.com/w640/re.png",
+"a": [
+"Réunion"
+],
+"d": "Réunion",
+"id": "fc:re"
+},
+{
+"c": "drapeau",
+"u": "https://flagcdn.com/w640/ro.png",
+"a": [
+"Roumanie",
+"Romania"
+],
+"d": "Roumanie",
+"id": "fc:ro"
+},
+{
+"c": "drapeau",
+"u": "https://flagcdn.com/w640/rs.png",
+"a": [
+"Serbie",
+"Serbia"
+],
+"d": "Serbie",
+"id": "fc:rs"
+},
+{
+"c": "drapeau",
+"u": "https://flagcdn.com/w640/ru.png",
+"a": [
+"Russie",
+"Russia"
+],
+"d": "Russie",
+"id": "fc:ru"
+},
+{
+"c": "drapeau",
+"u": "https://flagcdn.com/w640/rw.png",
+"a": [
+"Rwanda"
+],
+"d": "Rwanda",
+"id": "fc:rw"
+},
+{
+"c": "drapeau",
+"u": "https://flagcdn.com/w640/sa.png",
+"a": [
+"Arabie saoudite",
+"Saudi Arabia"
+],
+"d": "Arabie saoudite",
+"id": "fc:sa"
+},
+{
+"c": "drapeau",
+"u": "https://flagcdn.com/w640/sb.png",
+"a": [
+"Îles Salomon",
+"Solomon Islands"
+],
+"d": "Îles Salomon",
+"id": "fc:sb"
+},
+{
+"c": "drapeau",
+"u": "https://flagcdn.com/w640/sc.png",
+"a": [
+"Seychelles"
+],
+"d": "Seychelles",
+"id": "fc:sc"
+},
+{
+"c": "drapeau",
+"u": "https://flagcdn.com/w640/sd.png",
+"a": [
+"Soudan",
+"Sudan"
+],
+"d": "Soudan",
+"id": "fc:sd"
+},
+{
+"c": "drapeau",
+"u": "https://flagcdn.com/w640/se.png",
+"a": [
+"Suède",
+"Sweden"
+],
+"d": "Suède",
+"id": "fc:se"
+},
+{
+"c": "drapeau",
+"u": "https://flagcdn.com/w640/sg.png",
+"a": [
+"Singapour",
+"Singapore"
+],
+"d": "Singapour",
+"id": "fc:sg"
+},
+{
+"c": "drapeau",
+"u": "https://flagcdn.com/w640/sh.png",
+"a": [
+"Sainte-Hélène, Ascension et Tristan da Cunha",
+"Saint Helena, Ascension and Tristan da Cunha"
+],
+"d": "Sainte-Hélène, Ascension et Tristan da Cunha",
+"id": "fc:sh"
+},
+{
+"c": "drapeau",
+"u": "https://flagcdn.com/w640/si.png",
+"a": [
+"Slovénie",
+"Slovenia"
+],
+"d": "Slovénie",
+"id": "fc:si"
+},
+{
+"c": "drapeau",
+"u": "https://flagcdn.com/w640/sj.png",
+"a": [
+"Svalbard et Jan Mayen",
+"Svalbard and Jan Mayen"
+],
+"d": "Svalbard et Jan Mayen",
+"id": "fc:sj"
+},
+{
+"c": "drapeau",
+"u": "https://flagcdn.com/w640/sk.png",
+"a": [
+"Slovaquie",
+"Slovakia"
+],
+"d": "Slovaquie",
+"id": "fc:sk"
+},
+{
+"c": "drapeau",
+"u": "https://flagcdn.com/w640/sl.png",
+"a": [
+"Sierra Leone"
+],
+"d": "Sierra Leone",
+"id": "fc:sl"
+},
+{
+"c": "drapeau",
+"u": "https://flagcdn.com/w640/sm.png",
+"a": [
+"Saint-Marin",
+"San Marino"
+],
+"d": "Saint-Marin",
+"id": "fc:sm"
+},
+{
+"c": "drapeau",
+"u": "https://flagcdn.com/w640/sn.png",
+"a": [
+"Sénégal",
+"Senegal"
+],
+"d": "Sénégal",
+"id": "fc:sn"
+},
+{
+"c": "drapeau",
+"u": "https://flagcdn.com/w640/so.png",
+"a": [
+"Somalie",
+"Somalia"
+],
+"d": "Somalie",
+"id": "fc:so"
+},
+{
+"c": "drapeau",
+"u": "https://flagcdn.com/w640/sr.png",
+"a": [
+"Suriname"
+],
+"d": "Suriname",
+"id": "fc:sr"
+},
+{
+"c": "drapeau",
+"u": "https://flagcdn.com/w640/ss.png",
+"a": [
+"Soudan du Sud",
+"South Sudan"
+],
+"d": "Soudan du Sud",
+"id": "fc:ss"
+},
+{
+"c": "drapeau",
+"u": "https://flagcdn.com/w640/st.png",
+"a": [
+"Sao Tomé-et-Principe",
+"São Tomé and Príncipe"
+],
+"d": "Sao Tomé-et-Principe",
+"id": "fc:st"
+},
+{
+"c": "drapeau",
+"u": "https://flagcdn.com/w640/sv.png",
+"a": [
+"Salvador",
+"El Salvador"
+],
+"d": "Salvador",
+"id": "fc:sv"
+},
+{
+"c": "drapeau",
+"u": "https://flagcdn.com/w640/sx.png",
+"a": [
+"Saint-Martin (royaume des Pays-Bas)",
+"Sint Maarten"
+],
+"d": "Saint-Martin (royaume des Pays-Bas)",
+"id": "fc:sx"
+},
+{
+"c": "drapeau",
+"u": "https://flagcdn.com/w640/sy.png",
+"a": [
+"Syrie",
+"Syria"
+],
+"d": "Syrie",
+"id": "fc:sy"
+},
+{
+"c": "drapeau",
+"u": "https://flagcdn.com/w640/sz.png",
+"a": [
+"Eswatini",
+"Eswatini (Swaziland)"
+],
+"d": "Eswatini",
+"id": "fc:sz"
+},
+{
+"c": "drapeau",
+"u": "https://flagcdn.com/w640/tc.png",
+"a": [
+"Îles Turques-et-Caïques",
+"Turks and Caicos Islands"
+],
+"d": "Îles Turques-et-Caïques",
+"id": "fc:tc"
+},
+{
+"c": "drapeau",
+"u": "https://flagcdn.com/w640/td.png",
+"a": [
+"Tchad",
+"Chad"
+],
+"d": "Tchad",
+"id": "fc:td"
+},
+{
+"c": "drapeau",
+"u": "https://flagcdn.com/w640/tf.png",
+"a": [
+"Terres australes et antarctiques françaises",
+"French Southern and Antarctic Lands"
+],
+"d": "Terres australes et antarctiques françaises",
+"id": "fc:tf"
+},
+{
+"c": "drapeau",
+"u": "https://flagcdn.com/w640/tg.png",
+"a": [
+"Togo"
+],
+"d": "Togo",
+"id": "fc:tg"
+},
+{
+"c": "drapeau",
+"u": "https://flagcdn.com/w640/th.png",
+"a": [
+"Thaïlande",
+"Thailand"
+],
+"d": "Thaïlande",
+"id": "fc:th"
+},
+{
+"c": "drapeau",
+"u": "https://flagcdn.com/w640/tj.png",
+"a": [
+"Tadjikistan",
+"Tajikistan"
+],
+"d": "Tadjikistan",
+"id": "fc:tj"
+},
+{
+"c": "drapeau",
+"u": "https://flagcdn.com/w640/tk.png",
+"a": [
+"Tokelau"
+],
+"d": "Tokelau",
+"id": "fc:tk"
+},
+{
+"c": "drapeau",
+"u": "https://flagcdn.com/w640/tl.png",
+"a": [
+"Timor oriental",
+"Timor-Leste"
+],
+"d": "Timor oriental",
+"id": "fc:tl"
+},
+{
+"c": "drapeau",
+"u": "https://flagcdn.com/w640/tm.png",
+"a": [
+"Turkménistan",
+"Turkmenistan"
+],
+"d": "Turkménistan",
+"id": "fc:tm"
+},
+{
+"c": "drapeau",
+"u": "https://flagcdn.com/w640/tn.png",
+"a": [
+"Tunisie",
+"Tunisia"
+],
+"d": "Tunisie",
+"id": "fc:tn"
+},
+{
+"c": "drapeau",
+"u": "https://flagcdn.com/w640/to.png",
+"a": [
+"Tonga"
+],
+"d": "Tonga",
+"id": "fc:to"
+},
+{
+"c": "drapeau",
+"u": "https://flagcdn.com/w640/tr.png",
+"a": [
+"Turquie",
+"Turkey"
+],
+"d": "Turquie",
+"id": "fc:tr"
+},
+{
+"c": "drapeau",
+"u": "https://flagcdn.com/w640/tt.png",
+"a": [
+"Trinité-et-Tobago",
+"Trinidad and Tobago"
+],
+"d": "Trinité-et-Tobago",
+"id": "fc:tt"
+},
+{
+"c": "drapeau",
+"u": "https://flagcdn.com/w640/tv.png",
+"a": [
+"Tuvalu"
+],
+"d": "Tuvalu",
+"id": "fc:tv"
+},
+{
+"c": "drapeau",
+"u": "https://flagcdn.com/w640/tw.png",
+"a": [
+"Taïwan",
+"Taiwan"
+],
+"d": "Taïwan",
+"id": "fc:tw"
+},
+{
+"c": "drapeau",
+"u": "https://flagcdn.com/w640/tz.png",
+"a": [
+"Tanzanie",
+"Tanzania"
+],
+"d": "Tanzanie",
+"id": "fc:tz"
+},
+{
+"c": "drapeau",
+"u": "https://flagcdn.com/w640/ua.png",
+"a": [
+"Ukraine"
+],
+"d": "Ukraine",
+"id": "fc:ua"
+},
+{
+"c": "drapeau",
+"u": "https://flagcdn.com/w640/ug.png",
+"a": [
+"Ouganda",
+"Uganda"
+],
+"d": "Ouganda",
+"id": "fc:ug"
+},
+{
+"c": "drapeau",
+"u": "https://flagcdn.com/w640/um.png",
+"a": [
+"Îles mineures éloignées des États-Unis",
+"United States Minor Outlying Islands"
+],
+"d": "Îles mineures éloignées des États-Unis",
+"id": "fc:um"
+},
+{
+"c": "drapeau",
+"u": "https://flagcdn.com/w640/us.png",
+"a": [
+"États-Unis",
+"United States"
+],
+"d": "États-Unis",
+"id": "fc:us"
+},
+{
+"c": "drapeau",
+"u": "https://flagcdn.com/w640/uy.png",
+"a": [
+"Uruguay"
+],
+"d": "Uruguay",
+"id": "fc:uy"
+},
+{
+"c": "drapeau",
+"u": "https://flagcdn.com/w640/uz.png",
+"a": [
+"Ouzbékistan",
+"Uzbekistan"
+],
+"d": "Ouzbékistan",
+"id": "fc:uz"
+},
+{
+"c": "drapeau",
+"u": "https://flagcdn.com/w640/va.png",
+"a": [
+"Vatican",
+"Vatican City (Holy See)"
+],
+"d": "Vatican",
+"id": "fc:va"
+},
+{
+"c": "drapeau",
+"u": "https://flagcdn.com/w640/vc.png",
+"a": [
+"Saint-Vincent-et-les-Grenadines",
+"Saint Vincent and the Grenadines"
+],
+"d": "Saint-Vincent-et-les-Grenadines",
+"id": "fc:vc"
+},
+{
+"c": "drapeau",
+"u": "https://flagcdn.com/w640/ve.png",
+"a": [
+"Venezuela"
+],
+"d": "Venezuela",
+"id": "fc:ve"
+},
+{
+"c": "drapeau",
+"u": "https://flagcdn.com/w640/vg.png",
+"a": [
+"Îles Vierges britanniques",
+"British Virgin Islands"
+],
+"d": "Îles Vierges britanniques",
+"id": "fc:vg"
+},
+{
+"c": "drapeau",
+"u": "https://flagcdn.com/w640/vi.png",
+"a": [
+"Îles Vierges des États-Unis",
+"United States Virgin Islands"
+],
+"d": "Îles Vierges des États-Unis",
+"id": "fc:vi"
+},
+{
+"c": "drapeau",
+"u": "https://flagcdn.com/w640/vn.png",
+"a": [
+"Viêt Nam",
+"Vietnam"
+],
+"d": "Viêt Nam",
+"id": "fc:vn"
+},
+{
+"c": "drapeau",
+"u": "https://flagcdn.com/w640/vu.png",
+"a": [
+"Vanuatu"
+],
+"d": "Vanuatu",
+"id": "fc:vu"
+},
+{
+"c": "drapeau",
+"u": "https://flagcdn.com/w640/wf.png",
+"a": [
+"Wallis-et-Futuna",
+"Wallis and Futuna"
+],
+"d": "Wallis-et-Futuna",
+"id": "fc:wf"
+},
+{
+"c": "drapeau",
+"u": "https://flagcdn.com/w640/ws.png",
+"a": [
+"Samoa"
+],
+"d": "Samoa",
+"id": "fc:ws"
+},
+{
+"c": "drapeau",
+"u": "https://flagcdn.com/w640/xk.png",
+"a": [
+"Kosovo"
+],
+"d": "Kosovo",
+"id": "fc:xk"
+},
+{
+"c": "drapeau",
+"u": "https://flagcdn.com/w640/ye.png",
+"a": [
+"Yémen",
+"Yemen"
+],
+"d": "Yémen",
+"id": "fc:ye"
+},
+{
+"c": "drapeau",
+"u": "https://flagcdn.com/w640/yt.png",
+"a": [
+"Mayotte"
+],
+"d": "Mayotte",
+"id": "fc:yt"
+},
+{
+"c": "drapeau",
+"u": "https://flagcdn.com/w640/za.png",
+"a": [
+"Afrique du Sud",
+"South Africa"
+],
+"d": "Afrique du Sud",
+"id": "fc:za"
+},
+{
+"c": "drapeau",
+"u": "https://flagcdn.com/w640/zm.png",
+"a": [
+"Zambie",
+"Zambia"
+],
+"d": "Zambie",
+"id": "fc:zm"
+},
+{
+"c": "drapeau",
+"u": "https://flagcdn.com/w640/zw.png",
+"a": [
+"Zimbabwe"
+],
+"d": "Zimbabwe",
+"id": "fc:zw"
+}
+]

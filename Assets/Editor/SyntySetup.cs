@@ -37,6 +37,9 @@ public static class SyntySetup
         reg.post = AssetDatabase.LoadAssetAtPath<VolumeProfile>(Meadow + "Meadows_Post_Processing_01.asset");
         reg.layers = new[] { "Grass_01", "Grass_02", "Grass_Flowers_01", "Mud_01", "Moss_01", "Dirt_Cracked_Leaves_01" }
             .Select(n => AssetDatabase.LoadAssetAtPath<TerrainLayer>(Meadow + "Terrain/Terrain_Meadow_" + n + ".terrainlayer")).ToArray();
+        // Ecran du quiz : non eclaire (l'image garde ses couleurs), reference ici pour garder le shader dans la build.
+        if (!AssetDatabase.LoadAssetAtPath<Material>("Assets/Resources/QuizScreen.mat"))
+            AssetDatabase.CreateAsset(new Material(Shader.Find("Universal Render Pipeline/Unlit")), "Assets/Resources/QuizScreen.mat");
         if (!AssetDatabase.LoadAssetAtPath<Material>("Assets/Resources/TerrainLit.mat"))
             AssetDatabase.CreateAsset(new Material(Shader.Find("Universal Render Pipeline/Terrain/Lit")), "Assets/Resources/TerrainLit.mat");
         // Shaders du moteur de terrain : jamais references par une scene, donc a inclure explicitement dans la build.

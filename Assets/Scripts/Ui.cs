@@ -162,7 +162,7 @@ public partial class Ui : MonoBehaviour
     {
         games = Screen();
         var panel = Div(games, "panel");
-        panel.style.width = 1640;
+        panel.style.width = 1800;
         Text(panel, "À quoi on joue ?", "panel-title");
         var row = Div(panel, "row");
         GameCard(row, GameId.Croque, "Croque-Carotte", "2 à 4 joueurs  ·  Course de lapins",
@@ -171,6 +171,8 @@ public partial class Ui : MonoBehaviour
             "Approche-toi de 21 sans dépasser et bats le croupier. Le plus riche après les manches gagne.", "game-bj");
         GameCard(row, GameId.Roulette, "Roulette", "1 à 4 joueurs  ·  Casino",
             "Roulette française : pleins, chevaux, carrés, rouge ou noir... Le plus riche après les coups gagne.", "game-rt");
+        GameCard(row, GameId.Quiz, "Quiz d'images", "1 à 8 joueurs  ·  En ligne",
+            "Une image floutée se dévoile : films, jeux, drapeaux, pochettes... Le premier à 100 points gagne.", "game-qz");
         var back = Btn(panel, "Retour", Back, "ghost", "small");
         back.style.width = 260;
         back.style.marginTop = 20;
@@ -189,7 +191,7 @@ public partial class Ui : MonoBehaviour
     }
 
     // --- Preparation d'une partie (options + joueurs) -------------------------------------
-    VisualElement setupOptions, playerList;
+    VisualElement setupOptions, playerList, localTitle, localBtn;
     Label setupTitle;
     Button addPlayer;
 
@@ -201,7 +203,7 @@ public partial class Ui : MonoBehaviour
         setupTitle = Text(panel, "", "panel-title");
         Text(panel, "Options", "h2");
         setupOptions = Div(panel, "row");
-        Text(panel, "Joueurs sur ce PC (chacun son tour)", "h2");
+        localTitle = Text(panel, "Joueurs sur ce PC (chacun son tour)", "h2");
         playerList = Div(panel);
         addPlayer = Btn(panel, "+ Ajouter un joueur", () =>
         {
@@ -214,7 +216,8 @@ public partial class Ui : MonoBehaviour
         Btn(bottom, "Retour", Back, "ghost", "small").style.width = 200;
         Btn(bottom, "Règles", () => { RefreshRules(); Go(rulesScreen); }, "ghost", "small").style.width = 200;
         Btn(bottom, "Jouer en ligne", () => { RefreshOnline(); Go(onlineScreen); }, "small").style.width = 300;
-        Btn(bottom, "Jouer sur ce PC !", () => game.StartGame(), "green").style.width = 380;
+        localBtn = Btn(bottom, "Jouer sur ce PC !", () => game.StartGame(), "green");
+        localBtn.style.width = 380;
     }
 
     void OptionCards(VisualElement parent, int current, Action<int> pick)
@@ -222,6 +225,8 @@ public partial class Ui : MonoBehaviour
         parent.Clear();
         var opts = game.gameId == GameId.Croque
             ? new[] { (0, "Classique", "19 cases en spirale. La carotte ouvre 1 à 3 trous au hasard."), (1, "Amélioré", "25 cases, trous selon un cycle secret à deviner.") }
+            : game.gameId == GameId.Quiz
+            ? new[] { (0, "Flou", "L'image est floue puis se précise."), (1, "Pixelisé", "De gros pixels qui s'affinent."), (2, "Mélangé", "Flou ou pixels, au hasard à chaque image.") }
             : game.gameId == GameId.Blackjack
             ? new[] { (5, "Partie rapide", "5 manches"), (10, "Partie normale", "10 manches"), (20, "Longue soirée", "20 manches") }
             : new[] { (10, "Partie rapide", "10 coups"), (20, "Partie normale", "20 coups"), (40, "Longue soirée", "40 coups") };
@@ -255,6 +260,10 @@ public partial class Ui : MonoBehaviour
             rm.SetEnabled(game.names.Count > 2);
         }
         addPlayer.style.display = game.names.Count < Rules.MaxPlayers ? DisplayStyle.Flex : DisplayStyle.None;
+        // Le quiz se joue en ligne (chacun tape sur son PC) : pas de joueurs locaux.
+        bool local = game.gameId != GameId.Quiz;
+        foreach (var e in new[] { localTitle, playerList, localBtn }) e.style.display = local ? DisplayStyle.Flex : DisplayStyle.None;
+        if (!local) addPlayer.style.display = DisplayStyle.None;
     }
 
     // --- Choix du personnage ---------------------------------------------------------------
@@ -427,6 +436,13 @@ public partial class Ui : MonoBehaviour
             S("Mode Classique", "19 cases en spirale. Chaque tour de carotte ouvre 1 à 3 trous tirés au hasard, n'importe où à partir de la case 3.");
             S("Mode Amélioré", "25 cases sur deux anneaux. Les trous s'ouvrent un par un, selon un cycle de 25 crans tiré au début de la partie mais qui ne change plus. La carte Double carotte avance de deux crans. Quand un cran est connu, la case menacée s'allume en rouge. Observe, déduis, et place tes lapins là où ça ne tombera pas ! (D'après la vidéo d'Hydrios « Il manque 2 cases à Croque-Carotte ».)");
         }
+        else if (game.gameId == GameId.Quiz)
+        {
+            S("Le but", "Une image apparaît sur l'écran géant, floutée ou pixelisée, et se précise peu à peu. Devine ce que c'est avant les autres ! Le premier à 100 points gagne.");
+            S("Les catégories", "Films et séries (des scènes, pas les affiches), anime, jeux vidéo, pochettes d'album, drapeaux, photos et personnalités.");
+            S("Répondre", "Tape ta réponse puis Entrée, autant de fois que tu veux pendant les 20 secondes. Le titre français ou original, les abréviations connues (GTA, AoT...) et les petites fautes de frappe sont acceptés. Les mauvaises réponses de chacun s'affichent pour tout le monde.");
+            S("Les points", "Plus tu trouves vite, plus tu gagnes : 10 points tout de suite, 3 à la dernière seconde, et 2 de bonus pour le premier qui trouve.");
+        }
         else if (game.gameId == GameId.Roulette)
         {
             S("Le but", "Chaque joueur commence avec 1 000 jetons. Après le nombre de coups choisi, le joueur le plus riche gagne. Un joueur qui n'a plus de quoi miser (10 jetons) est éliminé.");
@@ -495,6 +511,7 @@ public partial class Ui : MonoBehaviour
         roundInfo = Text(bar, "", "bar-item");
 
         BuildRouletteHud();
+        BuildQuizHud();
 
         banner = Text(hud, "", "banner");
         banner.pickingMode = PickingMode.Ignore;
@@ -510,14 +527,16 @@ public partial class Ui : MonoBehaviour
         Show(hud);
         card.AddToClassList("flip");
         card.style.display = DisplayStyle.None;
-        bool bj = game.bj != null, rt = game.rt != null;
+        bool bj = game.bj != null, rt = game.rt != null, qz = game.qz != null;
         ccHud.style.display = game.rules != null ? DisplayStyle.Flex : DisplayStyle.None;
         bjHud.style.display = bj ? DisplayStyle.Flex : DisplayStyle.None;
         rtHud.style.display = rt ? DisplayStyle.Flex : DisplayStyle.None;
+        qzHud.style.display = qz ? DisplayStyle.Flex : DisplayStyle.None;
+        if (qz) { qzFeed.Clear(); qzReveal.style.display = DisplayStyle.None; qzInput.SetEnabled(false); }
         bubbles.Clear();
         seatTags.Clear();
-        playersBar.style.display = feed.style.display = bj || rt ? DisplayStyle.None : DisplayStyle.Flex;
-        hint.text = bj || rt ? "" : "Clic droit : tourner  ·  Molette : zoom  ·  Échap : pause";
+        playersBar.style.display = feed.style.display = bj || rt || qz ? DisplayStyle.None : DisplayStyle.Flex;
+        hint.text = bj || rt || qz ? "" : "Clic droit : tourner  ·  Molette : zoom  ·  Échap : pause";
         if (rt) ResetRouletteBets();
         if (bj) betAmount = Blackjack.MinBet * 5;
         Refresh();
@@ -555,6 +574,7 @@ public partial class Ui : MonoBehaviour
         if (game.rules != null) RefreshCroque();
         else if (game.bj != null) RefreshBlackjack();
         else if (game.rt != null) RefreshRoulette();
+        else if (game.qz != null) RefreshQuiz();
     }
 
     void PlayerCard(int i, string name, string avatar, bool active)
@@ -786,11 +806,13 @@ public partial class Ui : MonoBehaviour
         }
         else
         {
-            var ranking = (game.bj != null ? game.bj.players.Select(p => (p.name, p.seat, p.chips)) : game.rt.players.Select(p => (p.name, p.seat, p.chips)))
+            var ranking = (game.bj != null ? game.bj.players.Select(p => (p.name, p.seat, p.chips))
+                         : game.rt != null ? game.rt.players.Select(p => (p.name, p.seat, p.chips))
+                         : game.qz.players.Select(p => (p.name, p.seat, chips: p.score)))
                 .OrderByDescending(p => p.chips).ToList();
             winTitle.text = $"{ranking[0].name} gagne !";
             winTitle.style.color = Board.Colors[ranking[0].seat];
-            winSub.text = string.Join("\n", ranking.Select((p, i) => $"{i + 1}.  {p.name}  —  {p.chips} jetons"));
+            winSub.text = string.Join("\n", ranking.Select((p, i) => $"{i + 1}.  {p.name}  —  {p.chips} {(game.qz != null ? "points" : "jetons")}"));
         }
         replayBtn.style.display = !game.Online || game.net.IsHost ? DisplayStyle.Flex : DisplayStyle.None;
         current = null;

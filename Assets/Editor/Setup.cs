@@ -377,6 +377,29 @@ public static class Setup
             .Concat(Roulette.Simple).Concat(Enumerable.Range(1, 33).Select(n => $"C:{n}-{n + 3}")).Concat(Enumerable.Range(1, 35).Where(n => n % 3 != 0).Select(n => $"C:{n}-{n + 1}"))
             .Concat(Enumerable.Range(1, 32).Where(n => n % 3 != 0).Select(n => "Q:" + n)).Concat(Enumerable.Range(0, 12).Select(r => "T:" + r)).Concat(Enumerable.Range(0, 11).Select(r => "S:" + r));
         foreach (var k in allKeys) if (Ui.KeyAt(Ui.Anchor(k)) != k) throw new System.Exception($"tapis : {k} lu comme {Ui.KeyAt(Ui.Anchor(k))}");
+        // Quiz : tolerance des reponses, points, partie jusqu'a 100.
+        void Ok(bool c, string what) { if (!c) throw new System.Exception("quiz : " + what); }
+        Ok(Quiz.Matches("attaque des titans", new[] { "L'Attaque des Titans" }), "article");
+        Ok(Quiz.Matches("spiderman", new[] { "Spider-Man" }), "tiret");
+        Ok(Quiz.Matches("atack on titan", new[] { "Attack on Titan" }), "faute de frappe");
+        Ok(Quiz.Matches("Cote d ivoire", new[] { "Côte d'Ivoire" }), "accents");
+        Ok(Quiz.Matches("gta", new[] { "Grand Theft Auto V", "GTA" }), "acronyme");
+        Ok(!Quiz.Matches("chat", new[] { "Chien" }), "mot court proche refuse");
+        Ok(!Quiz.Matches("Iran", new[] { "Irak" }), "pays proche refuse");
+        Ok(Quiz.PointsFor(0, true) == 12 && Quiz.PointsFor(20000, false) == 3, "points");
+        Ok(Quiz.Pool.Count > 100 && Quiz.Pool.All(q => q.a.Length > 0 && q.u.StartsWith("https://")), "banque de questions");
+        {
+            var q = new Quiz(new[] { "A", "B" }, 2, 3, Quiz.Pool);
+            for (int r = 0; r < 60 && !q.Finished; r++)
+            {
+                Ok(q.TryApply(new[] { "next" }), "next");
+                Ok(q.TryApply(new[] { "guess", "1", "500", "reponse fausse" }), "mauvaise reponse");
+                Ok(q.TryApply(new[] { "guess", "0", "1000", q.Current.a[0] }), "bonne reponse");
+                Ok(!q.TryApply(new[] { "guess", "0", "1200", q.Current.a[0] }), "deja trouve");
+                Ok(q.TryApply(new[] { "end" }), "end");
+            }
+            Ok(q.Finished && q.players[0].score >= Quiz.Target && q.players[1].score == 0, "fin de partie a 100");
+        }
         if (!Updater.IsNewer("v2.1.0", "2.0.9") || Updater.IsNewer("v2.1.0", "2.1.0") || Updater.IsNewer("v1.9", "2.0")) throw new System.Exception("comparaison de versions");
         Debug.Log("SELFCHECK OK");
     }

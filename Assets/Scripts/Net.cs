@@ -81,7 +81,7 @@ public class Net : MonoBehaviour
             LobbyOption = option;
             Say("Création de la partie...");
             await Init();
-            session = await MultiplayerService.Instance.CreateSessionAsync(new SessionOptions { MaxPlayers = Rules.MaxPlayers, IsPrivate = true }.WithRelayNetwork());
+            session = await MultiplayerService.Instance.CreateSessionAsync(new SessionOptions { MaxPlayers = Games.MaxPlayers(g), IsPrivate = true }.WithRelayNetwork());
             IsHost = true;
             Hook();
             seats.Clear();
@@ -212,14 +212,14 @@ public class Net : MonoBehaviour
         var p = s.Split('|');
         if (p[0] == "hello")
         {
-            if (InGame || seats.ContainsKey(sender) || Lobby.Count >= Rules.MaxPlayers) return;
+            if (InGame || seats.ContainsKey(sender) || Lobby.Count >= Games.MaxPlayers(LobbyGame)) return;
             seats[sender] = Lobby.Count;
             Lobby.Add(Clean(p[1]) is var n && n.Length > 0 ? n : "Joueur " + (Lobby.Count + 1));
             LobbyAvatars.Add(p.Length > 2 && Array.IndexOf(Game.Characters, p[2]) >= 0 ? p[2] : "Casual_Male");
             SendLobby();
         }
-        else if (p[0] == "act" && InGame && seats.TryGetValue(sender, out int seat) && seat == shadow.Actor)
-            HostAct(p);
+        else if (p[0] == "act" && InGame && seats.TryGetValue(sender, out int seat) && CanPlay(seat))
+            HostAct(p, seat);
     }
 
     void Apply(string s)
@@ -256,9 +256,12 @@ public class Net : MonoBehaviour
     // --- Actions de l'hote / des joueurs -------------------------------------------
     public void SetOption(int option) { if (IsHost && !InGame) { LobbyOption = option; SendLobby(); } }
 
+    // Au quiz, tout le monde repond en meme temps ; ailleurs, seul le joueur dont c'est le tour agit.
+    bool CanPlay(int seat) => shadow.Actor == seat || shadow.Actor == Quiz.Everyone;
+
     public void StartMatch()
     {
-        if (!IsHost || Lobby.Count < 2) return;
+        if (!IsHost || Lobby.Count < (LobbyGame == GameId.Quiz ? 1 : 2)) return;
         int seed = UnityEngine.Random.Range(0, int.MaxValue);
         shadow = Games.Create(LobbyGame, LobbyOption, Lobby, seed);
         Broadcast($"start|{LobbyGame}|{LobbyOption}|{seed}|{string.Join(";", Lobby)}|{string.Join(";", LobbyAvatars)}");
@@ -266,13 +269,16 @@ public class Net : MonoBehaviour
 
     public void Act(string action)
     {
-        if (IsHost) { if (shadow.Actor == game.mySeat) HostAct(("act|" + action).Split('|')); }
+        if (IsHost) { if (CanPlay(game.mySeat)) HostAct(("act|" + action).Split('|'), game.mySeat); }
         else Send("act|" + action);
     }
 
-    // Valide l'action sur la copie de l'hote puis la diffuse.
-    void HostAct(string[] p)
+    // Valide l'action sur la copie de l'hote puis la diffuse. Quiz : l'hote ajoute le siege et le temps ecoule
+    // (sa propre horloge fait foi), la proposition devient "guess|siege|ms|texte".
+    void HostAct(string[] p, int seat = -1)
     {
+        if (shadow is Quiz && p.Length > 2 && p[1] == "guess")
+            p = new[] { "act", "guess", seat.ToString(), game.QuizElapsedMs.ToString(), Clean(p[2]) };
         if (shadow.Finished || !shadow.TryApply(p.Skip(1).ToArray())) return;
         Broadcast(string.Join("|", p));
     }
@@ -280,6 +286,13 @@ public class Net : MonoBehaviour
     // ponytail: un joueur parti est joue par l'hote avec une strategie simple (IMatch.Bot).
     void Update()
     {
+        // Quiz : l'hote pilote les phases (fin du temps ou tout le monde a trouve, puis question suivante).
+        if (IsHost && InGame && shadow is Quiz && game.Idle)
+        {
+            var tick = game.QuizTick((Quiz)shadow);
+            if (tick != null) HostAct(new[] { "act", tick });
+            return;
+        }
         if (!IsHost || !InGame || shadow == null || shadow.Finished || !gone.Contains(shadow.Actor) || !game.Idle) return;
         var a = shadow.Bot();
         if (a != null) HostAct(new[] { "act" }.Concat(a).ToArray());

@@ -30,3 +30,7 @@
 /Assets/Malbers Animations/
 /Assets/Malbers Animations.meta
 /Assets/Resources/Synty.asset*
+
+# Cles API du quiz : jamais commitees
+/Tools/quiz_keys.json
+/Tools/quiz_cache/
