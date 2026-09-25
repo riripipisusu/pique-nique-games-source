@@ -55,6 +55,7 @@ public class QuizView : MonoBehaviour
 
     // --- Plateau "tenna stage" (modele Blender) ------------------------------------------
     Transform stage, standTemplate;
+    static readonly Vector3 camFromStage = new Vector3(0, 5.6f, -10.2f);
     Vector3 camFrom = new Vector3(0, 2.9f, -7.2f), camAt = new Vector3(0, 2.9f - 0.144f, 0);
 
     void BuildStage()
@@ -62,6 +63,23 @@ public class QuizView : MonoBehaviour
         // Le modele regarde vers +z : on le tourne pour que le public (la camera) soit cote -z.
         stage = Instantiate(Synty.I.stage, transform).transform;
         stage.localRotation = Quaternion.Euler(0, 180, 0);
+        // Fond vert, mur et rideaux ne recoivent pas d'ombres : sinon celles des projecteurs y sont crenelees.
+        foreach (var n in new[] { "backdrop", "wall", "Grid.001", "Grid.002", "Grid.003", "Grid.004" })
+            if (stage.Find(n))
+            {
+                var rr = stage.Find(n).GetComponent<Renderer>();
+                rr.receiveShadows = false;
+                // URP lit l'option sur le materiau : copie sans ombres recues.
+                var ms = rr.sharedMaterials;
+                for (int k = 0; k < ms.Length; k++)
+                {
+                    if (!ms[k]) continue;
+                    ms[k] = new Material(ms[k]);
+                    ms[k].SetFloat("_ReceiveShadows", 0);
+                    ms[k].EnableKeyword("_RECEIVE_SHADOWS_OFF");
+                }
+                rr.sharedMaterials = ms;
+            }
         foreach (Transform c in stage)
             if (c.name.StartsWith("gamestand")) { if (c.name == "gamestand.003") standTemplate = c; c.gameObject.SetActive(false); }
 
@@ -71,15 +89,24 @@ public class QuizView : MonoBehaviour
         var mats = tv.sharedMaterials;
         int slot = System.Array.FindIndex(mats, m => m && m.name.StartsWith("Material_009"));
         if (slot < 0) slot = mats.Length - 1;
-        // La dalle du modele reste noire ; l'image, rectangulaire et a ses proportions, se pose dessus.
-        mats[slot] = new Material(lit) { color = Board.Hex("120c1c") };
-        tv.sharedMaterials = mats;
-        var sb = mesh.GetSubMesh(slot).bounds;
-        Vector3 c0 = tv.transform.TransformPoint(sb.center), ext = tv.transform.TransformVector(sb.extents);
-        // Dalle rectangulaire (ecran redresse dans Blender) : l'image l'occupe au maximum, a ses proportions.
-        screenSize = new Vector2(Mathf.Abs(ext.x) * 2 * 0.96f, Mathf.Abs(ext.y) * 2 * 0.95f);
-        screen = Box(PrimitiveType.Quad, transform.InverseTransformPoint(c0) + new Vector3(0, 0, -Mathf.Abs(ext.z) - 0.03f), new Vector3(screenSize.x, screenSize.y, 1), screenMat, transform);
+        // Ecran geant refait en rectangle parfait 16:9 (la dalle du modele a des UV en morceaux) :
+        // meme cadre orange, a la place de l'ancien, tourne face a la camera. L'image remplit tout l'ecran.
+        var frameMat = mats[0];
+        var tb = tv.bounds;
+        tv.gameObject.SetActive(false);
+        var group = new GameObject("ecran geant").transform;
+        group.SetParent(transform, false);
+        // Avance d'un metre vers le public : incline, le haut de l'ecran ne rentre plus dans le decor du fond.
+        var center = new Vector3(tb.center.x, tb.min.y + 2.45f, tb.center.z) - transform.forward * 1.1f;
+        group.position = center;
+        group.rotation = Quaternion.LookRotation(center - transform.TransformPoint(camFromStage));
+        const float sh = 3.95f, sw = sh * 16 / 9f, border = 0.32f;
+        Box(PrimitiveType.Cube, new Vector3(0, 0, 0.12f), new Vector3(sw + border * 2, sh + border * 2, 0.24f), frameMat, group);
+        Box(PrimitiveType.Cube, new Vector3(0, 0, -0.02f), new Vector3(sw + 0.08f, sh + 0.08f, 0.05f), new Material(lit) { color = Board.Hex("120c1c") }, group);
+        screen = Box(PrimitiveType.Quad, new Vector3(0, 0, -0.06f), new Vector3(sw, sh, 1), screenMat, group);
         screen.GetComponent<Renderer>().shadowCastingMode = UnityEngine.Rendering.ShadowCastingMode.Off;
+        screenAspect = 16 / 9f;
+        fillsFace = true;
 
         // Lumieres : chaque projecteur du modele (positions reprises du fichier Blender) eclaire la scene.
         // Repere du plateau tourne = (x, z, y) de Blender.
@@ -103,7 +130,7 @@ public class QuizView : MonoBehaviour
             l.type = LightType.Point; l.range = r; l.intensity = k; l.color = Board.Hex("ffe6d0");
         }
         // Camera haute : les pupitres passent sous l'ecran geant au lieu de le masquer.
-        camFrom = new Vector3(0, 5.6f, -10.2f);
+        camFrom = camFromStage;
         camAt = new Vector3(0, 1.75f, 0);   // le haut de l'image s'arrete a la rampe de projecteurs
         podiums = new GameObject("pupitres").transform;
         podiums.SetParent(transform, false);

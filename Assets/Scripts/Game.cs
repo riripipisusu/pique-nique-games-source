@@ -443,11 +443,11 @@ public class Game : MonoBehaviour
             quizLight.intensity = 1.5f;
             quizLight.shadows = LightShadows.Soft;
             quizLight.shadowStrength = 0.45f;
-            quizLight.transform.rotation = Quaternion.Euler(32, 12, 0);   // de face, legerement de cote
+            quizLight.transform.rotation = Quaternion.Euler(32, 0, 0);   // pile de face : ombres symetriques
         }
         quizLight.enabled = g == GameId.Quiz;
         snapCam = true;
-        Sound.I.Music(g == GameId.Croque ? "music_game" : g == GameId.Quiz ? "music_menu" : "music_blackjack");
+        Sound.I.Music(g == GameId.Croque ? "music_game" : g == GameId.Quiz ? "music_quiz" : "music_blackjack");
     }
 
     // Ambiance : prairie ensoleillee ou salle de casino fermee aux lumieres chaudes.
