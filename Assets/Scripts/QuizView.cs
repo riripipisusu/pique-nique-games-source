@@ -185,11 +185,22 @@ public class QuizView : MonoBehaviour
             return hi - lo;
         }
         // Sur le devant de la scene, cote cour, tourne vers le public.
-        t.localPosition = new Vector3(-5.2f, 0.12f, -2.2f);   // a gauche des pupitres, bien visible
-        t.localRotation = Quaternion.Euler(0, 170, 0);
-        t.localScale *= 2.35f / Mathf.Max(0.001f, WorldHeight(out _));
-        WorldHeight(out float foot);
-        t.position += Vector3.up * (transform.TransformPoint(new Vector3(0, 0.12f, 0)).y - foot);
+        // Position reglee a la souris dans Assets/Resources/QuizLayout.prefab (objet "Tenna").
+        var marker = Resources.Load<GameObject>("QuizLayout")?.transform.Find("Tenna");
+        if (marker)
+        {
+            t.localPosition = marker.localPosition;
+            t.localRotation = marker.localRotation;
+            t.localScale = marker.localScale;
+        }
+        else
+        {
+            t.localPosition = new Vector3(-5.2f, 0.12f, -2.2f);
+            t.localRotation = Quaternion.Euler(0, 170, 0);
+            t.localScale *= 2.35f / Mathf.Max(0.001f, WorldHeight(out _));
+            WorldHeight(out float foot);
+            t.position += Vector3.up * (transform.TransformPoint(new Vector3(0, 0.12f, 0)).y - foot);
+        }
         foreach (var smr in t.GetComponentsInChildren<SkinnedMeshRenderer>()) smr.updateWhenOffscreen = true;
         StartCoroutine(TennaDebug(t));
         tennaFace = t.GetComponentInChildren<SkinnedMeshRenderer>();

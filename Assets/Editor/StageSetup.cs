@@ -66,6 +66,32 @@ public static class StageSetup
         return prefab;
     }
 
+    // Mise en place du quiz a regler a la souris : Assets/Resources/QuizLayout.prefab (double-clic pour l'ouvrir).
+    // Le plateau y sert d'apercu ; le jeu relit la position, la rotation et l'echelle de l'objet "Tenna".
+    // Cree une seule fois : les reglages faits a la main ne sont jamais ecrases.
+    const string LayoutPath = "Assets/Resources/QuizLayout.prefab";
+    public static void Layout(GameObject stage, GameObject tenna)
+    {
+        if (File.Exists(LayoutPath) || !stage || !tenna) return;
+        var root = new GameObject("QuizLayout");
+        var st = (GameObject)PrefabUtility.InstantiatePrefab(stage, root.transform);
+        st.name = "Plateau (apercu, non utilise)";
+        st.transform.localRotation = Quaternion.Euler(0, 180, 0);
+        var t = (GameObject)PrefabUtility.InstantiatePrefab(tenna, root.transform);
+        t.name = "Tenna";
+        t.transform.localPosition = new Vector3(-5.2f, 0.12f, -2.2f);
+        t.transform.localRotation = Quaternion.Euler(0, 170, 0);
+        // Echelle : Tenna mesure 2.35 m (maillage pose mesure en coordonnees du monde).
+        var smr = t.GetComponentInChildren<SkinnedMeshRenderer>();
+        var baked = new Mesh(); smr.BakeMesh(baked, true);
+        float lo = float.MaxValue, hi = float.MinValue;
+        foreach (var v in baked.vertices) { float y = smr.transform.TransformPoint(v).y; lo = Mathf.Min(lo, y); hi = Mathf.Max(hi, y); }
+        t.transform.localScale *= 2.35f / Mathf.Max(0.001f, hi - lo);
+        PrefabUtility.SaveAsPrefabAsset(root, LayoutPath);
+        Object.DestroyImmediate(root);
+        Debug.Log("QUIZLAYOUT cree");
+    }
+
     static Material MatAt(string path, System.Action<Material> init)
     {
         var m = AssetDatabase.LoadAssetAtPath<Material>(path);
