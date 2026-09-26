@@ -197,6 +197,23 @@ public class Game : MonoBehaviour
         IEnumerator Shot(string n) { yield return new WaitForEndOfFrame(); var tex = ScreenCapture.CaptureScreenshotAsTexture(); System.IO.File.WriteAllBytes(System.IO.Path.Combine(dir, n + ".png"), tex.EncodeToPNG()); Destroy(tex); }
         IEnumerator Fps(string n) { int f = Time.frameCount; float t = Time.realtimeSinceStartup; yield return new WaitForSecondsRealtime(3); System.IO.File.AppendAllText(System.IO.Path.Combine(dir, "fps.txt"), $"{n}: {(Time.frameCount - f) / (Time.realtimeSinceStartup - t):0} fps" + System.Environment.NewLine); }
         yield return new WaitForSeconds(6); yield return Shot("1-titre"); yield return Fps("titre");
+        if (Array.IndexOf(Environment.GetCommandLineArgs(), "-uitour") >= 0)
+        {
+            yield return new WaitForSeconds(2); yield return Shot("u-titre");
+            foreach (var s in new[] { "games", "setup", "settings", "online" })
+            {
+                SelectGame(GameId.Croque);
+                ui.OpenForTest(s); yield return new WaitForSeconds(1); yield return Shot("u-" + s);
+                ui.ShowTitle();
+            }
+            SelectGame(GameId.Trivia); ui.OpenForTest("setup"); yield return new WaitForSeconds(1); yield return Shot("u-setup-tv");
+            SelectGame(GameId.Croque); StartGame();
+            yield return new WaitForSeconds(4); yield return Shot("u-hud");
+            ui.ShowPause(); yield return new WaitForSecondsRealtime(1); yield return Shot("u-pause"); ui.Back();
+            Draw(); yield return new WaitForSeconds(0.6f); yield return Shot("u-carte");
+            Application.Quit();
+            yield break;
+        }
         if (Array.IndexOf(Environment.GetCommandLineArgs(), "-menutest") >= 0)
         {
             foreach (var g in new[] { GameId.Quiz, GameId.Roulette, GameId.Blackjack, GameId.Croque })

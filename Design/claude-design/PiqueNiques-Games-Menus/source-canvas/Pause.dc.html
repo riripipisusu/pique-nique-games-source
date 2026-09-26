@@ -1,0 +1,109 @@
+<!doctype html>
+<html lang="fr">
+<head>
+<meta charset="utf-8">
+<title>Pause</title>
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Bungee&amp;family=Fredoka:wght@400;500;600;700&amp;family=Lilita+One&amp;display=swap">
+<style>
+body{margin:0;font-family:'Fredoka',system-ui,sans-serif;color:#3B2416;background:#8FD6FF}
+a{color:#B4560F}a:hover{color:#7A3300}
+*{box-sizing:border-box}
+.p-orange{--hi:#FFC46B;--face:#FF9B2F;--lo:#D9660C;--ink:#7A3300}
+.p-blue{--hi:#8FD6FF;--face:#3AA7F2;--lo:#1C6FC4;--ink:#0D3A73}
+.p-red{--hi:#FF8C7C;--face:#F0503E;--lo:#B82A1D;--ink:#6B120A}
+.p-cream{--hi:#FFFFFF;--face:#FFF1D6;--lo:#E2C391;--ink:#5A3A1E}
+.gl{position:relative;display:flex;text-decoration:none;cursor:pointer;border:0;padding:0;margin:0;background:none;font:inherit;color:inherit;transition:transform 150ms cubic-bezier(.34,1.56,.64,1)}
+.gl:hover{transform:scale(1.04)}
+.gl:active{transform:translateY(7px);transition-duration:70ms}
+.gl:focus-visible{outline:6px solid #FFE14D;outline-offset:6px;border-radius:26px}
+.gl-drop{position:absolute;left:0;right:0;top:0;bottom:-8px;background:rgba(26,14,6,.28);border-radius:22px}
+.gl:active .gl-drop{bottom:-2px}
+.gl-body{position:relative;flex-grow:1;display:flex;border:4px solid #2E1B10;border-radius:22px;background:var(--lo);padding-bottom:10px;transition:padding 70ms}
+.gl:active .gl-body{padding-bottom:3px}
+.gl-face{position:relative;flex-grow:1;display:flex;align-items:center;justify-content:center;gap:14px;background:var(--face);border-top:4px solid var(--hi);border-radius:18px;overflow:hidden;padding:14px 36px}
+.gl-shine{position:absolute;left:8px;right:8px;top:4px;height:38%;background:rgba(255,255,255,.3);border-radius:9999px;transition:background 120ms}
+.gl:hover .gl-shine{background:rgba(255,255,255,.5)}
+.gl-label{position:relative;font-weight:700;font-size:30px;line-height:1.15;color:#fff;-webkit-text-stroke:7px var(--ink);paint-order:stroke fill;text-shadow:0 3px 0 var(--ink);white-space:nowrap}
+.p-cream .gl-label{color:#5A3A1E;-webkit-text-stroke:0;text-shadow:none}
+.p-cream.sm .gl-label,.p-cream.lg .gl-label{-webkit-text-stroke-width:0}
+.gl-ico{position:relative;width:38px;height:38px;flex-shrink:0;fill:none;stroke:#fff;stroke-width:4;stroke-linecap:round;stroke-linejoin:round;filter:drop-shadow(0 3px 0 var(--ink))}
+.p-cream .gl-ico{stroke:#2E1B10;filter:none}
+.lg .gl-face{padding:22px 48px;gap:18px}
+.lg .gl-label{font-size:38px;-webkit-text-stroke-width:8px}
+.lg .gl-ico{width:46px;height:46px}
+.fam-prairie{--fr-hi:#A6E86F;--fr:#5CC23A;--fr-lo:#3A8C22;--plate:#FFF6E3;--plate2:#F8E9CC;--inset:#EAD6B2;--t-ink:#3B2416;--t-muted:#6E4C31;--t-accent:#B4560F}
+.panel{position:relative;display:flex;animation:pop 260ms cubic-bezier(.34,1.56,.64,1) both}
+.panel-drop{position:absolute;left:0;right:0;top:0;bottom:-12px;background:rgba(26,14,6,.28);border-radius:44px}
+.panel-body{position:relative;flex-grow:1;display:flex;border:4px solid #2E1B10;border-radius:44px;background:var(--fr-lo);padding-bottom:14px}
+.panel-frame{position:relative;flex-grow:1;display:flex;background:var(--fr);border-top:4px solid var(--fr-hi);border-radius:40px;padding:18px}
+.plate{position:relative;flex-grow:1;display:flex;flex-direction:column;gap:24px;background:var(--plate);border:4px solid #2E1B10;border-radius:26px;padding:72px 44px 40px;color:var(--t-ink)}
+.rivet{position:absolute;width:14px;height:14px;border-radius:9999px;background:var(--fr-hi);border:3px solid #2E1B10}
+.ribbon-wrap{position:absolute;left:0;right:0;top:-58px;display:flex;justify-content:center;animation:ribbon 200ms 240ms cubic-bezier(.34,1.56,.64,1) both}
+.ribbon{cursor:default}.ribbon:hover,.ribbon:active{transform:none}
+.ribbon .gl-body,.ribbon .gl-drop,.ribbon .gl-face{border-radius:9999px}
+.ribbon .gl-face{padding:12px 72px}
+.ribbon .gl-label{font-family:'Lilita One',sans-serif;font-weight:400;font-size:58px;-webkit-text-stroke-width:10px;text-shadow:0 5px 0 var(--ink)}
+.muted{font-size:24px;font-weight:500;color:var(--t-muted)}
+@keyframes pop{0%{transform:scale(.85);opacity:0}60%{transform:scale(1.03);opacity:1}100%{transform:scale(1)}}
+@keyframes ribbon{0%{transform:translateY(-50px);opacity:0}100%{transform:none;opacity:1}}
+@media (prefers-reduced-motion:reduce){*{animation:none!important;transition:none!important}}
+</style>
+</helmet>
+<div class="fam-prairie" style="position: relative; width: 1920px; height: 1080px; overflow: hidden; background: #8FD6FF">
+<svg viewBox="0 0 1920 1080" style="position: absolute; left: 0; top: 0; width: 1920px; height: 1080px" aria-hidden="true">
+<rect width="1920" height="1080" fill="#8FD6FF"></rect>
+<circle cx="1650" cy="240" r="86" fill="#FFC72C" stroke="#2E1B10" stroke-width="6"></circle>
+<polygon points="0,560 220,440 430,520 680,390 940,500 1180,410 1460,510 1700,420 1920,480 1920,1080 0,1080" fill="#A6E86F" stroke="#2E1B10" stroke-width="6" stroke-linejoin="round"></polygon>
+<polygon points="0,700 300,620 560,690 860,630 1160,700 1460,620 1920,690 1920,1080 0,1080" fill="#5CC23A" stroke="#2E1B10" stroke-width="6" stroke-linejoin="round"></polygon>
+<g fill="#EAD6B2" stroke="#2E1B10" stroke-width="6"><ellipse cx="260" cy="900" rx="80" ry="30"></ellipse><ellipse cx="460" cy="850" rx="80" ry="30"></ellipse><ellipse cx="680" cy="820" rx="80" ry="30"></ellipse><ellipse cx="910" cy="810" rx="80" ry="30"></ellipse><ellipse cx="1140" cy="820" rx="80" ry="30"></ellipse><ellipse cx="1360" cy="850" rx="80" ry="30"></ellipse><ellipse cx="1570" cy="900" rx="80" ry="30"></ellipse></g>
+</svg>
+<div style="position: absolute; left: 0; top: 0; width: 1920px; height: 1080px; background: rgba(26,14,6,.6)"></div>
+
+<div class="panel" role="dialog" aria-modal="true" aria-labelledby="pause-t" style="position: absolute; left: 580px; top: 230px; width: 760px">
+<div class="panel-drop"></div>
+<div class="panel-body"><div class="panel-frame">
+<span class="rivet" style="left: 70px; top: 2px"></span><span class="rivet" style="right: 70px; top: 2px"></span><span class="rivet" style="left: 70px; bottom: 2px"></span><span class="rivet" style="right: 70px; bottom: 2px"></span>
+<div class="plate">
+<p class="muted" style="margin: 0; text-align: center">La partie est en pause pour tout le monde.</p>
+<a class="gl p-orange lg" href="Partie.dc.html">
+<span class="gl-drop"></span><span class="gl-body"><span class="gl-face"><span class="gl-shine"></span>
+<svg class="gl-ico" viewBox="0 0 48 48" aria-hidden="true"><path d="M16 10L38 24 16 38Z"></path></svg>
+<span class="gl-label">Reprendre</span></span></span>
+</a>
+<div style="display: flex; gap: 20px">
+<a class="gl p-cream" href="#regles" style="flex-grow: 1">
+<span class="gl-drop"></span><span class="gl-body"><span class="gl-face" style="padding: 14px 20px"><span class="gl-shine"></span>
+<svg class="gl-ico" viewBox="0 0 48 48" aria-hidden="true"><path d="M6 10h13a5 5 0 0 1 5 5v25a4 4 0 0 0-4-4H6zM42 10H29a5 5 0 0 0-5 5v25a4 4 0 0 1 4-4h14z"></path></svg>
+<span class="gl-label">Règles</span></span></span>
+</a>
+<a class="gl p-blue" href="Parametres.dc.html" style="flex-grow: 1">
+<span class="gl-drop"></span><span class="gl-body"><span class="gl-face" style="padding: 14px 20px"><span class="gl-shine"></span>
+<svg class="gl-ico" viewBox="0 0 48 48" aria-hidden="true"><circle cx="24" cy="24" r="7"></circle><circle cx="24" cy="24" r="14"></circle><path d="M24 4v6M24 38v6M4 24h6M38 24h6M10 10l4 4M34 34l4 4M38 10l-4 4M14 34l-4 4"></path></svg>
+<span class="gl-label">Paramètres</span></span></span>
+</a>
+</div>
+<a class="gl p-red" href="Main.dc.html">
+<span class="gl-drop"></span><span class="gl-body"><span class="gl-face"><span class="gl-shine"></span>
+<svg class="gl-ico" viewBox="0 0 48 48" aria-hidden="true"><path d="M20 8H10v32h10M22 24h18M33 17l7 7-7 7"></path></svg>
+<span class="gl-label">Quitter la partie</span></span></span>
+</a>
+</div>
+</div></div>
+<div class="ribbon-wrap"><div class="gl p-orange ribbon"><span class="gl-drop"></span><span class="gl-body"><span class="gl-face"><span class="gl-shine"></span><h1 id="pause-t" class="gl-label" style="margin: 0">Pause</h1></span></span></div></div>
+</div>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"$preview":{"width":1920,"height":1080}}'>
+class Component extends DCLogic {
+  renderVals() {
+    return {};
+  }
+}
+</script>
+</body>
+</html>

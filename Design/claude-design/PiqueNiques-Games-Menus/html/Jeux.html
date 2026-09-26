@@ -1,0 +1,191 @@
+<!doctype html>
+<html lang="fr">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=1920">
+<title>Choix du jeu · Pique-Nique's Games</title>
+<link rel="stylesheet" href="fonts.css">
+<style>
+body{margin:0;font-family:'Fredoka',system-ui,sans-serif;color:#3B2416;background:#8FD6FF}
+a{color:#B4560F}a:hover{color:#7A3300}
+*{box-sizing:border-box}
+.p-orange{--hi:#FFC46B;--face:#FF9B2F;--lo:#D9660C;--ink:#7A3300}
+.p-green{--hi:#A6E86F;--face:#5CC23A;--lo:#3A8C22;--ink:#1E5410}
+.p-blue{--hi:#8FD6FF;--face:#3AA7F2;--lo:#1C6FC4;--ink:#0D3A73}
+.p-red{--hi:#FF8C7C;--face:#F0503E;--lo:#B82A1D;--ink:#6B120A}
+.p-gold{--hi:#FFE98A;--face:#FFC72C;--lo:#D99500;--ink:#6B4400}
+.p-purple{--hi:#D9A3FF;--face:#A652EA;--lo:#6F25B3;--ink:#3A0E66}
+.p-pink{--hi:#FF8CC6;--face:#F03C92;--lo:#B3145F;--ink:#5E0632}
+.p-cream{--hi:#FFFFFF;--face:#FFF1D6;--lo:#E2C391;--ink:#5A3A1E}
+.gl{position:relative;display:flex;text-decoration:none;cursor:pointer;border:0;padding:0;margin:0;background:none;font:inherit;color:inherit;transition:transform 150ms cubic-bezier(.34,1.56,.64,1)}
+.gl:hover{transform:scale(1.04)}
+.gl:active{transform:translateY(7px);transition-duration:70ms}
+.gl:focus-visible{outline:6px solid #FFE14D;outline-offset:6px;border-radius:26px}
+.gl-drop{position:absolute;left:0;right:0;top:0;bottom:-8px;background:rgba(26,14,6,.28);border-radius:22px}
+.gl:active .gl-drop{bottom:-2px}
+.gl-body{position:relative;flex-grow:1;display:flex;border:4px solid #2E1B10;border-radius:22px;background:var(--lo);padding-bottom:10px;transition:padding 70ms}
+.gl:active .gl-body{padding-bottom:3px}
+.gl-face{position:relative;flex-grow:1;display:flex;align-items:center;justify-content:center;gap:14px;background:var(--face);border-top:4px solid var(--hi);border-radius:18px;overflow:hidden;padding:14px 36px}
+.gl-shine{position:absolute;left:8px;right:8px;top:4px;height:38%;background:rgba(255,255,255,.3);border-radius:9999px;transition:background 120ms}
+.gl:hover .gl-shine{background:rgba(255,255,255,.5)}
+.gl-label{position:relative;font-weight:700;font-size:30px;line-height:1.15;color:#fff;-webkit-text-stroke:7px var(--ink);paint-order:stroke fill;text-shadow:0 3px 0 var(--ink);white-space:nowrap}
+.p-cream .gl-label{color:#5A3A1E;-webkit-text-stroke:0;text-shadow:none}
+.p-cream.sm .gl-label,.p-cream.lg .gl-label{-webkit-text-stroke-width:0}
+.gl-ico{position:relative;width:38px;height:38px;flex-shrink:0;fill:none;stroke:#fff;stroke-width:4;stroke-linecap:round;stroke-linejoin:round;filter:drop-shadow(0 3px 0 var(--ink))}
+.p-cream .gl-ico{stroke:#2E1B10;filter:none}
+.lg .gl-face{padding:22px 48px;gap:18px}
+.lg .gl-label{font-size:38px;-webkit-text-stroke-width:8px}
+.lg .gl-ico{width:46px;height:46px}
+.sm .gl-body{padding-bottom:6px;border-radius:18px}
+.sm .gl-drop{border-radius:18px;bottom:-6px}
+.sm .gl-face{padding:10px 22px;border-radius:14px;gap:10px}
+.sm .gl-label{font-size:24px;-webkit-text-stroke-width:6px}
+.sm .gl-ico{width:30px;height:30px}
+.round .gl-body,.round .gl-drop,.round .gl-face{border-radius:9999px}
+.round .gl-face{padding:0;width:84px;height:84px}
+.round .gl-shine{height:34%;left:14px;right:14px}
+.fam-prairie{--fr-hi:#A6E86F;--fr:#5CC23A;--fr-lo:#3A8C22;--plate:#FFF6E3;--plate2:#F8E9CC;--inset:#EAD6B2;--t-ink:#3B2416;--t-muted:#6E4C31;--t-accent:#B4560F}
+.panel{position:relative;display:flex;animation:pop 260ms cubic-bezier(.34,1.56,.64,1) both}
+.panel-drop{position:absolute;left:0;right:0;top:0;bottom:-12px;background:rgba(26,14,6,.28);border-radius:44px}
+.panel-body{position:relative;flex-grow:1;display:flex;border:4px solid #2E1B10;border-radius:44px;background:var(--fr-lo);padding-bottom:14px}
+.panel-frame{position:relative;flex-grow:1;display:flex;background:var(--fr);border-top:4px solid var(--fr-hi);border-radius:40px;padding:18px}
+.plate{position:relative;flex-grow:1;display:flex;flex-direction:column;gap:28px;background:var(--plate);border:4px solid #2E1B10;border-radius:26px;padding:72px 44px 40px;color:var(--t-ink)}
+.rivet{position:absolute;width:14px;height:14px;border-radius:9999px;background:var(--fr-hi);border:3px solid #2E1B10}
+.ribbon-wrap{position:absolute;left:0;right:0;top:-58px;display:flex;justify-content:center;animation:ribbon 200ms 240ms cubic-bezier(.34,1.56,.64,1) both}
+.ribbon{cursor:default}.ribbon:hover,.ribbon:active{transform:none}
+.ribbon .gl-body,.ribbon .gl-drop,.ribbon .gl-face{border-radius:9999px}
+.ribbon .gl-face{padding:12px 72px}
+.ribbon .gl-label{font-family:'Lilita One',sans-serif;font-weight:400;font-size:58px;-webkit-text-stroke-width:10px;text-shadow:0 5px 0 var(--ink)}
+.muted{font-size:24px;font-weight:500;color:var(--t-muted)}
+.card{position:relative;display:flex;padding:0;margin:0;border:0;background:none;font:inherit;color:inherit;text-align:left;cursor:pointer;transition:transform 150ms cubic-bezier(.34,1.56,.64,1)}
+.card:hover{transform:translateY(-10px) rotate(-1.5deg)}
+.card:focus-visible{outline:6px solid #FFE14D;outline-offset:10px;border-radius:34px}
+.card-drop{position:absolute;left:0;right:0;top:0;bottom:-10px;background:rgba(26,14,6,.28);border-radius:30px}
+.card-body{position:relative;flex-grow:1;display:flex;border:4px solid #2E1B10;border-radius:30px;background:#E2C391;padding-bottom:10px}
+.card-face{position:relative;flex-grow:1;display:flex;flex-direction:column;background:#FFF1D6;border-top:4px solid #FFFFFF;border-radius:26px;overflow:hidden}
+.card-illu{display:block;width:100%;aspect-ratio:1.8;border-bottom:4px solid #2E1B10}
+.card-illu svg{display:block;width:100%;height:100%}
+.card-txt{display:flex;flex-direction:column;gap:4px;padding:18px 24px 22px}
+.card-title{font-size:34px;font-weight:700;color:#3B2416}
+.card-ring{position:absolute;left:-16px;right:-16px;top:-16px;bottom:-24px;border:6px solid #FF9B2F;border-radius:44px;pointer-events:none}
+.check{position:absolute;right:-26px;top:-26px;width:64px;height:64px;display:flex;border:4px solid #2E1B10;border-radius:9999px;background:#3A8C22;padding-bottom:6px;animation:pop 220ms cubic-bezier(.34,1.56,.64,1) both}
+.check-face{flex-grow:1;display:flex;align-items:center;justify-content:center;border-radius:9999px;background:#5CC23A;border-top:3px solid #A6E86F}
+.tag{position:absolute;left:16px;top:16px;padding:4px 16px 6px;border:4px solid #2E1B10;border-radius:9999px;background:var(--face);font-size:20px;font-weight:700;color:#fff;-webkit-text-stroke:5px var(--ink);paint-order:stroke fill}
+@keyframes pop{0%{transform:scale(.85);opacity:0}60%{transform:scale(1.03);opacity:1}100%{transform:scale(1)}}
+@keyframes ribbon{0%{transform:translateY(-50px);opacity:0}100%{transform:none;opacity:1}}
+@media (prefers-reduced-motion:reduce){*{animation:none!important;transition:none!important}}
+</style>
+</head>
+<body>
+<div class="fam-prairie" style="position: relative; width: 1920px; height: 1080px; overflow: hidden; background: #8FD6FF">
+<svg viewBox="0 0 1920 1080" style="position: absolute; left: 0; top: 0; width: 1920px; height: 1080px" aria-hidden="true">
+<rect width="1920" height="1080" fill="#8FD6FF"></rect>
+<circle cx="1650" cy="170" r="86" fill="#FFC72C" stroke="#2E1B10" stroke-width="6"></circle>
+<polygon points="0,640 220,520 430,600 680,470 940,580 1180,490 1460,590 1700,500 1920,560 1920,1080 0,1080" fill="#A6E86F" stroke="#2E1B10" stroke-width="6" stroke-linejoin="round"></polygon>
+<polygon points="0,780 300,700 560,770 860,710 1160,780 1460,700 1920,770 1920,1080 0,1080" fill="#5CC23A" stroke="#2E1B10" stroke-width="6" stroke-linejoin="round"></polygon>
+<g fill="#3A8C22" opacity=".45"><polygon points="300,700 560,770 380,820"></polygon><polygon points="860,710 1160,780 960,830"></polygon><polygon points="1460,700 1920,770 1600,830"></polygon></g>
+</svg>
+
+<div class="panel" style="position: absolute; left: 80px; top: 130px; width: 1760px">
+<div class="panel-drop"></div>
+<div class="panel-body"><div class="panel-frame">
+<span class="rivet" style="left: 70px; top: 2px"></span><span class="rivet" style="right: 70px; top: 2px"></span><span class="rivet" style="left: 70px; bottom: 2px"></span><span class="rivet" style="right: 70px; bottom: 2px"></span>
+<div class="plate">
+<div style="display: flex; align-items: center; justify-content: space-between">
+<div role="group" aria-label="Filtrer par famille" style="display: flex; gap: 14px">
+<button class="gl p-blue sm" aria-pressed="true"><span class="gl-drop"></span><span class="gl-body"><span class="gl-face"><span class="gl-shine"></span><span class="gl-label">Tous</span></span></span></button>
+<button class="gl p-cream sm" aria-pressed="false"><span class="gl-drop"></span><span class="gl-body"><span class="gl-face"><span class="gl-shine"></span><span class="gl-label">Prairie</span></span></span></button>
+<button class="gl p-cream sm" aria-pressed="false"><span class="gl-drop"></span><span class="gl-body"><span class="gl-face"><span class="gl-shine"></span><span class="gl-label">Casino</span></span></span></button>
+<button class="gl p-cream sm" aria-pressed="false"><span class="gl-drop"></span><span class="gl-body"><span class="gl-face"><span class="gl-shine"></span><span class="gl-label">TV Time</span></span></span></button>
+</div>
+<div class="muted">3 jeux</div>
+</div>
+
+<div style="display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 44px; padding: 8px 12px 12px">
+<button class="card" aria-pressed="true">
+<span class="card-drop"></span>
+<span class="card-body"><span class="card-face">
+<span class="card-illu"><svg viewBox="0 0 720 400" aria-hidden="true">
+<rect width="720" height="400" fill="#A6E86F"></rect>
+<circle cx="620" cy="80" r="44" fill="#FFC72C" stroke="#2E1B10" stroke-width="6"></circle>
+<polygon points="0,280 180,220 360,270 540,210 720,260 720,400 0,400" fill="#5CC23A" stroke="#2E1B10" stroke-width="6" stroke-linejoin="round"></polygon>
+<g fill="#EAD6B2" stroke="#2E1B10" stroke-width="5"><ellipse cx="80" cy="350" rx="44" ry="18"></ellipse><ellipse cx="190" cy="330" rx="44" ry="18"></ellipse><ellipse cx="530" cy="330" rx="44" ry="18"></ellipse><ellipse cx="640" cy="350" rx="44" ry="18"></ellipse></g>
+<g transform="rotate(-14 360 230)" stroke="#2E1B10" stroke-width="8" stroke-linejoin="round">
+<polygon points="360,70 330,150 390,150" fill="#5CC23A"></polygon><polygon points="360,150 300,90 350,100" fill="#3A8C22"></polygon><polygon points="360,150 420,86 372,104" fill="#3A8C22"></polygon>
+<polygon points="296,150 424,150 360,370" fill="#FF9B2F"></polygon>
+<path d="M322 200h26M340 250h24M334 300h18" fill="none" stroke-linecap="round" stroke-width="6"></path>
+</g>
+</svg></span>
+<span class="card-txt"><span class="card-title">Croque-Carotte</span><span class="muted">2 à 4 joueurs · Plateau</span></span>
+</span></span>
+<span class="card-ring"></span><span class="check"><span class="check-face"><svg viewBox="0 0 48 48" style="width: 34px; height: 34px; fill: none; stroke: #FFFFFF; stroke-width: 6; stroke-linecap: round; stroke-linejoin: round" aria-hidden="true"><path d="M10 25l10 10 18-22"></path></svg></span></span>
+</button>
+
+<button class="card" aria-pressed="false">
+<span class="card-drop"></span>
+<span class="card-body"><span class="card-face">
+<span class="card-illu"><svg viewBox="0 0 720 400" aria-hidden="true">
+<rect width="720" height="400" fill="#17603A"></rect>
+<g stroke="#1E7045" stroke-width="10"><path d="M0 60L720 60M0 340L720 340"></path></g>
+<circle cx="300" cy="200" r="160" fill="#FFC72C" stroke="#2E1B10" stroke-width="8"></circle>
+<circle cx="300" cy="200" r="130" fill="#E0453A" stroke="#2E1B10" stroke-width="6"></circle>
+<circle cx="300" cy="200" r="100" fill="none" stroke="#2E1B10" stroke-width="58" stroke-dasharray="26.18 26.18"></circle>
+<circle cx="300" cy="200" r="70" fill="#1E7045" stroke="#2E1B10" stroke-width="6"></circle>
+<path d="M300 140v120M240 200h120" stroke="#FFC72C" stroke-width="10" stroke-linecap="round"></path>
+<circle cx="300" cy="200" r="24" fill="#FFC72C" stroke="#2E1B10" stroke-width="6"></circle>
+<circle cx="382" cy="112" r="14" fill="#FFFFFF" stroke="#2E1B10" stroke-width="5"></circle>
+<g stroke="#2E1B10" stroke-width="6"><ellipse cx="580" cy="316" rx="72" ry="26" fill="#3AA7F2"></ellipse><ellipse cx="580" cy="290" rx="72" ry="26" fill="#F0503E"></ellipse><ellipse cx="580" cy="264" rx="72" ry="26" fill="#FFC72C"></ellipse></g>
+<ellipse cx="580" cy="264" rx="40" ry="13" fill="none" stroke="#FFFFFF" stroke-width="6" stroke-dasharray="12 12"></ellipse>
+</svg></span>
+<span class="card-txt"><span class="card-title">Roulette</span><span class="muted">2 à 8 joueurs · Casino</span></span>
+</span></span>
+
+</button>
+
+<button class="card" aria-pressed="false">
+<span class="card-drop"></span>
+<span class="card-body"><span class="card-face">
+<span class="card-illu"><svg viewBox="0 0 720 400" aria-hidden="true">
+<rect width="720" height="400" fill="#2A1446"></rect>
+<g fill="#3A1E5E"><polygon points="140,0 220,0 420,400 250,400"></polygon><polygon points="500,0 580,0 470,400 300,400"></polygon></g>
+<ellipse cx="360" cy="380" rx="260" ry="44" fill="#1B0C30" stroke="#2E1B10" stroke-width="6"></ellipse>
+<path d="M360 250v130" stroke="#2E1B10" stroke-width="16" stroke-linecap="round"></path>
+<path d="M360 250v130" stroke="#D4C3EE" stroke-width="6" stroke-linecap="round"></path>
+<path d="M300 380h120" stroke="#2E1B10" stroke-width="16" stroke-linecap="round"></path>
+<rect x="315" y="70" width="90" height="180" rx="45" fill="#A652EA" stroke="#2E1B10" stroke-width="8"></rect>
+<path d="M330 110h60M325 140h70M325 170h70" stroke="#6F25B3" stroke-width="6" stroke-linecap="round"></path>
+<rect x="306" y="196" width="108" height="30" rx="10" fill="#F03C92" stroke="#2E1B10" stroke-width="6"></rect>
+<g fill="#FFE14D" stroke="#2E1B10" stroke-width="4" stroke-linejoin="round"><path d="M150 90C154 118 164 128 192 132C164 136 154 146 150 174C146 146 136 136 108 132C136 128 146 118 150 90Z"></path><path d="M580 150C583 170 590 177 610 180C590 183 583 190 580 210C577 190 570 183 550 180C570 177 577 170 580 150Z"></path></g>
+</svg></span>
+<span class="card-txt"><span class="card-title">Quiz des célébrités</span><span class="muted">2 à 6 joueurs · Quiz</span></span>
+<span class="tag p-pink">Nouveau</span>
+</span></span>
+
+</button>
+</div>
+
+<div style="display: flex; align-items: center; justify-content: space-between; gap: 24px; padding-top: 8px">
+<a class="gl p-cream" href="index.html">
+<span class="gl-drop"></span><span class="gl-body"><span class="gl-face"><span class="gl-shine"></span>
+<svg class="gl-ico" viewBox="0 0 48 48" aria-hidden="true"><path d="M30 10L16 24l14 14"></path></svg>
+<span class="gl-label">Retour</span></span></span>
+</a>
+<div style="display: flex; align-items: center; gap: 28px">
+<div class="muted summary">Croque-Carotte · 2 à 4 joueurs</div>
+<a class="gl p-orange lg" href="Salon.html">
+<span class="gl-drop"></span><span class="gl-body"><span class="gl-face"><span class="gl-shine"></span>
+<svg class="gl-ico" viewBox="0 0 48 48" aria-hidden="true"><path d="M16 10L38 24 16 38Z"></path></svg>
+<span class="gl-label">Continuer</span></span></span>
+</a>
+</div>
+</div>
+</div>
+</div></div>
+<div class="ribbon-wrap"><div class="gl p-orange ribbon"><span class="gl-drop"></span><span class="gl-body"><span class="gl-face"><span class="gl-shine"></span><h1 class="gl-label" style="margin: 0">Choisis un jeu</h1></span></span></div></div>
+</div>
+</div>
+<script>
+document.querySelectorAll('.card').forEach((c,i,all)=>{c.addEventListener('click',()=>{all.forEach(o=>{o.setAttribute('aria-pressed','false');o.querySelectorAll('.card-ring,.check').forEach(e=>e.remove())});c.setAttribute('aria-pressed','true');c.insertAdjacentHTML('beforeend','<span class="card-ring"></span><span class="check"><span class="check-face"><svg viewBox="0 0 48 48" style="width: 34px; height: 34px; fill: none; stroke: #FFFFFF; stroke-width: 6; stroke-linecap: round; stroke-linejoin: round" aria-hidden="true"><path d="M10 25l10 10 18-22"></path></svg></span></span>');document.querySelector('.summary').textContent=['Croque-Carotte · 2 à 4 joueurs','Roulette · 2 à 8 joueurs','Quiz des célébrités · 2 à 6 joueurs'][i];})});
+</script>
+</body>
+</html>

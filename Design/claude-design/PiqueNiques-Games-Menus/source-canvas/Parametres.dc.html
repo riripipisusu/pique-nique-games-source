@@ -1,0 +1,195 @@
+<!doctype html>
+<html lang="fr">
+<head>
+<meta charset="utf-8">
+<title>Paramètres</title>
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Bungee&amp;family=Fredoka:wght@400;500;600;700&amp;family=Lilita+One&amp;display=swap">
+<style>
+body{margin:0;font-family:'Fredoka',system-ui,sans-serif;color:#3B2416;background:#8FD6FF}
+a{color:#B4560F}a:hover{color:#7A3300}
+*{box-sizing:border-box}
+.p-orange{--hi:#FFC46B;--face:#FF9B2F;--lo:#D9660C;--ink:#7A3300}
+.p-blue{--hi:#8FD6FF;--face:#3AA7F2;--lo:#1C6FC4;--ink:#0D3A73}
+.p-cream{--hi:#FFFFFF;--face:#FFF1D6;--lo:#E2C391;--ink:#5A3A1E}
+.gl{position:relative;display:flex;text-decoration:none;cursor:pointer;border:0;padding:0;margin:0;background:none;font:inherit;color:inherit;transition:transform 150ms cubic-bezier(.34,1.56,.64,1)}
+.gl:hover{transform:scale(1.04)}
+.gl:active{transform:translateY(7px);transition-duration:70ms}
+.gl:focus-visible{outline:6px solid #FFE14D;outline-offset:6px;border-radius:26px}
+.gl-drop{position:absolute;left:0;right:0;top:0;bottom:-8px;background:rgba(26,14,6,.28);border-radius:22px}
+.gl:active .gl-drop{bottom:-2px}
+.gl-body{position:relative;flex-grow:1;display:flex;border:4px solid #2E1B10;border-radius:22px;background:var(--lo);padding-bottom:10px;transition:padding 70ms}
+.gl:active .gl-body{padding-bottom:3px}
+.gl-face{position:relative;flex-grow:1;display:flex;align-items:center;justify-content:center;gap:14px;background:var(--face);border-top:4px solid var(--hi);border-radius:18px;overflow:hidden;padding:14px 36px}
+.gl-shine{position:absolute;left:8px;right:8px;top:4px;height:38%;background:rgba(255,255,255,.3);border-radius:9999px;transition:background 120ms}
+.gl:hover .gl-shine{background:rgba(255,255,255,.5)}
+.gl-label{position:relative;font-weight:700;font-size:30px;line-height:1.15;color:#fff;-webkit-text-stroke:7px var(--ink);paint-order:stroke fill;text-shadow:0 3px 0 var(--ink);white-space:nowrap}
+.p-cream .gl-label{color:#5A3A1E;-webkit-text-stroke:0;text-shadow:none}
+.p-cream.sm .gl-label,.p-cream.lg .gl-label{-webkit-text-stroke-width:0}
+.gl-ico{position:relative;width:38px;height:38px;flex-shrink:0;fill:none;stroke:#fff;stroke-width:4;stroke-linecap:round;stroke-linejoin:round;filter:drop-shadow(0 3px 0 var(--ink))}
+.p-cream .gl-ico{stroke:#2E1B10;filter:none}
+.lg .gl-face{padding:22px 48px;gap:18px}
+.lg .gl-label{font-size:38px;-webkit-text-stroke-width:8px}
+.sm .gl-body{padding-bottom:6px;border-radius:18px}
+.sm .gl-drop{border-radius:18px;bottom:-6px}
+.sm .gl-face{padding:10px 18px;border-radius:14px;gap:10px}
+.sm .gl-label{font-size:24px;-webkit-text-stroke-width:6px}
+.fam-prairie{--fr-hi:#A6E86F;--fr:#5CC23A;--fr-lo:#3A8C22;--plate:#FFF6E3;--plate2:#F8E9CC;--inset:#EAD6B2;--t-ink:#3B2416;--t-muted:#6E4C31;--t-accent:#B4560F}
+.panel{position:relative;display:flex;animation:pop 260ms cubic-bezier(.34,1.56,.64,1) both}
+.panel-drop{position:absolute;left:0;right:0;top:0;bottom:-12px;background:rgba(26,14,6,.28);border-radius:44px}
+.panel-body{position:relative;flex-grow:1;display:flex;border:4px solid #2E1B10;border-radius:44px;background:var(--fr-lo);padding-bottom:14px}
+.panel-frame{position:relative;flex-grow:1;display:flex;background:var(--fr);border-top:4px solid var(--fr-hi);border-radius:40px;padding:18px}
+.plate{position:relative;flex-grow:1;display:flex;flex-direction:column;gap:28px;background:var(--plate);border:4px solid #2E1B10;border-radius:26px;padding:72px 44px 40px;color:var(--t-ink)}
+.rivet{position:absolute;width:14px;height:14px;border-radius:9999px;background:var(--fr-hi);border:3px solid #2E1B10}
+.ribbon-wrap{position:absolute;left:0;right:0;top:-58px;display:flex;justify-content:center;animation:ribbon 200ms 240ms cubic-bezier(.34,1.56,.64,1) both}
+.ribbon{cursor:default}.ribbon:hover,.ribbon:active{transform:none}
+.ribbon .gl-body,.ribbon .gl-drop,.ribbon .gl-face{border-radius:9999px}
+.ribbon .gl-face{padding:12px 72px}
+.ribbon .gl-label{font-family:'Lilita One',sans-serif;font-weight:400;font-size:58px;-webkit-text-stroke-width:10px;text-shadow:0 5px 0 var(--ink)}
+.h2{margin:0;font-size:34px;font-weight:700;color:var(--t-ink)}
+.lbl{font-size:24px;font-weight:600;color:var(--t-ink)}
+.val{font-size:24px;font-weight:700;color:var(--t-accent)}
+.col{flex:1 1 0;min-width:0;display:flex;flex-direction:column;gap:26px}
+.grp{display:flex;flex-direction:column;gap:12px}
+.field{position:relative;display:flex;align-items:center;gap:12px;background:#FFFFFF;border:4px solid #2E1B10;border-radius:22px;overflow:hidden;padding:18px 22px 10px}
+.field::before{content:'';position:absolute;left:0;right:0;top:0;height:9px;background:#DCCFB8}
+.field:focus-within{border-color:#1C6FC4;outline:6px solid #FFE14D}
+.field-input{flex-grow:1;border:0;background:transparent;font:inherit;font-size:28px;font-weight:600;color:#3B2416;outline:none;appearance:none;-webkit-appearance:none;min-width:0;cursor:pointer}
+.field-input::placeholder{color:#8A6D55}
+.track{position:relative;display:block;height:36px}
+.track-in{position:absolute;left:0;right:0;top:0;bottom:0;border:4px solid #2E1B10;border-radius:9999px;background:#F8E9CC;overflow:hidden}
+.track-in::before{content:'';position:absolute;left:0;right:0;top:0;height:8px;background:#EAD6B2;z-index:1}
+.track-fill{position:absolute;left:0;top:0;bottom:0;background:#3AA7F2}
+.range{position:absolute;left:0;right:0;top:-10px;bottom:-10px;width:100%;height:56px;margin:0;opacity:0;cursor:pointer;z-index:2}
+.knob{position:absolute;top:50%;width:52px;height:52px;margin:-26px 0 0 -26px;display:flex;border-radius:9999px;border:4px solid #2E1B10;background:#1C6FC4;padding-bottom:6px;pointer-events:none}
+.knob-face{flex-grow:1;border-radius:9999px;background:#3AA7F2;border-top:3px solid #8FD6FF}
+.range:focus-visible ~ .knob{outline:6px solid #FFE14D;outline-offset:3px}
+.tg{position:relative;display:flex;align-items:center;justify-content:space-between;gap:20px;cursor:pointer}
+.tg-in{position:absolute;opacity:0;width:1px;height:1px}
+.tg-track{position:relative;flex-shrink:0;width:108px;height:58px;border:4px solid #2E1B10;border-radius:9999px;background:#F8E9CC;overflow:hidden;transition:background 150ms}
+.tg-track::before{content:'';position:absolute;left:0;right:0;top:0;height:9px;background:#EAD6B2}
+.tg-track.on{background:#5CC23A}
+.tg-track.on::before{background:#3A8C22}
+.tg-knob{position:absolute;left:5px;top:6px;width:40px;height:40px;border-radius:9999px;background:#FFF1D6;border:4px solid #2E1B10;border-bottom-width:7px;transition:left 160ms cubic-bezier(.34,1.56,.64,1)}
+.tg-track.on .tg-knob{left:55px}
+.tg-in:focus-visible + .tg-track{outline:6px solid #FFE14D;outline-offset:3px}
+@keyframes pop{0%{transform:scale(.85);opacity:0}60%{transform:scale(1.03);opacity:1}100%{transform:scale(1)}}
+@keyframes ribbon{0%{transform:translateY(-50px);opacity:0}100%{transform:none;opacity:1}}
+@media (prefers-reduced-motion:reduce){*{animation:none!important;transition:none!important}}
+</style>
+</helmet>
+<div class="fam-prairie" style="position: relative; width: 1920px; height: 1080px; overflow: hidden; background: #8FD6FF">
+<svg viewBox="0 0 1920 1080" style="position: absolute; left: 0; top: 0; width: 1920px; height: 1080px" aria-hidden="true">
+<rect width="1920" height="1080" fill="#8FD6FF"></rect>
+<circle cx="1650" cy="170" r="86" fill="#FFC72C" stroke="#2E1B10" stroke-width="6"></circle>
+<polygon points="0,640 220,520 430,600 680,470 940,580 1180,490 1460,590 1700,500 1920,560 1920,1080 0,1080" fill="#A6E86F" stroke="#2E1B10" stroke-width="6" stroke-linejoin="round"></polygon>
+<polygon points="0,780 300,700 560,770 860,710 1160,780 1460,700 1920,770 1920,1080 0,1080" fill="#5CC23A" stroke="#2E1B10" stroke-width="6" stroke-linejoin="round"></polygon>
+<g fill="#3A8C22" opacity=".45"><polygon points="300,700 560,770 380,820"></polygon><polygon points="860,710 1160,780 960,830"></polygon><polygon points="1460,700 1920,770 1600,830"></polygon></g>
+</svg>
+
+<div class="panel" style="position: absolute; left: 410px; top: 160px; width: 1100px">
+<div class="panel-drop"></div>
+<div class="panel-body"><div class="panel-frame">
+<span class="rivet" style="left: 70px; top: 2px"></span><span class="rivet" style="right: 70px; top: 2px"></span><span class="rivet" style="left: 70px; bottom: 2px"></span><span class="rivet" style="right: 70px; bottom: 2px"></span>
+<div class="plate">
+<div style="display: flex; gap: 48px">
+
+<section class="col">
+<h2 class="h2">Jeu</h2>
+<div class="grp">
+<label class="lbl" for="prenom">Ton prénom</label>
+<div class="field"><input id="prenom" class="field-input" type="text" placeholder="Ton prénom" maxlength="16" style="cursor: text"></div>
+</div>
+<div class="grp">
+<span class="lbl" id="vit">Vitesse des animations</span>
+<div role="group" aria-labelledby="vit" style="display: flex; gap: 12px">
+<button class="gl sm {{c0}}" aria-pressed="{{s0}}" onClick="{{set0}}" style="flex-grow: 1"><span class="gl-drop"></span><span class="gl-body"><span class="gl-face"><span class="gl-shine"></span><span class="gl-label">Réduite</span></span></span></button>
+<button class="gl sm {{c1}}" aria-pressed="{{s1}}" onClick="{{set1}}" style="flex-grow: 1"><span class="gl-drop"></span><span class="gl-body"><span class="gl-face"><span class="gl-shine"></span><span class="gl-label">Normale</span></span></span></button>
+<button class="gl sm {{c2}}" aria-pressed="{{s2}}" onClick="{{set2}}" style="flex-grow: 1"><span class="gl-drop"></span><span class="gl-body"><span class="gl-face"><span class="gl-shine"></span><span class="gl-label">Rapide</span></span></span></button>
+</div>
+</div>
+<div class="grp">
+<label class="lbl" for="langue">Langue</label>
+<div class="field">
+<select id="langue" class="field-input"><option>Français</option><option>English</option><option>Español</option></select>
+<svg viewBox="0 0 48 48" style="width: 30px; height: 30px; flex-shrink: 0; fill: none; stroke: #2E1B10; stroke-width: 5; stroke-linecap: round; stroke-linejoin: round; pointer-events: none" aria-hidden="true"><path d="M12 18l12 12 12-12"></path></svg>
+</div>
+</div>
+</section>
+
+<section class="col">
+<h2 class="h2">Son</h2>
+<label class="grp">
+<span style="display: flex; justify-content: space-between"><span class="lbl">Volume général</span><span class="val">{{vMaster}} %</span></span>
+<span class="track"><span class="track-in"><span class="track-fill" style="width: {{wMaster}}"></span></span><input class="range" type="range" min="0" max="100" value="{{vMaster}}" onChange="{{setMaster}}"><span class="knob" style="left: {{wMaster}}"><span class="knob-face"></span></span></span>
+</label>
+<label class="grp">
+<span style="display: flex; justify-content: space-between"><span class="lbl">Musique</span><span class="val">{{vMusic}} %</span></span>
+<span class="track"><span class="track-in"><span class="track-fill" style="width: {{wMusic}}"></span></span><input class="range" type="range" min="0" max="100" value="{{vMusic}}" onChange="{{setMusic}}"><span class="knob" style="left: {{wMusic}}"><span class="knob-face"></span></span></span>
+</label>
+<label class="grp">
+<span style="display: flex; justify-content: space-between"><span class="lbl">Effets sonores</span><span class="val">{{vSfx}} %</span></span>
+<span class="track"><span class="track-in"><span class="track-fill" style="width: {{wSfx}}"></span></span><input class="range" type="range" min="0" max="100" value="{{vSfx}}" onChange="{{setSfx}}"><span class="knob" style="left: {{wSfx}}"><span class="knob-face"></span></span></span>
+</label>
+<label class="tg">
+<span class="lbl">Voix de l'animateur</span>
+<input class="tg-in" type="checkbox" checked="{{voice}}" onChange="{{toggleVoice}}">
+<span class="tg-track {{voiceCls}}"><span class="tg-knob"></span></span>
+</label>
+</section>
+</div>
+
+<div style="display: flex; align-items: center; justify-content: space-between; padding-top: 8px">
+<a class="gl p-cream" href="Main.dc.html">
+<span class="gl-drop"></span><span class="gl-body"><span class="gl-face"><span class="gl-shine"></span>
+<svg class="gl-ico" viewBox="0 0 48 48" aria-hidden="true"><path d="M30 10L16 24l14 14"></path></svg>
+<span class="gl-label">Retour</span></span></span>
+</a>
+<button class="gl p-orange lg">
+<span class="gl-drop"></span><span class="gl-body"><span class="gl-face"><span class="gl-shine"></span>
+<svg class="gl-ico" viewBox="0 0 48 48" style="width: 44px; height: 44px" aria-hidden="true"><path d="M10 25l10 10 18-22"></path></svg>
+<span class="gl-label">Enregistrer</span></span></span>
+</button>
+</div>
+</div>
+</div></div>
+<div class="ribbon-wrap"><div class="gl p-orange ribbon"><span class="gl-drop"></span><span class="gl-body"><span class="gl-face"><span class="gl-shine"></span><h1 class="gl-label" style="margin: 0">Paramètres</h1></span></span></div></div>
+</div>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"$preview":{"width":1920,"height":1080}}'>
+class Component extends DCLogic {
+  constructor(props) {
+    super(props);
+    this.state = { master: 80, music: 60, sfx: 90, speed: 1, voice: true };
+  }
+  renderVals() {
+    const s = this.state;
+    const sp = (i) => s.speed === i;
+    return {
+      vMaster: s.master, wMaster: s.master + '%',
+      vMusic: s.music, wMusic: s.music + '%',
+      vSfx: s.sfx, wSfx: s.sfx + '%',
+      setMaster: (e) => this.setState({ master: +e.target.value }),
+      setMusic: (e) => this.setState({ music: +e.target.value }),
+      setSfx: (e) => this.setState({ sfx: +e.target.value }),
+      s0: sp(0), s1: sp(1), s2: sp(2),
+      c0: sp(0) ? 'p-blue' : 'p-cream',
+      c1: sp(1) ? 'p-blue' : 'p-cream',
+      c2: sp(2) ? 'p-blue' : 'p-cream',
+      set0: () => this.setState({ speed: 0 }),
+      set1: () => this.setState({ speed: 1 }),
+      set2: () => this.setState({ speed: 2 }),
+      voice: s.voice,
+      voiceCls: s.voice ? 'on' : '',
+      toggleVoice: () => this.setState({ voice: !s.voice })
+    };
+  }
+}
+</script>
+</body>
+</html>

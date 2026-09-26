@@ -1,0 +1,16 @@
+Pique-Nique's Games · Menus et interface
+=========================================
+
+html/            Les 6 écrans en pages web autonomes (1920 × 1080).
+                 Ouvre html/index.html dans ton navigateur : les boutons
+                 enchaînent les écrans, polices incluses (fonctionne hors ligne).
+                 index.html = Accueil · Jeux · Salon · Partie · Pause · Parametres
+apercus/         Captures PNG 1920 × 1080 de chaque écran.
+source-canvas/   Fichiers source du canvas Claude Design (.dc.html + canvas.json).
+design-system/   tokens.json du design system Pique-Nique's Games.
+
+À remplacer par tes vrais éléments : décor 3D (fond prairie = aplat),
+icônes et illustrations (redessinées), noms des jeux Roulette / Quiz et
+leur nombre de joueurs, prénoms, code du salon, numéro de version.
+
+Polices : Fredoka, Lilita One, Bungee (licence SIL OFL).

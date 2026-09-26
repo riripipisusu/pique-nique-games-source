@@ -1,0 +1,134 @@
+<!doctype html>
+<html lang="fr">
+<head>
+<meta charset="utf-8">
+<title>En jeu</title>
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Bungee&amp;family=Fredoka:wght@400;500;600;700&amp;family=Lilita+One&amp;display=swap">
+<style>
+body{margin:0;font-family:'Fredoka',system-ui,sans-serif;color:#3B2416;background:#8FD6FF}
+a{color:#B4560F}a:hover{color:#7A3300}
+*{box-sizing:border-box}
+.p-orange{--hi:#FFC46B;--face:#FF9B2F;--lo:#D9660C;--ink:#7A3300}
+.p-cream{--hi:#FFFFFF;--face:#FFF1D6;--lo:#E2C391;--ink:#5A3A1E}
+.gl{position:relative;display:flex;text-decoration:none;cursor:pointer;border:0;padding:0;margin:0;background:none;font:inherit;color:inherit;transition:transform 150ms cubic-bezier(.34,1.56,.64,1)}
+.gl:hover{transform:scale(1.04)}
+.gl:active{transform:translateY(7px);transition-duration:70ms}
+.gl:focus-visible{outline:6px solid #FFE14D;outline-offset:6px;border-radius:26px}
+.gl-drop{position:absolute;left:0;right:0;top:0;bottom:-8px;background:rgba(26,14,6,.28);border-radius:22px}
+.gl:active .gl-drop{bottom:-2px}
+.gl-body{position:relative;flex-grow:1;display:flex;border:4px solid #2E1B10;border-radius:22px;background:var(--lo);padding-bottom:10px;transition:padding 70ms}
+.gl:active .gl-body{padding-bottom:3px}
+.gl-face{position:relative;flex-grow:1;display:flex;align-items:center;justify-content:center;gap:14px;background:var(--face);border-top:4px solid var(--hi);border-radius:18px;overflow:hidden;padding:14px 36px}
+.gl-shine{position:absolute;left:8px;right:8px;top:4px;height:38%;background:rgba(255,255,255,.3);border-radius:9999px;transition:background 120ms}
+.gl:hover .gl-shine{background:rgba(255,255,255,.5)}
+.gl-label{position:relative;font-weight:700;font-size:30px;line-height:1.15;color:#fff;-webkit-text-stroke:7px var(--ink);paint-order:stroke fill;text-shadow:0 3px 0 var(--ink);white-space:nowrap}
+.p-cream .gl-label{color:#5A3A1E;-webkit-text-stroke:0;text-shadow:none}
+.p-cream.sm .gl-label,.p-cream.lg .gl-label{-webkit-text-stroke-width:0}
+.gl-ico{position:relative;width:38px;height:38px;flex-shrink:0;fill:none;stroke:#fff;stroke-width:4;stroke-linecap:round;stroke-linejoin:round;filter:drop-shadow(0 3px 0 var(--ink))}
+.p-cream .gl-ico{stroke:#2E1B10;filter:none}
+.lg .gl-face{padding:22px 48px;gap:18px}
+.lg .gl-label{font-size:38px;-webkit-text-stroke-width:8px}
+.lg .gl-ico{width:46px;height:46px}
+.round .gl-body,.round .gl-drop,.round .gl-face{border-radius:9999px}
+.round .gl-face{padding:0;width:72px;height:72px}
+.round .gl-shine{height:34%;left:12px;right:12px}
+.med{position:relative;display:flex;align-items:center;gap:16px;width:250px;padding:10px 16px 10px 12px;background:#FFF6E3;border:4px solid #2E1B10;border-bottom-width:8px;border-radius:22px}
+.med-on{transform:scale(1.06)}
+.med-ring{position:absolute;left:-14px;right:-14px;top:-14px;bottom:-18px;border:6px solid #FF9B2F;border-radius:34px;pointer-events:none}
+.av{position:relative;width:64px;height:64px;flex-shrink:0;border-radius:9999px;background:#F3D9B8;border:6px solid #2E1B10;display:flex;align-items:center;justify-content:center}
+.av-face{width:34px;height:34px;fill:none;stroke:#6E4C31;stroke-width:4;stroke-linecap:round;stroke-linejoin:round}
+.av-sym{position:absolute;right:-12px;bottom:-10px;width:30px;height:30px}
+.pname{font-size:28px;font-weight:700;line-height:1.1;-webkit-text-stroke:4px #2E1B10;paint-order:stroke fill}
+.sub{font-size:20px;font-weight:600;color:#6E4C31}
+.banner{position:relative;display:flex;animation:banner 500ms cubic-bezier(.34,1.56,.64,1) both}
+.banner .gl-label{font-family:'Lilita One',sans-serif;font-weight:400;font-size:72px;-webkit-text-stroke-width:12px;text-shadow:0 6px 0 var(--ink)}
+.banner .gl-face{padding:20px 84px;border-radius:9999px}
+.banner .gl-body,.banner .gl-drop{border-radius:9999px}
+.sparkle{position:absolute;animation:twinkle 1.2s ease-in-out infinite alternate}
+.feed{display:flex;align-items:center;gap:10px;padding:8px 18px;background:rgba(255,246,227,.92);border:3px solid #2E1B10;border-radius:9999px;font-size:20px;font-weight:600;color:#3B2416}
+.feed b{-webkit-text-stroke:3px #2E1B10;paint-order:stroke fill}
+@keyframes banner{0%{transform:scale(.4);opacity:0}60%{transform:scale(1.12);opacity:1}100%{transform:scale(1)}}
+@keyframes twinkle{0%{transform:rotate(-15deg) scale(.8)}100%{transform:rotate(15deg) scale(1.1)}}
+@keyframes pulse{0%{transform:scale(1)}100%{transform:scale(1.12)}}
+@media (prefers-reduced-motion:reduce){*{animation:none!important;transition:none!important}}
+</style>
+</helmet>
+<div style="position: relative; width: 1920px; height: 1080px; overflow: hidden; background: #8FD6FF">
+<svg viewBox="0 0 1920 1080" style="position: absolute; left: 0; top: 0; width: 1920px; height: 1080px" aria-hidden="true">
+<rect width="1920" height="1080" fill="#8FD6FF"></rect>
+<circle cx="1650" cy="240" r="86" fill="#FFC72C" stroke="#2E1B10" stroke-width="6"></circle>
+<polygon points="0,560 220,440 430,520 680,390 940,500 1180,410 1460,510 1700,420 1920,480 1920,1080 0,1080" fill="#A6E86F" stroke="#2E1B10" stroke-width="6" stroke-linejoin="round"></polygon>
+<polygon points="0,700 300,620 560,690 860,630 1160,700 1460,620 1920,690 1920,1080 0,1080" fill="#5CC23A" stroke="#2E1B10" stroke-width="6" stroke-linejoin="round"></polygon>
+<g fill="#EAD6B2" stroke="#2E1B10" stroke-width="6"><ellipse cx="260" cy="900" rx="80" ry="30"></ellipse><ellipse cx="460" cy="850" rx="80" ry="30"></ellipse><ellipse cx="680" cy="820" rx="80" ry="30"></ellipse><ellipse cx="910" cy="810" rx="80" ry="30"></ellipse><ellipse cx="1140" cy="820" rx="80" ry="30"></ellipse><ellipse cx="1360" cy="850" rx="80" ry="30"></ellipse><ellipse cx="1570" cy="900" rx="80" ry="30"></ellipse></g>
+<g transform="rotate(-10 1640 740)" stroke="#2E1B10" stroke-width="7" stroke-linejoin="round"><polygon points="1640,610 1616,670 1664,670" fill="#5CC23A"></polygon><polygon points="1590,670 1690,670 1640,850" fill="#FF9B2F"></polygon></g>
+</svg>
+
+<div style="position: absolute; left: 64px; top: 64px; display: flex; gap: 24px" aria-label="Joueurs">
+<div class="med">
+<span class="av" style="border-color: #2C62C9"><svg class="av-face" viewBox="0 0 48 48" aria-hidden="true"><circle cx="24" cy="17" r="8"></circle><path d="M9 41c2-9 8-13 15-13s13 4 15 13"></path></svg><svg class="av-sym" viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="11" fill="#2C62C9" stroke="#2E1B10" stroke-width="2"></circle><rect x="7" y="7" width="10" height="10" rx="1.5" fill="#FFFFFF"></rect></svg></span>
+<div><div class="pname" style="color: #2C62C9">Toi</div><div class="sub">Case 9</div></div>
+</div>
+<div class="med med-on">
+<span class="med-ring"></span>
+<span class="av" style="border-color: #F08A24"><svg class="av-face" viewBox="0 0 48 48" aria-hidden="true"><circle cx="24" cy="17" r="8"></circle><path d="M9 41c2-9 8-13 15-13s13 4 15 13"></path></svg><svg class="av-sym" viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="11" fill="#F08A24" stroke="#2E1B10" stroke-width="2"></circle><polygon points="12,6 17.2,9 17.2,15 12,18 6.8,15 6.8,9" fill="#FFFFFF"></polygon></svg></span>
+<div><div class="pname" style="color: #F08A24">Léo</div><div class="sub">Case 12</div></div>
+</div>
+<div class="med">
+<span class="av" style="border-color: #2E9E4F"><svg class="av-face" viewBox="0 0 48 48" aria-hidden="true"><circle cx="24" cy="17" r="8"></circle><path d="M9 41c2-9 8-13 15-13s13 4 15 13"></path></svg><svg class="av-sym" viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="11" fill="#2E9E4F" stroke="#2E1B10" stroke-width="2"></circle><polygon points="12,6.5 17.5,16.5 6.5,16.5" fill="#FFFFFF"></polygon></svg></span>
+<div><div class="pname" style="color: #2E9E4F">Maya</div><div class="sub">Case 7</div></div>
+</div>
+<div class="med">
+<span class="av" style="border-color: #C42F7E"><svg class="av-face" viewBox="0 0 48 48" aria-hidden="true"><rect x="10" y="16" width="28" height="22" rx="6"></rect><circle cx="19" cy="27" r="2.5"></circle><circle cx="29" cy="27" r="2.5"></circle><path d="M24 16V9"></path></svg><svg class="av-sym" viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="11" fill="#C42F7E" stroke="#2E1B10" stroke-width="2"></circle><path d="M12 17.5C7 14 6 11 7.6 9.2C9 7.8 11 8.2 12 10C13 8.2 15 7.8 16.4 9.2C18 11 17 14 12 17.5Z" fill="#FFFFFF"></path></svg></span>
+<div><div class="pname" style="color: #C42F7E">Radis</div><div class="sub">Case 10</div></div>
+</div>
+</div>
+
+<div style="position: absolute; right: 32px; top: 32px; display: flex; gap: 16px">
+<button class="gl p-cream round" aria-label="Couper le son"><span class="gl-drop"></span><span class="gl-body"><span class="gl-face"><span class="gl-shine"></span><svg class="gl-ico" viewBox="0 0 48 48" aria-hidden="true"><path d="M8 18h8l10-8v28l-10-8H8zM32 18c3 3 3 9 0 12M36 13c6 6 6 16 0 22"></path></svg></span></span></button>
+<a class="gl p-cream round" href="Pause.dc.html" aria-label="Pause"><span class="gl-drop"></span><span class="gl-body"><span class="gl-face"><span class="gl-shine"></span><svg class="gl-ico" viewBox="0 0 48 48" aria-hidden="true"><path d="M17 12v24M31 12v24"></path></svg></span></span></a>
+</div>
+
+<div style="position: absolute; left: 0; right: 0; top: 330px; display: flex; justify-content: center">
+<div class="banner p-orange" role="status">
+<span class="gl-drop"></span><span class="gl-body"><span class="gl-face"><span class="gl-shine"></span><span class="gl-label">Au tour de Léo&nbsp;!</span></span></span>
+<svg class="sparkle" viewBox="0 0 24 24" style="left: -40px; top: -30px; width: 60px; height: 60px" aria-hidden="true"><path d="M12 1C13 8 16 11 23 12C16 13 13 16 12 23C11 16 8 13 1 12C8 11 11 8 12 1Z" fill="#FFE98A" stroke="#2E1B10" stroke-width="2" stroke-linejoin="round"></path></svg>
+<svg class="sparkle" viewBox="0 0 24 24" style="right: -30px; bottom: -24px; width: 48px; height: 48px; animation-delay: .6s" aria-hidden="true"><path d="M12 1C13 8 16 11 23 12C16 13 13 16 12 23C11 16 8 13 1 12C8 11 11 8 12 1Z" fill="#FFE98A" stroke="#2E1B10" stroke-width="2" stroke-linejoin="round"></path></svg>
+</div>
+</div>
+
+<div style="position: absolute; left: 32px; bottom: 32px; display: flex; flex-direction: column; align-items: flex-start; gap: 10px" aria-label="Historique">
+<div class="feed"><b style="color: #2E9E4F">Maya</b> avance de 3 cases</div>
+<div class="feed"><b style="color: #C42F7E">Radis</b> pioche une carte</div>
+</div>
+
+<div style="position: absolute; left: 0; right: 0; bottom: 72px; display: flex; justify-content: center">
+<button class="gl p-orange lg">
+<span class="gl-drop"></span><span class="gl-body"><span class="gl-face"><span class="gl-shine"></span>
+<svg class="gl-ico" viewBox="0 0 48 48" aria-hidden="true"><rect x="8" y="12" width="20" height="28" rx="4" transform="rotate(-10 18 26)"></rect><rect x="20" y="8" width="20" height="28" rx="4" transform="rotate(8 30 22)"></rect></svg>
+<span class="gl-label">Piocher une carte</span></span></span>
+</button>
+</div>
+
+<div style="position: absolute; right: 64px; bottom: 64px; width: 168px; height: 168px; border-radius: 9999px; background: #F8E9CC; border: 4px solid #2E1B10; border-top-width: 12px; display: flex; align-items: center; justify-content: center" role="timer" aria-label="12 secondes restantes">
+<svg viewBox="0 0 160 160" style="position: absolute; left: 4px; top: 0px; width: 152px; height: 152px; transform: rotate(-90deg)" aria-hidden="true"><circle cx="80" cy="80" r="64" fill="none" stroke="#EAD6B2" stroke-width="16"></circle><circle cx="80" cy="80" r="64" fill="none" stroke="#5CC23A" stroke-width="16" stroke-linecap="round" stroke-dasharray="241 402"></circle></svg>
+<div style="position: relative; display: flex; flex-direction: column; align-items: center">
+<span style="font-family: 'Lilita One', sans-serif; font-size: 60px; line-height: 1; color: #3B2416">12</span>
+<span style="font-size: 16px; font-weight: 600; color: #6E4C31">secondes</span>
+</div>
+</div>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"$preview":{"width":1920,"height":1080}}'>
+class Component extends DCLogic {
+  renderVals() {
+    return {};
+  }
+}
+</script>
+</body>
+</html>

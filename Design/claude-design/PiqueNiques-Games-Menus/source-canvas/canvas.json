@@ -1,0 +1,90 @@
+{
+  "v": 3,
+  "attachments": {},
+  "boards": {
+    "Jeux.dc.html": {
+      "h": 1080,
+      "is_interactive": true,
+      "title": "Choix du jeu",
+      "w": 1920,
+      "x": 2000,
+      "y": 0
+    },
+    "Main.dc.html": {
+      "h": 1080,
+      "is_interactive": true,
+      "title": "Accueil",
+      "w": 1920,
+      "x": 0,
+      "y": 0
+    },
+    "Parametres.dc.html": {
+      "h": 1080,
+      "is_interactive": true,
+      "title": "Paramètres",
+      "w": 1920,
+      "x": 4000,
+      "y": 1200
+    },
+    "Partie.dc.html": {
+      "h": 1080,
+      "is_interactive": true,
+      "title": "En jeu (HUD)",
+      "w": 1920,
+      "x": 0,
+      "y": 1200
+    },
+    "Pause.dc.html": {
+      "h": 1080,
+      "is_interactive": true,
+      "title": "Pause",
+      "w": 1920,
+      "x": 2000,
+      "y": 1200
+    },
+    "Salon.dc.html": {
+      "h": 1080,
+      "is_interactive": true,
+      "title": "Salon",
+      "w": 1920,
+      "x": 4000,
+      "y": 0
+    }
+  },
+  "createdOnFiles": {
+    "at": "2026-09-25T23:00:21Z",
+    "v": 1
+  },
+  "designSystems": [
+    {
+      "artifact": "https://claude.ai/code/artifact/1db5a94a-6d4b-4106-bdf5-ab10e3c4ea5a",
+      "copiedAt": "2026-09-25T23:00:21Z",
+      "namespace": "pique-nique",
+      "title": "Pique-Nique's Games",
+      "version": null
+    }
+  ],
+  "launch": {
+    "view": "canvas"
+  },
+  "notes": {
+    "titre": {
+      "kind": "title1",
+      "maxW": 5920,
+      "text": "Pique-Nique's Games · Menus et interface",
+      "w": 240,
+      "x": 0,
+      "y": -300
+    }
+  },
+  "order": [
+    "Main.dc.html",
+    "Jeux.dc.html",
+    "Salon.dc.html",
+    "Partie.dc.html",
+    "Pause.dc.html",
+    "Parametres.dc.html"
+  ],
+  "pages": [],
+  "title": "Pique-Nique's Games · Menus"
+}

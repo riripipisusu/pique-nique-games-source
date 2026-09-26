@@ -1,0 +1,144 @@
+<!doctype html>
+<html lang="fr">
+<head>
+<meta charset="utf-8">
+<title>Accueil</title>
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<helmet>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Bungee&amp;family=Fredoka:wght@400;500;600;700&amp;family=Lilita+One&amp;display=swap">
+<style>
+body{margin:0;font-family:'Fredoka',system-ui,sans-serif;color:#3B2416;background:#8FD6FF}
+a{color:#B4560F}a:hover{color:#7A3300}
+*{box-sizing:border-box}
+.p-orange{--hi:#FFC46B;--face:#FF9B2F;--lo:#D9660C;--ink:#7A3300}
+.p-green{--hi:#A6E86F;--face:#5CC23A;--lo:#3A8C22;--ink:#1E5410}
+.p-blue{--hi:#8FD6FF;--face:#3AA7F2;--lo:#1C6FC4;--ink:#0D3A73}
+.p-red{--hi:#FF8C7C;--face:#F0503E;--lo:#B82A1D;--ink:#6B120A}
+.p-gold{--hi:#FFE98A;--face:#FFC72C;--lo:#D99500;--ink:#6B4400}
+.p-purple{--hi:#D9A3FF;--face:#A652EA;--lo:#6F25B3;--ink:#3A0E66}
+.p-pink{--hi:#FF8CC6;--face:#F03C92;--lo:#B3145F;--ink:#5E0632}
+.p-cream{--hi:#FFFFFF;--face:#FFF1D6;--lo:#E2C391;--ink:#5A3A1E}
+.gl{position:relative;display:flex;text-decoration:none;cursor:pointer;border:0;padding:0;margin:0;background:none;font:inherit;color:inherit;transition:transform 150ms cubic-bezier(.34,1.56,.64,1)}
+.gl:hover{transform:scale(1.04)}
+.gl:active{transform:translateY(7px);transition-duration:70ms}
+.gl:focus-visible{outline:6px solid #FFE14D;outline-offset:6px;border-radius:26px}
+.gl-drop{position:absolute;left:0;right:0;top:0;bottom:-8px;background:rgba(26,14,6,.28);border-radius:22px}
+.gl:active .gl-drop{bottom:-2px}
+.gl-body{position:relative;flex-grow:1;display:flex;border:4px solid #2E1B10;border-radius:22px;background:var(--lo);padding-bottom:10px;transition:padding 70ms}
+.gl:active .gl-body{padding-bottom:3px}
+.gl-face{position:relative;flex-grow:1;display:flex;align-items:center;justify-content:center;gap:14px;background:var(--face);border-top:4px solid var(--hi);border-radius:18px;overflow:hidden;padding:14px 36px}
+.gl-shine{position:absolute;left:8px;right:8px;top:4px;height:38%;background:rgba(255,255,255,.3);border-radius:9999px;transition:background 120ms}
+.gl:hover .gl-shine{background:rgba(255,255,255,.5)}
+.gl-label{position:relative;font-weight:700;font-size:30px;line-height:1.15;color:#fff;-webkit-text-stroke:7px var(--ink);paint-order:stroke fill;text-shadow:0 3px 0 var(--ink);white-space:nowrap}
+.p-cream .gl-label{color:#5A3A1E;-webkit-text-stroke:0;text-shadow:none}
+.p-cream.sm .gl-label,.p-cream.lg .gl-label{-webkit-text-stroke-width:0}
+.gl-ico{position:relative;width:38px;height:38px;flex-shrink:0;fill:none;stroke:#fff;stroke-width:4;stroke-linecap:round;stroke-linejoin:round;filter:drop-shadow(0 3px 0 var(--ink))}
+.p-cream .gl-ico{stroke:#2E1B10;filter:none}
+.lg .gl-face{padding:22px 48px;gap:18px}
+.lg .gl-label{font-size:38px;-webkit-text-stroke-width:8px}
+.lg .gl-ico{width:46px;height:46px}
+.sm .gl-body{padding-bottom:6px;border-radius:18px}
+.sm .gl-drop{border-radius:18px;bottom:-6px}
+.sm .gl-face{padding:10px 22px;border-radius:14px;gap:10px}
+.sm .gl-label{font-size:24px;-webkit-text-stroke-width:6px}
+.sm .gl-ico{width:30px;height:30px}
+.round .gl-body,.round .gl-drop,.round .gl-face{border-radius:9999px}
+.round .gl-face{padding:0;width:84px;height:84px}
+.round .gl-shine{height:34%;left:14px;right:14px}
+.logo{margin:0;font-family:'Lilita One',sans-serif;font-weight:400;line-height:.95;text-align:center;-webkit-text-stroke:16px #2E1B10;paint-order:stroke fill;text-shadow:0 10px 0 #2E1B10}
+.sparkle{position:absolute;animation:twinkle 1.2s ease-in-out infinite alternate}
+@keyframes twinkle{0%{transform:rotate(-15deg) scale(.8)}100%{transform:rotate(15deg) scale(1.1)}}
+@keyframes pop{0%{transform:scale(.85);opacity:0}60%{transform:scale(1.03);opacity:1}100%{transform:scale(1)}}
+.pop{animation:pop 260ms cubic-bezier(.34,1.56,.64,1) both}
+@media (prefers-reduced-motion:reduce){*{animation:none!important;transition:none!important}}
+</style>
+</helmet>
+<div style="position: relative; width: 1920px; height: 1080px; overflow: hidden; background: #8FD6FF">
+<svg viewBox="0 0 1920 1080" style="position: absolute; left: 0; top: 0; width: 1920px; height: 1080px" aria-hidden="true">
+<defs><pattern id="vichy" width="56" height="56" patternUnits="userSpaceOnUse"><rect width="56" height="56" fill="#FFF6E3"></rect><rect width="28" height="56" fill="#F0503E" opacity=".5"></rect><rect width="56" height="28" fill="#F0503E" opacity=".5"></rect></pattern></defs>
+<rect width="1920" height="1080" fill="#8FD6FF"></rect>
+<circle cx="1650" cy="170" r="130" fill="#FFE98A" opacity=".55"></circle>
+<circle cx="1650" cy="170" r="86" fill="#FFC72C" stroke="#2E1B10" stroke-width="6"></circle>
+<g fill="#FFFFFF" stroke="#2E1B10" stroke-width="6" stroke-linejoin="round"><polygon points="150,250 200,200 280,196 330,150 420,158 470,210 540,222 560,250"></polygon><polygon points="1180,140 1220,104 1290,100 1330,70 1400,78 1440,116 1490,128 1504,150"></polygon></g>
+<polygon points="0,640 220,520 430,600 680,470 940,580 1180,490 1460,590 1700,500 1920,560 1920,1080 0,1080" fill="#A6E86F" stroke="#2E1B10" stroke-width="6" stroke-linejoin="round"></polygon>
+<g fill="#8FD65A"><polygon points="220,520 430,600 300,640"></polygon><polygon points="680,470 940,580 760,620"></polygon><polygon points="1180,490 1460,590 1280,630"></polygon><polygon points="1700,500 1920,560 1780,610"></polygon></g>
+<polygon points="0,780 300,700 560,770 860,710 1160,780 1460,700 1920,770 1920,1080 0,1080" fill="#5CC23A" stroke="#2E1B10" stroke-width="6" stroke-linejoin="round"></polygon>
+<g fill="#3A8C22" opacity=".45"><polygon points="300,700 560,770 380,820"></polygon><polygon points="860,710 1160,780 960,830"></polygon><polygon points="1460,700 1920,770 1600,830"></polygon></g>
+<g stroke="#2E1B10" stroke-width="6" stroke-linejoin="round"><rect x="136" y="640" width="28" height="110" fill="#6B4A33"></rect><polygon points="150,420 250,660 50,660" fill="#3A8C22"></polygon><polygon points="150,420 150,660 50,660" fill="#2E7A1A"></polygon><rect x="1756" y="620" width="28" height="120" fill="#6B4A33"></rect><polygon points="1770,390 1880,640 1660,640" fill="#3A8C22"></polygon><polygon points="1770,390 1770,640 1660,640" fill="#2E7A1A"></polygon></g>
+<polygon points="620,1080 760,880 1160,880 1300,1080" fill="url(#vichy)" stroke="#2E1B10" stroke-width="6" stroke-linejoin="round"></polygon>
+<g stroke="#2E1B10" stroke-width="5" stroke-linejoin="round"><polygon points="1040,960 1110,920 1122,940" fill="#FF9B2F"></polygon><polygon points="1110,920 1140,896 1130,930" fill="#5CC23A"></polygon><polygon points="1112,922 1150,918 1128,936" fill="#3A8C22"></polygon></g>
+</svg>
+
+<div style="position: absolute; left: 0; right: 0; top: 96px; display: flex; flex-direction: column; align-items: center; gap: 6px; transform: rotate(-3deg)">
+<h1 class="logo" style="font-size: 136px; color: #FFC46B">Pique-Nique's</h1>
+<div class="logo" style="font-size: 100px; color: #A6E86F">Games</div>
+<svg class="sparkle" viewBox="0 0 24 24" style="left: 520px; top: 20px; width: 56px; height: 56px" aria-hidden="true"><path d="M12 1C13 8 16 11 23 12C16 13 13 16 12 23C11 16 8 13 1 12C8 11 11 8 12 1Z" fill="#FFE98A" stroke="#2E1B10" stroke-width="2" stroke-linejoin="round"></path></svg>
+<svg class="sparkle" viewBox="0 0 24 24" style="right: 500px; top: 200px; width: 44px; height: 44px; animation-delay: .5s" aria-hidden="true"><path d="M12 1C13 8 16 11 23 12C16 13 13 16 12 23C11 16 8 13 1 12C8 11 11 8 12 1Z" fill="#FFE98A" stroke="#2E1B10" stroke-width="2" stroke-linejoin="round"></path></svg>
+</div>
+
+<nav class="pop" style="position: absolute; left: 640px; top: 470px; width: 640px; display: flex; flex-direction: column; gap: 28px" aria-label="Menu principal">
+<a class="gl p-orange lg" href="Salon.dc.html" style="width: 640px">
+<span class="gl-drop"></span><span class="gl-body"><span class="gl-face"><span class="gl-shine"></span>
+<svg class="gl-ico" viewBox="0 0 48 48" aria-hidden="true"><circle cx="24" cy="24" r="17"></circle><ellipse cx="24" cy="24" rx="7" ry="17"></ellipse><path d="M7 24h34"></path></svg>
+<span class="gl-label">Jouer en ligne</span></span></span>
+</a>
+<a class="gl p-green lg" href="Jeux.dc.html" style="width: 640px">
+<span class="gl-drop"></span><span class="gl-body"><span class="gl-face"><span class="gl-shine"></span>
+<svg class="gl-ico" viewBox="0 0 48 48" aria-hidden="true"><rect x="6" y="8" width="36" height="25" rx="4"></rect><path d="M17 41h14M24 33v8"></path></svg>
+<span class="gl-label">Jouer sur ce PC</span></span></span>
+</a>
+<div style="display: flex; gap: 20px">
+<a class="gl p-cream" href="#regles" style="flex-grow: 1">
+<span class="gl-drop"></span><span class="gl-body"><span class="gl-face" style="padding: 14px 18px"><span class="gl-shine"></span>
+<svg class="gl-ico" viewBox="0 0 48 48" aria-hidden="true"><path d="M6 10h13a5 5 0 0 1 5 5v25a4 4 0 0 0-4-4H6zM42 10H29a5 5 0 0 0-5 5v25a4 4 0 0 1 4-4h14z"></path></svg>
+<span class="gl-label">Règles</span></span></span>
+</a>
+<a class="gl p-blue" href="Parametres.dc.html" style="flex-grow: 1">
+<span class="gl-drop"></span><span class="gl-body"><span class="gl-face" style="padding: 14px 18px"><span class="gl-shine"></span>
+<svg class="gl-ico" viewBox="0 0 48 48" aria-hidden="true"><circle cx="24" cy="24" r="7"></circle><circle cx="24" cy="24" r="14"></circle><path d="M24 4v6M24 38v6M4 24h6M38 24h6M10 10l4 4M34 34l4 4M38 10l-4 4M14 34l-4 4"></path></svg>
+<span class="gl-label">Paramètres</span></span></span>
+</a>
+<a class="gl p-red" href="#quitter" style="flex-grow: 1">
+<span class="gl-drop"></span><span class="gl-body"><span class="gl-face" style="padding: 14px 18px"><span class="gl-shine"></span>
+<svg class="gl-ico" viewBox="0 0 48 48" aria-hidden="true"><path d="M20 8H10v32h10M22 24h18M33 17l7 7-7 7"></path></svg>
+<span class="gl-label">Quitter</span></span></span>
+</a>
+</div>
+</nav>
+
+<div style="position: absolute; right: 32px; top: 32px; display: flex; gap: 16px">
+<button class="gl p-cream round" aria-label="Couper le son">
+<span class="gl-drop"></span><span class="gl-body"><span class="gl-face"><span class="gl-shine"></span>
+<svg class="gl-ico" viewBox="0 0 48 48" aria-hidden="true"><path d="M8 18h8l10-8v28l-10-8H8zM32 18c3 3 3 9 0 12M36 13c6 6 6 16 0 22"></path></svg>
+</span></span>
+</button>
+</div>
+
+<a class="gl p-cream" href="#profil" style="position: absolute; left: 64px; bottom: 72px">
+<span class="gl-drop"></span><span class="gl-body"><span class="gl-face" style="padding: 12px 28px 12px 12px; gap: 16px"><span class="gl-shine"></span>
+<span style="position: relative; width: 64px; height: 64px; border-radius: 9999px; background: #F3D9B8; border: 6px solid #2C62C9; display: flex; align-items: center; justify-content: center">
+<svg viewBox="0 0 48 48" style="width: 36px; height: 36px; fill: none; stroke: #6E4C31; stroke-width: 4; stroke-linecap: round" aria-hidden="true"><circle cx="24" cy="17" r="8"></circle><path d="M9 41c2-9 8-13 15-13s13 4 15 13"></path></svg>
+<svg viewBox="0 0 24 24" style="position: absolute; right: -12px; bottom: -10px; width: 30px; height: 30px" aria-hidden="true"><circle cx="12" cy="12" r="11" fill="#2C62C9" stroke="#2E1B10" stroke-width="2"></circle><rect x="7" y="7" width="10" height="10" rx="1.5" fill="#FFFFFF"></rect></svg>
+</span>
+<span style="position: relative; display: flex; flex-direction: column; align-items: flex-start">
+<span style="font-size: 16px; font-weight: 600; color: #6E4C31">Ton prénom</span>
+<span style="font-size: 30px; font-weight: 700; color: #2C62C9; -webkit-text-stroke: 4px #2E1B10; paint-order: stroke fill">Toi</span>
+</span>
+</span></span>
+</a>
+
+<div style="position: absolute; right: 64px; bottom: 64px; font-size: 20px; font-weight: 600; color: #FFFFFF; -webkit-text-stroke: 5px #1E5410; paint-order: stroke fill">Version [0.0.0]</div>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script data-props='{"$preview":{"width":1920,"height":1080}}'>
+class Component extends DCLogic {
+  renderVals() {
+    return {};
+  }
+}
+</script>
+</body>
+</html>
