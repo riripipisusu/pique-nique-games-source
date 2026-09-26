@@ -217,7 +217,7 @@ public partial class Ui : MonoBehaviour
         var corner = Div(title, "corner");
         SoundBtn(corner);
         Text(title, "Version " + Application.version, "version");
-        Text(title, "Décors Synty Studios · Modèles Kenney & Quaternius (CC0)  ·  Questions : OpenQuizzDB (CC BY-SA) · Tenna : rig de ThatAverageJoe · Sons de roulette : Pixabay · Musiques : MMAudio, Geoff Harvey (Pixabay), « A Conversation with Saul » de Matthew Pablo (CC-BY 3.0)", "credits");
+        Text(title, "Décors Synty Studios · Modèles Kenney & Quaternius (CC0) · Lapins : Poly Art de Malbers Animations  ·  Questions : OpenQuizzDB (CC BY-SA) · Tenna : rig de ThatAverageJoe · Sons de roulette : Pixabay · Musiques : MMAudio, Geoff Harvey (Pixabay), « A Conversation with Saul » de Matthew Pablo (CC-BY 3.0)", "credits");
         updateCard = Div(title, "panel", "update-card");
         updateCard.style.display = DisplayStyle.None;
         updateText = Text(updateCard, "", "p");
