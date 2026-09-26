@@ -22,7 +22,7 @@ public class Board : MonoBehaviour
     Mesh cube, sphere;
     Font font;
     RuntimeAnimatorController rabbitCtrl;
-    GameObject rabbitPrefab;
+    GameObject[] rabbitPrefabs;
     Transform root, carrot;
     readonly Dictionary<int, Transform> stumps = new Dictionary<int, Transform>();
     readonly Dictionary<int, float> tops = new Dictionary<int, float>();
@@ -43,7 +43,7 @@ public class Board : MonoBehaviour
         fxMat = Resources.Load<Material>("Particle");
         font = Resources.Load<Font>("Fonts/Fredoka");
         rabbitCtrl = Resources.Load<RuntimeAnimatorController>("RabbitAnim");
-        rabbitPrefab = Resources.Load<GameObject>("Models/Rabbit");
+        rabbitPrefabs = new[] { "White", "Brown", "Brown White", "Common", "White Spots", "Black" }.Select(n => Resources.Load<GameObject>("Rabbits/" + n)).ToArray();   // pelages Poly Art (RabbitSetup)
         var c = GameObject.CreatePrimitive(PrimitiveType.Cube); cube = c.GetComponent<MeshFilter>().sharedMesh; Destroy(c);
         var s = GameObject.CreatePrimitive(PrimitiveType.Sphere); sphere = s.GetComponent<MeshFilter>().sharedMesh; Destroy(s);
         BuildWorld();
@@ -292,7 +292,7 @@ public class Board : MonoBehaviour
         bunnies = new Bunny[rules.players.Count, Rules.RabbitsPerPlayer];
         for (int p = 0; p < rules.players.Count; p++)
             for (int k = 0; k < Rules.RabbitsPerPlayer; k++)
-                bunnies[p, k] = MakeBunny(Colors[rules.players[p].color]);
+                bunnies[p, k] = MakeBunny(Colors[rules.players[p].color], rabbitPrefabs[rules.players[p].color % rabbitPrefabs.Length]);
         PlaceStumps();
         Sync();
     }
@@ -337,21 +337,27 @@ public class Board : MonoBehaviour
         }
     }
 
-    Bunny MakeBunny(Color c)
+    public static float RabbitLength = 1.05f;   // longueur du lapin (m) ; une case fait ~2 m
+
+    // Un pelage par joueur, et sa couleur en collier autour du cou (en plus de l'anneau au sol).
+    Bunny MakeBunny(Color c, GameObject prefab)
     {
         var t = new GameObject("Lapin").transform;
         t.SetParent(root);
-        var model = Instantiate(rabbitPrefab, t);
-        model.transform.localScale = Vector3.one * 0.42f;
+        var model = Instantiate(prefab, t);
+        model.transform.localPosition = Vector3.zero;   // le prefab Malbers garde une position de scene de demo
+        model.transform.localRotation = Quaternion.identity;
+        var smr = model.GetComponentInChildren<SkinnedMeshRenderer>();
+        model.transform.localScale *= RabbitLength / Mathf.Max(0.01f, smr.bounds.size.z);
         var an = model.GetComponentInChildren<Animator>();
         an.runtimeAnimatorController = rabbitCtrl;
         an.applyRootMotion = false;
-        foreach (var r in model.GetComponentsInChildren<Renderer>())
+        var neck = smr.bones.FirstOrDefault(b => b.name == "Neck");
+        if (neck)
         {
-            if (r.name.Contains("Eye")) continue;
-            var ms = r.materials;
-            foreach (var m in ms) m.color = Color.Lerp(Color.white, c, 0.4f);
-            r.materials = ms;
+            var collar = Prim(PrimitiveType.Sphere, Vector3.zero, Vector3.one, c, neck, 0.4f).transform;
+            var s = neck.lossyScale;
+            collar.localScale = new Vector3(0.3f / s.x, 0.3f / s.y, 0.3f / s.z);
         }
         var ring = Prim(PrimitiveType.Cylinder, Vector3.up * 0.02f, new Vector3(1.4f, 0.015f, 1.4f), c, t, 0.4f);
         return new Bunny { t = t, an = an, ring = ring.transform };
@@ -363,6 +369,7 @@ public class Board : MonoBehaviour
         if (dir.sqrMagnitude > 0.0001f) t.rotation = Quaternion.LookRotation(dir);
     }
 
+    public Vector3 BunnyPos(int p, int r) => bunnies[p, r].t.position;
     public void Sync()
     {
         for (int p = 0; p < rules.players.Count; p++)

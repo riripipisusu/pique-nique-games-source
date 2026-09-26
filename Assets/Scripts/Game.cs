@@ -38,6 +38,7 @@ public class Game : MonoBehaviour
     DepthOfField dof;
     bool inGame, paused, snapCam = true;
     float yaw = 35, pitch = 24, dist = 36;
+    Func<Vector3> testCam;   // autotest : cadrage force
     Vector3 target = new Vector3(0, 2.5f, 0);
 
     public static readonly string[] Characters =
@@ -197,6 +198,30 @@ public class Game : MonoBehaviour
         IEnumerator Shot(string n) { yield return new WaitForEndOfFrame(); var tex = ScreenCapture.CaptureScreenshotAsTexture(); System.IO.File.WriteAllBytes(System.IO.Path.Combine(dir, n + ".png"), tex.EncodeToPNG()); Destroy(tex); }
         IEnumerator Fps(string n) { int f = Time.frameCount; float t = Time.realtimeSinceStartup; yield return new WaitForSecondsRealtime(3); System.IO.File.AppendAllText(System.IO.Path.Combine(dir, "fps.txt"), $"{n}: {(Time.frameCount - f) / (Time.realtimeSinceStartup - t):0} fps" + System.Environment.NewLine); }
         yield return new WaitForSeconds(6); yield return Shot("1-titre"); yield return Fps("titre");
+        if (Array.IndexOf(Environment.GetCommandLineArgs(), "-lapins") >= 0)
+        {
+            names.Clear(); names.AddRange(new[] { "Anastasia", "Léo", "Camille", "Maya" });
+            SelectGame(GameId.Croque); StartGame();
+            yield return new WaitForSeconds(3);
+            testCam = () => board.BunnyPos(0, 1) + Vector3.up * 0.4f;
+            pitch = 22; dist = 6;
+            yield return new WaitForSeconds(2); yield return Shot("l-enclos");
+            for (int turn = 0; turn < 6; turn++)
+            {
+                while (busy) yield return null;
+                int pl = rules.turn;
+                testCam = () => board.BunnyPos(pl, 0) + Vector3.up * 0.4f;
+                Draw();
+                yield return new WaitForSeconds(1.2f);
+                while (busy) yield return null;
+                if (rules.drawn != null && rules.CanMove(0)) { Move(0); yield return new WaitForSeconds(0.45f); if (turn < 2) yield return Shot("l-saut" + turn); }
+                while (busy) yield return null;
+                yield return new WaitForSeconds(0.5f);
+                if (turn == 5) yield return Shot("l-case");
+            }
+            Application.Quit();
+            yield break;
+        }
         if (Array.IndexOf(Environment.GetCommandLineArgs(), "-uitour") >= 0)
         {
             yield return new WaitForSeconds(2); yield return Shot("u-titre");
@@ -1004,6 +1029,7 @@ public class Game : MonoBehaviour
         {
             var home = new Vector3(0, 2.5f, 0);
             want = inGame && settings.autoCam ? Vector3.Lerp(home, board.Focus, 0.55f) : home;
+            if (testCam != null) want = testCam();
             if (!inGame) { want = hub.Focus; pitch = Mathf.Lerp(pitch, 14, dt); dist = Mathf.Lerp(dist, 6.5f, dt); }
         }
         target = snapCam ? want : Vector3.Lerp(target, want, 1 - Mathf.Exp(-2.5f * dt));

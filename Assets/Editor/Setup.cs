@@ -136,7 +136,7 @@ public static class Setup
         PlayerSettings.runInBackground = true;   // en ligne, un Alt+Tab ne doit pas figer la partie
         AssetDatabase.SaveAssets();
 
-        RabbitController();
+        RabbitSetup.Build();
         AssetDatabase.ImportAsset(Res + "Characters", ImportAssetOptions.ImportRecursive | ImportAssetOptions.ForceUpdate);
         CharacterController();
         Portraits();
@@ -144,32 +144,6 @@ public static class Setup
         AssetDatabase.SaveAssets();
         Diagnose();
         SelfCheck();
-    }
-
-    // Copie les clips du lapin (pour pouvoir regler la boucle) et monte un AnimatorController.
-    static void RabbitController()
-    {
-        string dir = Res + "Anim/";
-        Directory.CreateDirectory(dir);
-        var clips = AssetDatabase.LoadAllAssetsAtPath(Res + "Models/Rabbit.glb").OfType<AnimationClip>().ToArray();
-        string ctrlPath = Res + "RabbitAnim.controller";
-        AssetDatabase.DeleteAsset(ctrlPath);
-        var ctrl = UnityEditor.Animations.AnimatorController.CreateAnimatorControllerAtPath(ctrlPath);
-        var sm = ctrl.layers[0].stateMachine;
-        string[] loops = { "Idle", "Sitting_Eating", "Wave", "Jump_Idle" };
-        foreach (var n in new[] { "Idle", "Jump", "Jump_Idle", "Death", "HitReact", "Wave", "Yes", "No", "Sitting_Eating", "Duck" })
-        {
-            var copy = Object.Instantiate(clips.First(c => c.name.EndsWith("|" + n)));
-            copy.name = n;
-            var s = AnimationUtility.GetAnimationClipSettings(copy);
-            s.loopTime = loops.Contains(n);
-            AnimationUtility.SetAnimationClipSettings(copy, s);
-            AssetDatabase.DeleteAsset(dir + n + ".anim");
-            AssetDatabase.CreateAsset(copy, dir + n + ".anim");
-            var state = sm.AddState(n);
-            state.motion = copy;
-            if (n == "Idle") sm.defaultState = state;
-        }
     }
 
     // Tous les personnages Quaternius partagent le meme squelette : un seul controleur suffit.
@@ -270,15 +244,6 @@ public static class Setup
 
     static void Diagnose()
     {
-        var rabbit = Resources.Load<GameObject>("Models/Rabbit");
-        Debug.Log("DIAG rabbit: " + (rabbit ? string.Join(", ", rabbit.GetComponentsInChildren<Component>(true).Select(c => c.GetType().Name).Distinct()) : "null"));
-        if (rabbit)
-        {
-            var clips = AssetDatabase.LoadAllAssetsAtPath(Res + "Models/Rabbit.glb").OfType<AnimationClip>().Select(c => c.name + (c.legacy ? "(legacy)" : ""));
-            Debug.Log("DIAG clips: " + string.Join(", ", clips));
-            var b = rabbit.GetComponentsInChildren<Renderer>().Select(r => r.bounds).Aggregate((a, c) => { a.Encapsulate(c); return a; });
-            Debug.Log("DIAG rabbit bounds: " + b.size);
-        }
         var tree = Resources.Load<GameObject>("Models/tree_oak");
         Debug.Log("DIAG tree: " + (tree ? tree.GetComponentInChildren<Renderer>().bounds.size + " " + tree.GetComponentInChildren<Renderer>().sharedMaterial.shader.name : "null"));
     }
