@@ -31,6 +31,46 @@ public class DiscordLink : MonoBehaviour
         bool ok = client.RegisterLaunchCommand(AppId, "");   // Discord pourra lancer ce jeu quand un ami accepte une invitation
         Debug.Log("Discord : commande de lancement enregistree = " + ok);
         client.SetActivityJoinCallback(Join);
+        client.SetActivityInviteCreatedCallback(inv => Debug.Log("Discord : invitation creee (" + inv.Type() + ")"));
+        client.SetStatusChangedCallback((st, err, detail) =>
+        {
+            Debug.Log($"Discord : etat {st} {(err != Client.Error.None ? err + " " + detail : "")}");
+            if (st == Client.Status.Ready) shown = "";   // connecte : on republie le statut (avec invitations)
+        });
+        SignIn();
+    }
+
+    // Connexion au compte Discord du joueur : sans elle, Discord lance bien le jeu depuis une invitation
+    // mais ne lui transmet pas le code du salon. Autorisation demandee une seule fois, puis jeton rafraichi.
+    const string RefreshKey = "discord-refresh";
+
+    void SignIn()
+    {
+        var refresh = PlayerPrefs.GetString(RefreshKey, "");
+        if (refresh != "") { client.RefreshToken(AppId, refresh, OnToken); return; }
+        var verifier = client.CreateAuthorizationCodeVerifier();
+        var args = new AuthorizationArgs();
+        args.SetClientId(AppId);
+        args.SetScopes(Client.GetDefaultPresenceScopes());
+        args.SetCodeChallenge(verifier.Challenge());
+        client.Authorize(args, (r, code, redirect) =>
+        {
+            if (!r.Successful()) { Debug.LogWarning("Discord : autorisation refusee : " + r.Error()); return; }
+            client.GetToken(AppId, code, verifier.Verifier(), redirect, OnToken);
+        });
+    }
+
+    void OnToken(ClientResult r, string access, string refresh, AuthorizationTokenType type, int expires, string scopes)
+    {
+        if (!r.Successful())
+        {
+            Debug.LogWarning("Discord : jeton refuse : " + r.Error());
+            if (PlayerPrefs.GetString(RefreshKey, "") != "") { PlayerPrefs.DeleteKey(RefreshKey); SignIn(); }   // jeton perime : on redemande
+            return;
+        }
+        PlayerPrefs.SetString(RefreshKey, refresh);
+        PlayerPrefs.Save();
+        client.UpdateToken(type, access, u => { if (u.Successful()) client.Connect(); else Debug.LogWarning("Discord : " + u.Error()); });
     }
 
     // Invitation acceptee (ou bouton Rejoindre) : le secret est le code du salon.

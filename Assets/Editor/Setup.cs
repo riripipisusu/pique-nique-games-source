@@ -130,7 +130,7 @@ public static class Setup
         EditorSceneManager.SaveScene(scene, "Assets/Scenes/Main.unity");
         EditorBuildSettings.scenes = new[] { new EditorBuildSettingsScene("Assets/Scenes/Main.unity", true) };
         PlayerSettings.productName = "Pique-Nique's Games";
-        PlayerSettings.companyName = "Anastasia";
+        PlayerSettings.companyName = "Pique-Nique";   // dossier des sauvegardes et du journal (anciennement "Anastasia", cf. Game.MigratePrefs)
         PlayerSettings.defaultIsNativeResolution = true;
         PlayerSettings.fullScreenMode = FullScreenMode.FullScreenWindow;
         PlayerSettings.runInBackground = true;   // en ligne, un Alt+Tab ne doit pas figer la partie
@@ -217,6 +217,9 @@ public static class Setup
 
     public static void Build()
     {
+        PlayerSettings.companyName = "Pique-Nique";
+        var icon = AssetDatabase.LoadAssetAtPath<Texture2D>("Assets/Icon/icon.png");
+        if (icon) PlayerSettings.SetIcons(UnityEditor.Build.NamedBuildTarget.Unknown, new[] { icon }, IconKind.Any);   // icone du .exe et de la fenetre
         if (File.Exists("VERSION")) PlayerSettings.bundleVersion = File.ReadAllText("VERSION").Trim();
         BakeWorld();
         var r = BuildPipeline.BuildPlayer(new[] { "Assets/Scenes/Main.unity", "Assets/Synty/Monde.unity" }, "Build/PiqueNiqueGames.exe", BuildTarget.StandaloneWindows64, BuildOptions.None);
