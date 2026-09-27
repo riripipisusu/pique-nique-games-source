@@ -248,7 +248,7 @@ public class Net : MonoBehaviour
             // Partie en cours : le nouveau venu la regarde (depart + actions deja jouees, rejouees en accelere).
             if (InGame) { SendTo(sender, "watch|" + startBody); foreach (var a in actions) SendTo(sender, a); }
         }
-        else if (p[0] == "act" && InGame && seats.TryGetValue(sender, out int seat) && CanPlay(seat))
+        else if (p[0] == "act" && InGame && seats.TryGetValue(sender, out int seat) && CanPlay(seat, p.Length > 1 ? p[1] : null))
             HostAct(p, seat);
         else if (p[0] == "quit" && InGame && seats.TryGetValue(sender, out int who) && who < Players && gone.Add(who))
             Broadcast("left|" + who);   // retourne au salon en pleine partie : l'hote joue pour lui
@@ -300,7 +300,8 @@ public class Net : MonoBehaviour
     public void SetOption(int option) { if (IsHost && !InGame) { LobbyOption = option; SendLobby(); } }
 
     // Au quiz, tout le monde repond en meme temps ; ailleurs, seul le joueur dont c'est le tour agit.
-    bool CanPlay(int seat) => seat < Players && !gone.Contains(seat) && (shadow.Actor == seat || shadow.Actor == Quiz.Everyone);
+    bool CanPlay(int seat, string action = null) => seat < Players && !gone.Contains(seat)
+        && (shadow.Actor == seat || shadow.Actor == Quiz.Everyone || (shadow is Uno && (action == "uno" || action == "catch" || action == "jump")));   // Uno : a tout moment
 
     public void SetGame(GameId g)
     {
@@ -349,7 +350,7 @@ public class Net : MonoBehaviour
 
     public void Act(string action)
     {
-        if (IsHost) { if (CanPlay(game.mySeat)) HostAct(("act|" + action).Split('|'), game.mySeat); }
+        if (IsHost) { if (CanPlay(game.mySeat, action.Split('|')[0])) HostAct(("act|" + action).Split('|'), game.mySeat); }
         else Send("act|" + action);
     }
 
@@ -360,6 +361,8 @@ public class Net : MonoBehaviour
         if (shadow is Quiz && p.Length > 2 && p[1] == "guess")
             p = new[] { "act", "guess", seat.ToString(), game.QuizElapsedMs.ToString(), Clean(p[2]) };
         if (shadow is Rhythm && p.Length > 2 && (p[1] == "sc" || p[1] == "done")) p[2] = seat.ToString();   // chacun ne donne que son score
+        if (shadow is Uno && p.Length > 2 && (p[1] == "uno" || p[1] == "catch" || p[1] == "jump") && seat >= 0) p[2] = seat.ToString();   // on n'annonce que pour soi
+        if (shadow is Uno && p.Length > 1 && p[1] == "next" && seat >= 0) return;
         if (shadow is Rhythm && p.Length > 1 && (p[1] == "go" || p[1] == "end") && seat >= 0) return;          // reserve a l'hote
         if (shadow.Finished || !shadow.TryApply(p.Skip(1).ToArray())) return;
         var msg = string.Join("|", p);
@@ -371,9 +374,9 @@ public class Net : MonoBehaviour
     void Update()
     {
         // Quiz : l'hote pilote les phases (fin du temps ou tout le monde a trouve, puis question suivante).
-        if (IsHost && InGame && (shadow is Quiz || shadow is Rhythm) && game.Idle)
+        if (IsHost && InGame && (shadow is Quiz || shadow is Rhythm || (shadow is Uno u0 && u0.phase == UPhase.RoundOver)) && game.Idle)
         {
-            var tick = shadow is Rhythm r ? game.RhythmTick(r) : game.QuizTick((Quiz)shadow);
+            var tick = shadow is Rhythm r ? game.RhythmTick(r) : shadow is Uno u ? game.UnoTick(u) : game.QuizTick((Quiz)shadow);
             if (tick != null) HostAct(new[] { "act", tick });
             return;
         }

@@ -808,3 +808,100 @@ Button.pick-game.selected { border-color: #FF9B2F; border-width: 6px; scale: 1.0
 .rh-dif-hard { background-color: #F29A2E; }
 .rh-dif-veryhard { background-color: #E0463C; }
 .rh-dif-impossible { background-color: #7A3CFF; }
+/* Uno : main en bas, vignettes des joueurs, roue des couleurs, fin de manche */
+.uno-top { position: absolute; top: 18px; left: 0; right: 0; align-items: center; }   /* toujours centre, quelle que soit la longueur du pseudo */
+.uno-turn {
+    font-size: 36px; -unity-font: url("../Fonts/LilitaOne.ttf"); -unity-font-definition: initial; color: rgb(255, 255, 255);
+    -unity-text-outline-width: 2.5px; -unity-text-outline-color: #2E1B10; padding: 4px 26px; border-radius: 24px; background-color: rgba(46, 27, 16, 0.75);
+}
+.uno-color {
+    margin-top: 8px; font-size: 22px; -unity-font-style: bold; color: rgb(255, 255, 255); padding: 3px 18px; border-radius: 16px;
+    border-width: 3px; border-color: #2E1B10; -unity-text-outline-width: 1.5px; -unity-text-outline-color: #2E1B10;
+}
+.uno-hand { position: absolute; bottom: -70px; left: 330px; right: 330px; flex-direction: row; align-items: flex-end; justify-content: center; }
+.uno-card {
+    width: 176px; height: 271px; padding: 0; margin: 0; border-width: 0; border-radius: 14px; background-color: rgba(0, 0, 0, 0);
+    -unity-background-scale-mode: stretch-to-fill; transition-property: translate, scale, opacity; transition-duration: 0.12s;
+}
+.uno-slot { transform-origin: 50% 100%; }
+.uno-card:hover { translate: 0 -34px; scale: 1.06 1.06; background-color: rgba(0, 0, 0, 0); }
+.uno-card.playable { translate: 0 -26px; }
+.uno-card.playable:hover { translate: 0 -52px; }
+.uno-status {
+    position: absolute; bottom: 250px; left: 50%; translate: -50% 0; font-size: 24px; -unity-font-style: bold; color: rgb(255, 245, 220);
+    padding: 4px 18px; border-radius: 16px; background-color: rgba(15, 10, 25, 0.8);
+}
+.uno-draw { position: absolute; right: 60px; bottom: 60px; }
+.uno-call {
+    position: absolute; right: 50px; bottom: 150px; width: 250px; height: 180px; padding: 0; margin: 0; border-width: 0;
+    background-color: rgba(0, 0, 0, 0); -unity-background-scale-mode: scale-to-fit;
+}
+.uno-call:hover { background-color: rgba(0, 0, 0, 0); scale: 1.08 1.08; }
+.uno-catch {
+    position: absolute; right: 50px; bottom: 350px; width: 250px; height: 180px; padding: 0; margin: 0; border-width: 0;
+    background-color: rgba(0, 0, 0, 0); -unity-background-scale-mode: scale-to-fit; align-items: center; justify-content: center;
+}
+.uno-catch:hover { background-color: rgba(0, 0, 0, 0); scale: 1.08 1.08; }
+.uno-catch-band {
+    rotate: -14deg; padding: 2px 22px; font-size: 38px; -unity-font: url("../Fonts/LilitaOne.ttf"); -unity-font-definition: initial; color: rgb(255, 255, 255);
+    background-color: rgb(229, 50, 45); border-width: 4px; border-color: rgb(255, 255, 255); border-radius: 10px;
+    -unity-text-outline-width: 2px; -unity-text-outline-color: #2E1B10;
+}
+.uno-catch-who {
+    position: absolute; bottom: -18px; font-size: 20px; -unity-font: url("../Fonts/Fredoka-Bold.ttf"); -unity-font-definition: initial; color: #2E1B10;
+    background-color: #FFF6E3; border-width: 3px; border-color: #2E1B10; border-radius: 14px; padding: 2px 12px;
+}
+.uno-wheel-layer { position: absolute; left: 0; right: 0; top: 0; bottom: 0; align-items: center; justify-content: center; background-color: rgba(0, 0, 0, 0.35); }
+.uno-wheel { width: 380px; height: 380px; flex-direction: row; flex-wrap: wrap; border-radius: 190px; overflow: hidden; border-width: 8px; border-color: #2E1B10; }
+.uno-quarter { width: 50%; height: 50%; margin: 0; padding: 0; border-width: 3px; border-color: #2E1B10; border-radius: 0; transition-property: scale; transition-duration: 0.1s; }
+.uno-quarter:hover { scale: 1.06 1.06; }
+.uno-wheel-title {
+    margin-top: 18px; font-size: 34px; -unity-font: url("../Fonts/LilitaOne.ttf"); -unity-font-definition: initial; color: rgb(255, 255, 255);
+    -unity-text-outline-width: 2.5px; -unity-text-outline-color: #2E1B10;
+}
+.uno-drawn { position: absolute; right: 60px; bottom: 170px; align-items: center; padding: 18px 26px; }
+.uno-drawn-card { width: 120px; height: 185px; margin: 6px 0 12px 0; -unity-background-scale-mode: stretch-to-fill; }
+.uno-round { position: absolute; top: 50%; left: 50%; translate: -50% -50%; width: 640px; }
+.uno-gain { font-size: 22px; color: #1C7A3C; -unity-font-style: bold; margin-right: 16px; }
+.uno-tag {
+    position: absolute; flex-direction: row; align-items: center; padding: 6px 16px 6px 8px; border-radius: 40px;
+    background-color: #FFF6E3; border-width: 4px; border-color: #2E1B10; transition-property: scale; transition-duration: 0.2s;
+}
+.uno-tag .portrait { margin: 0; }
+.uno-tag-col { margin-left: 10px; }
+.uno-tag-name { font-size: 24px; -unity-font: url("../Fonts/Fredoka-Bold.ttf"); -unity-font-definition: initial; color: #2E1B10; }
+.uno-tag-cards { align-items: center; margin-top: 2px; }
+.uno-tag-card-icon { width: 20px; height: 28px; border-radius: 4px; background-color: #D8423A; border-width: 2px; border-color: #2E1B10; margin-right: 6px; rotate: -8deg; }
+.uno-tag-count { font-size: 26px; -unity-font: url("../Fonts/LilitaOne.ttf"); -unity-font-definition: initial; color: #D9660C; }
+.uno-tag.active { scale: 1.1 1.1; background-color: #FFE0A8; border-color: #D9660C; }
+.uno-tag.uno-said .uno-tag-count { color: #E5322D; }
+.uno-bubble {
+    position: absolute; top: -20px; left: -30px; width: 190px; height: 190px; -unity-text-align: middle-center; font-size: 34px;
+    -unity-font: url("../Fonts/LilitaOne.ttf"); -unity-font-definition: initial; color: rgb(229, 50, 45);
+    -unity-text-outline-width: 2.5px; -unity-text-outline-color: rgb(255, 255, 255); -unity-background-scale-mode: stretch-to-fill;
+    opacity: 1; scale: 1 1; transition-property: scale; transition-duration: 0.25s; transition-timing-function: ease-out-back;
+}
+.uno-bubble.burst { scale: 0.2 0.2; transition-duration: 0s; }
+.uno-bubble.pop { opacity: 0; scale: 1.25 1.25; transition-property: opacity, scale; transition-duration: 0.5s; }
+.uno-pulse { transition-property: scale; transition-duration: 0.45s; transition-timing-function: ease-in-out-sine; }
+.uno-pulse.big { scale: 1.1 1.1; }
+.uno-toast {
+    font-size: 24px; -unity-font: url("../Fonts/Fredoka-Bold.ttf"); -unity-font-definition: initial; color: #2E1B10;
+    padding: 4px 18px; border-radius: 18px; background-color: #FFF6E3; border-width: 3px; border-color: #2E1B10; opacity: 1;
+}
+.uno-toast.hide { opacity: 0; transition-property: opacity; transition-duration: 0.4s; }
+.uno-card.enter { translate: 0 320px; opacity: 0; }
+.uno-card.entering { transition-duration: 0.35s; transition-timing-function: ease-out-back; }
+.uno-round .seat-name { color: #2E1B10; font-size: 24px; -unity-font: url("../Fonts/Fredoka-Bold.ttf"); -unity-font-definition: initial; }
+.uno-round { width: 760px; left: 50%; margin-left: -380px; translate: 0 -50%; }   /* largeur fixe : centrage exact */
+.uno-round .panel-title { font-size: 40px; }
+.uno-toast-row { position: absolute; bottom: 300px; left: 0; right: 0; align-items: center; }
+.uno-challenge { position: absolute; left: 0; right: 0; top: 36%; align-items: center; padding: 18px 0; background-color: rgba(46, 27, 16, 0.55); }
+.uno-challenge-text { font-size: 34px; -unity-font: url("../Fonts/LilitaOne.ttf"); -unity-font-definition: initial; color: rgb(255, 255, 255); -unity-text-outline-width: 2px; -unity-text-outline-color: #2E1B10; }
+.uno-challenge-row { align-items: center; margin: 10px 0; }
+.uno-challenge-card { width: 130px; height: 200px; margin: 0 40px; -unity-background-scale-mode: stretch-to-fill; rotate: -6deg; }
+.uno-challenge-hint { font-size: 20px; color: rgb(255, 245, 220); -unity-font: url("../Fonts/Fredoka-SemiBold.ttf"); -unity-font-definition: initial; }
+.uno-swap { position: absolute; top: 50%; left: 50%; width: 900px; margin-left: -450px; translate: 0 -50%; align-items: center; }
+.uno-swap-list { flex-wrap: wrap; justify-content: center; }
+.uno-swap-btn { width: 150px; margin: 8px; padding: 10px; align-items: center; border-radius: 20px; border-width: 4px; border-color: #2E1B10; background-color: #FFF6E3; }
+.uno-swap-btn:hover { background-color: #FFE0A8; scale: 1.05 1.05; }

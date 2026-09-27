@@ -23,7 +23,7 @@ public partial class Game : MonoBehaviour
     public Blackjack bj;
     public Roulette rt;
     public Quiz qz;
-    public IMatch Match => (IMatch)rules ?? (IMatch)bj ?? (IMatch)rt ?? (IMatch)qz ?? rh;
+    public IMatch Match => (IMatch)rules ?? (IMatch)bj ?? (IMatch)rt ?? (IMatch)qz ?? (IMatch)rh ?? uno;
     public bool busy;
 
     Board board;
@@ -91,6 +91,7 @@ public partial class Game : MonoBehaviour
         qview = new GameObject("PlateauQuiz").AddComponent<QuizView>();
         rview = table.gameObject.AddComponent<RouletteView>();
         live = new GameObject("SceneLive").AddComponent<RhythmView>();
+        uview = new GameObject("NappeUno").AddComponent<UnoView>();
         rview.Init(table);
         MenuBackdrop();
 
@@ -247,6 +248,49 @@ public partial class Game : MonoBehaviour
                 yield return new WaitForSeconds(0.5f);
                 if (turn == 5) yield return Shot("l-case");
             }
+            Application.Quit();
+            yield break;
+        }
+        if (Array.IndexOf(Environment.GetCommandLineArgs(), "-uno") >= 0)   // Uno contre 3 bots, je joue en automatique
+        {
+            SelectGame(GameId.Uno);
+            option = Uno.OptSevenZero | Uno.OptJumpIn | Uno.OptDrawMatch | Uno.OptForcePlay;   // test : toutes les regles maison (sauf cumul, pour la contestation)
+            ui.OpenForTest("setup"); yield return new WaitForSeconds(1); yield return Shot("n0-setup");
+            quizBots = 3;
+            botForget = 1;   // test : les bots oublient toujours UNO (bouton Contre-UNO)
+            StartQuizWithBots();
+            yield return new WaitForSeconds(0.9f); yield return Shot("n1-donne");
+            yield return new WaitForSeconds(2.5f); yield return Shot("n1-debut");
+            int shots = 0, turns = 0;
+            var fxKinds = new System.Collections.Generic.HashSet<int>();   // un effet de chaque sorte
+            bool reversedShot = false, forwardShot = false, wheelShot = false, revealShot = false, unoShot = false, catchShot = false, fxShot = false, challengeShot = false, swapShot = false;
+            var bad = new System.Text.StringBuilder();
+            while (!uno.Finished && turns < 400)
+            {
+                int total = uno.drawPile.Count + uno.discard.Count + uno.players.Sum(p => p.hand.Count);
+                if (total != 108) bad.AppendLine($"cartes : {total} au tour {turns}");
+                if (uno.Actor == 0 && Idle)
+                {
+                    if (shots < 4 && turns % 6 == 0) yield return Shot("n2-main" + shots++);
+                    if (uno.dir < 0 && !reversedShot) { reversedShot = true; yield return Shot("n2-sens-moins"); }
+                    if (uno.dir > 0 && !forwardShot) { forwardShot = true; yield return Shot("n2-sens-plus"); }
+                    if (uno.players[0].hand.Count == 2 && !unoShot) { unoShot = true; ui.Refresh(); yield return new WaitForSeconds(0.3f); yield return Shot("n7-bouton-uno"); }
+                    var a = uno.Bot();
+                    if (a[0] == "play" && Uno.IsWild(int.Parse(a[1])) && !wheelShot) { wheelShot = true; uview.ShowWheelPick(); yield return new WaitForSeconds(0.6f); yield return Shot("n5-roue"); uview.HideWheel(); }
+                    if (uno.players[0].hand.Count == 2 && turns % 2 == 0) UnoCall("uno|0");
+                    Act(string.Join("|", a.Take(3)) + (a.Length > 3 ? "|0" : ""));
+                    turns++;
+                }
+                if (busy && uno.discard.Count > 1 && Uno.Kind(uno.Top) >= Uno.Skip && Uno.Kind(uno.Top) != Uno.Wild && fxKinds.Add(Uno.Kind(uno.Top))) { fxShot = true; yield return new WaitForSeconds(0.45f); yield return Shot("n9-effet-" + Uno.Code(uno.Top)); }
+                if (!challengeShot && uno.phase == UPhase.Challenge && uno.turn == 0) { challengeShot = true; ui.Refresh(); yield return new WaitForSeconds(0.4f); yield return Shot("n10-contestation"); }
+                if (!swapShot && uno.phase == UPhase.SwapPick && uno.turn == 0) { swapShot = true; ui.Refresh(); yield return new WaitForSeconds(0.4f); yield return Shot("n11-echange"); }
+                if (!catchShot && uno.vulnerable > 0) { catchShot = true; ui.Refresh(); yield return new WaitForSeconds(0.3f); yield return Shot("n8-contre-uno"); }
+                if (!revealShot && uno.Actor != 0 && uno.discard.Count > 0 && Uno.IsWild(uno.Top) && busy) { revealShot = true; yield return new WaitForSeconds(0.45f); yield return Shot("n6-joker-adverse"); }
+                yield return null;
+            }
+            yield return new WaitForSeconds(1); yield return Shot("n3-fin");
+            yield return new WaitForSeconds(4); yield return Shot("n4-victoire");
+            System.IO.File.WriteAllText(System.IO.Path.Combine(dir, "uno.txt"), $"fini={uno.Finished} tours={turns}" + Environment.NewLine + bad + string.Join(Environment.NewLine, uno.log));
             Application.Quit();
             yield break;
         }
@@ -584,8 +628,11 @@ public partial class Game : MonoBehaviour
         rules = null;
         qz = null;
         rh = null;
+        uno = null;
         live.Hide();
+        uview.Hide();
         if (g == GameId.Rhythm) StartRhythm(n, opt, av);
+        else if (g == GameId.Uno) StartUno(n, opt, seed, av);
         else if (Games.TvTime(g))
         {
             qz = g == GameId.Quiz ? new Quiz(n, opt, seed, Quiz.Pool) : new Quiz(n, opt, seed, Quiz.TriviaPool, true);
@@ -627,7 +674,7 @@ public partial class Game : MonoBehaviour
             var first = rt.events.ToList();
             StartCoroutine(Run(rview.Play(first, s => ui.Say(s)), null));
         }
-        Casino(g != GameId.Croque);
+        Casino(g != GameId.Croque && g != GameId.Uno);   // Uno : en plein air, sur la nappe
         // Plateau TV : tout est eclaire de face, uniformement (lumiere directionnelle propre au quiz).
         if (Games.TvTime(g)) RenderSettings.ambientLight = Board.Hex(g == GameId.Rhythm ? "3a3450" : "9a8f8a");
         if (!quizLight)
@@ -643,7 +690,7 @@ public partial class Game : MonoBehaviour
         quizLight.enabled = Games.TvTime(g) && g != GameId.Rhythm;
         snapCam = true;
         if (!Games.TvTime(g))   // TV Time : la musique demarre apres le generique et les regles
-            Sound.I.Music(g == GameId.Croque ? "music_game" : g == GameId.Quiz ? "music_quiz" : "music_blackjack");
+            Sound.I.Music(g == GameId.Croque || g == GameId.Uno ? "music_game" : g == GameId.Quiz ? "music_quiz" : "music_blackjack");
         catchingUp = watch;
         if (watch) { Time.timeScale = 12; AudioListener.volume = 0; catchSince = Time.realtimeSinceStartup; }
         if (Spectating) ui.Say("Tu regardes la partie en cours", 4);
@@ -673,7 +720,7 @@ public partial class Game : MonoBehaviour
 
     public void PlayerLeft(int seat)
     {
-        string n = rules?.players[seat].name ?? bj?.players[seat].name ?? rt?.players[seat].name ?? qz?.players[seat].name ?? rh.players[seat].name;
+        string n = rules?.players[seat].name ?? bj?.players[seat].name ?? rt?.players[seat].name ?? qz?.players[seat].name ?? rh?.players[seat].name ?? uno.players[seat].name;
         ui.Say($"{n} est parti : l'hôte joue pour lui.", 3.5f);
     }
 
@@ -912,6 +959,7 @@ public partial class Game : MonoBehaviour
         var p = action.Split('|');
         if (qz != null) { ApplyQuiz(p); return; }
         if (rh != null) { ApplyRhythm(p); return; }
+        if (uno != null) { ApplyUno(p); return; }
         if (rules != null)
         {
             if (p[0] == "draw") DoDraw(); else DoMove(int.Parse(p[1]));
@@ -1038,6 +1086,8 @@ public partial class Game : MonoBehaviour
         if (quizLight) quizLight.enabled = false;
         live.Hide();
         rh = null;
+        uview.Hide();
+        uno = null;
         snapCam = true;
         pitch = 14;
         dist = 6.5f;
@@ -1049,6 +1099,8 @@ public partial class Game : MonoBehaviour
     void Update()
     {
         RhythmUpdate();
+        UnoBots();
+        UnoClick();
         if (inGame && qz != null)
         {
             // L'image se devoile en 18 s ; seul (hors ligne), c'est ce PC qui pilote les phases.
@@ -1071,7 +1123,8 @@ public partial class Game : MonoBehaviour
         if (!Focused) return;
         if (ui.DialogueShown && (Input.GetKeyDown(KeyCode.Space) || Input.GetKeyDown(KeyCode.Escape) || Input.GetKeyDown(KeyCode.Return))) { ui.DialogueKey(Input.GetKeyDown(KeyCode.Escape)); return; }
         if (ui.IntroShown && (Input.GetKeyDown(KeyCode.Space) || Input.GetKeyDown(KeyCode.Escape) || Input.GetKeyDown(KeyCode.Return))) { ui.IntroKey(Input.GetKeyDown(KeyCode.Escape)); return; }
-        if (Input.GetKeyDown(KeyCode.Escape))
+        if (Input.GetKeyDown(KeyCode.Escape) && uno != null && uview.WheelClosedFrame == Time.frameCount) { }   // Echap a ferme la roue : pas de pause
+        else if (Input.GetKeyDown(KeyCode.Escape))
         {
             if (ui.InSubMenu) ui.Back();
             else if (inGame && !paused) Pause();
@@ -1115,6 +1168,14 @@ public partial class Game : MonoBehaviour
             cam.transform.SetPositionAndRotation(qp.position, qp.rotation);
             if (dof) dof.active = paused;
             ui.UpdateQuiz(cam);
+            return;
+        }
+        if (inGame && uno != null)
+        {
+            var up = uview.CamPose;
+            cam.transform.SetPositionAndRotation(up.position, up.rotation);
+            if (dof) dof.active = paused;
+            ui.UpdateUno(cam);
             return;
         }
         if (inGame && rh != null)
