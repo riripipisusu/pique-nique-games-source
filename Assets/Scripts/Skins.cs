@@ -8,7 +8,7 @@ public static class Chars
 {
     public const string Default = "City/Character_Male_Hoodie/01_A";
 
-    static readonly (string pack, string mesh, string label)[] Models =
+    public static readonly (string pack, string mesh, string label)[] Models =
     {
         ("City", "Character_Male_Hoodie", "Sweat à capuche"), ("City", "Character_Male_Jacket", "Veste (H)"),
         ("City", "Character_Female_Jacket", "Veste (F)"), ("City", "Character_Female_Coat", "Manteau"),
@@ -49,7 +49,7 @@ public static class Chars
 
     public static string Label(string id)
     {
-        if (Sidekick.IsLook(id)) return "Personnalisé";
+        if (Sidekick.IsLook(id) || Mix.IsLook(id)) return "Personnalisé";
         if (Friends.ContainsKey(id)) return id.Substring(4);   // "Ami_Roux" -> "Roux"
         var p = Resolve(id).Split('/');
         var m = Models.FirstOrDefault(x => p.Length > 1 && x.mesh == p[1]);
@@ -58,13 +58,13 @@ public static class Chars
 
     public static string PortraitName(string id) => id.Replace('/', '_');
 
-    public static bool Valid(string id) => System.Array.IndexOf(Game.Characters, id) >= 0 || (Sidekick.IsLook(id) && Sidekick.Available);
+    public static bool Valid(string id) => System.Array.IndexOf(Game.Characters, id) >= 0 || Mix.IsLook(id) || (Sidekick.IsLook(id) && Sidekick.Available);
 
     // Portrait : image precalculee (Resources/Portraits) ou, pour un personnage cree, rendu a la volee (mis en cache).
     static readonly Dictionary<string, Texture2D> shots = new Dictionary<string, Texture2D>();
     public static Texture2D Portrait(string id)
     {
-        if (!Sidekick.IsLook(id)) return Resources.Load<Texture2D>("Portraits/" + PortraitName(id));
+        if (!Sidekick.IsLook(id) && !Mix.IsLook(id)) return Resources.Load<Texture2D>("Portraits/" + PortraitName(id));
         if (shots.TryGetValue(id, out var tex) && tex) return tex;
         var stage = new GameObject("PortraitStudio").transform;
         stage.position = new Vector3(0, -400, 0);
@@ -103,6 +103,14 @@ public static class Chars
             g = Sidekick.Build(look, parent);
             var headMesh = g.GetComponentInChildren<SkinnedMeshRenderer>();   // la tete porte le squelette : son maillage donne le haut du crane (sans coiffure ni chapeau)
             size = (headMesh.bounds.max.y - g.transform.position.y) * 100f / Mathf.Clamp(look.height, 80, 120);
+        }
+        else if (Mix.IsLook(id))
+        {
+            var look = Mix.Look.Decode(id);
+            g = Mix.Build(look, parent);
+            var rs = g.GetComponentsInChildren<SkinnedMeshRenderer>();
+            var b = rs[0].bounds; foreach (var r in rs) b.Encapsulate(r.bounds);
+            size = b.size.y * 100f / Mathf.Clamp(look.height, 80, 120);
         }
         else
         {

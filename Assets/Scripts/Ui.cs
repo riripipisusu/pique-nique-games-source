@@ -440,7 +440,7 @@ public partial class Ui : MonoBehaviour
     {
         onPick = pick;
         pickCurrent = current;
-        pickerCreate.style.display = Sidekick.Available ? DisplayStyle.Flex : DisplayStyle.None;
+        pickerCreate.style.display = DisplayStyle.Flex;
         Go(picker);
     }
 

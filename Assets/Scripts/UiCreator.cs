@@ -10,6 +10,12 @@ public partial class Ui
     readonly List<Button> creatorTabs = new List<Button>();
     int creatorTab;
     Sidekick.Look look = new Sidekick.Look();
+    Mix.Look mix = new Mix.Look();
+    bool mixMode = true;
+    Button modeBtn;
+    string CurrentId => mixMode ? mix.Encode() : look.Encode();
+    static readonly string[][] TabNames = { new[] { "Visage", "Cheveux", "Tenue", "Couleurs", "Silhouette" }, new[] { "Tête", "Haut", "Bas", "Chaussures", "Peau et taille" } };
+    static readonly string[] SkinSwatches = { "f1c7a4", "c8905f", "6e4a33" };
     Action<string> onCreate;
     bool creatorFromPicker;
     Transform stage, previewChar;
@@ -47,14 +53,18 @@ public partial class Ui
         Text(creatorPreview, "Glisse pour tourner · molette pour zoomer", "cr-hint").pickingMode = PickingMode.Ignore;
         var bottom = Div(panel, "row", "bottom-row");
         Ico(Btn(bottom, "Annuler", CloseCreator, "ghost", "small"), "back");
-        Btn(bottom, "Au hasard", () => { look = RandomLook(); CreatorRefresh(); }, "blue", "small");
+        Btn(bottom, "Au hasard", () => { if (mixMode) mix = RandomMix(); else look = RandomLook(); CreatorRefresh(); }, "blue", "small");
+        modeBtn = Btn(bottom, "", () => { mixMode = !mixMode; creatorTab = -1; CreatorRefresh(); }, "ghost", "small");
         Div(bottom, "grow");
         Ico(Btn(bottom, "Enregistrer", SaveCreator, "green"), "check");
     }
 
     void OpenCreator(string start, Action<string> save, bool fromPicker)
     {
+        mixMode = !Sidekick.IsLook(start) || !Sidekick.Available;
         look = Sidekick.IsLook(start) ? Sidekick.Look.Decode(start) : new Sidekick.Look();
+        mix = Mix.IsLook(start) ? Mix.Look.Decode(start) : new Mix.Look();
+        modeBtn.style.display = Sidekick.Available ? DisplayStyle.Flex : DisplayStyle.None;
         onCreate = save;
         creatorFromPicker = fromPicker;
         if (!stage)
@@ -80,7 +90,7 @@ public partial class Ui
 
     void SaveCreator()
     {
-        var id = look.Encode();
+        var id = CurrentId;
         var cb = onCreate;
         Back();
         if (creatorFromPicker) Back();
@@ -95,7 +105,7 @@ public partial class Ui
         if (previewCam) previewCam.enabled = open;
         if (!open || !previewChar) return;
         if (!dragging && (spinPause -= Time.deltaTime) <= 0) previewChar.Rotate(0, 20 * Time.deltaTime, 0);
-        bool face = creatorTab <= 1;
+        bool face = mixMode ? creatorTab == 0 : creatorTab <= 1;
         var head = previewAn ? previewAn.GetBoneTransform(HumanBodyBones.Head) : null;
         var look = face && head ? head.position + Vector3.up * 0.06f : stage.position + Vector3.up * 0.95f;
         float dist = (face ? 1.35f : 3.9f) * zoom;
@@ -113,16 +123,18 @@ public partial class Ui
     {
         float rot = previewChar ? previewChar.localEulerAngles.y : 180;
         if (previewChar) Destroy(previewChar.gameObject);
-        previewChar = Chars.Spawn(look.Encode(), stage, Vector3.zero, rot, out previewAn);
-        CreatorTab(creatorTab);
+        previewChar = Chars.Spawn(CurrentId, stage, Vector3.zero, rot, out previewAn);
+        ((Label)modeBtn.Q(className: "gl-label")).text = mixMode ? "Style fantaisie" : "Style à la carte";
+        CreatorTab(Mathf.Max(0, creatorTab));
     }
 
     void CreatorTab(int k)
     {
         if (k != creatorTab) zoom = 1;
         creatorTab = k;
-        for (int i = 0; i < creatorTabs.Count; i++) creatorTabs[i].EnableInClassList("selected", i == k);
+        for (int i = 0; i < creatorTabs.Count; i++) { creatorTabs[i].EnableInClassList("selected", i == k); creatorTabs[i].text = TabNames[mixMode ? 1 : 0][i]; }
         creatorBody.Clear();
+        if (mixMode) { MixTab(k); return; }
         var l = look;
         switch (k)
         {
@@ -163,8 +175,49 @@ public partial class Ui
     }
 
     // Autotest : onglet, tirage au hasard, look courant.
-    public void CreatorTest(int tab, bool random) { if (random) { look = RandomLook(); CreatorRefresh(); } CreatorTab(tab); }
-    public string CreatorLook => look.Encode();
+    public void CreatorTest(int tab, bool random) { if (random) { if (mixMode) mix = RandomMix(); else look = RandomLook(); CreatorRefresh(); } CreatorTab(tab); }
+    public string CreatorLook => CurrentId;
+    public void CreatorMode(bool mixed) { mixMode = mixed; CreatorRefresh(); }
+
+    // Style a la carte : chaque morceau (tete, haut, bas, chaussures) pris sur n'importe quel perso des packs.
+    void MixTab(int k)
+    {
+        if (k == 4)
+        {
+            int cur = Math.Max(0, Array.IndexOf(new[] { "A", "B", "C" }, mix.skin));
+            Swatches("Peau", SkinSwatches, cur, i => mix.skin = "ABC".Substring(i, 1));
+            MixHeight();
+            return;
+        }
+        var part = (Mix.Part)k;
+        var p = mix[part].Split('/');
+        var models = Chars.Models;
+        int model = Math.Max(0, Array.FindIndex(models, m => m.pack == p[0] && m.mesh == p[1]));
+        int pal = 1;
+        if (p.Length > 2) int.TryParse(p[2], out pal);
+        Step(k == 0 ? "Tête (et coiffure)" : "Modèle", models[model].label, d =>
+        {
+            var m = models[Cycle(model, d, 0, models.Length - 1)];
+            mix[part] = $"{m.pack}/{m.mesh}/{Mathf.Min(pal, Mix.Palettes(m.pack))}";
+        });
+        Step(k == 0 ? "Couleur des cheveux" : "Couleurs", $"{pal} / {Mix.Palettes(p[0])}", d => mix[part] = $"{p[0]}/{p[1]}/{Cycle(pal, d, 1, Mix.Palettes(p[0]))}");
+        if (k == 0) Text(creatorBody, "Astuce : prends le haut, le bas et les chaussures de personnages différents !", "small-note");
+    }
+
+    void MixHeight()
+    {
+        var box = CreatorRow("Taille");
+        var s = Add(box, new Slider(85, 115) { value = mix.height });
+        s.RegisterValueChangedCallback(e => mix.height = Mathf.RoundToInt(e.newValue));
+        s.RegisterCallback<PointerCaptureOutEvent>(_ => CreatorRefresh());
+    }
+
+    static Mix.Look RandomMix()
+    {
+        var r = new System.Random();
+        string Piece() { var m = Chars.Models[r.Next(Chars.Models.Length)]; return $"{m.pack}/{m.mesh}/{r.Next(1, Mix.Palettes(m.pack) + 1)}"; }
+        return new Mix.Look { head = Piece(), top = Piece(), bottom = Piece(), feet = Piece(), skin = "ABC".Substring(r.Next(3), 1), height = r.Next(92, 109) };
+    }
 
     static int Cycle(int v, int d, int min, int max) => v + d > max ? min : v + d < min ? max : v + d;
 
@@ -215,7 +268,7 @@ public partial class Ui
             set(Mathf.RoundToInt(e.newValue));
             if (!previewChar) return;
             Sidekick.Shape(previewChar.gameObject, look);
-            if (label == "Taille") { float rot = previewChar.localEulerAngles.y; Destroy(previewChar.gameObject); previewChar = Chars.Spawn(look.Encode(), stage, Vector3.zero, rot, out previewAn); }
+            if (label == "Taille") { float rot = previewChar.localEulerAngles.y; Destroy(previewChar.gameObject); previewChar = Chars.Spawn(CurrentId, stage, Vector3.zero, rot, out previewAn); }
         });
     }
 
