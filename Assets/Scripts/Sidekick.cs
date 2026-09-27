@@ -142,12 +142,12 @@ public static class Sidekick
             Kill(inst);
         }
         // Pieces importees sans Animator : on pose l'avatar humanoide du squelette complet (Resources/Rig).
-        var an = root.GetComponent<Animator>() ?? root.AddComponent<Animator>();
+        var an = root.GetComponent<Animator>(); if (!an) an = root.AddComponent<Animator>();
         if (!an.avatar || !an.avatar.isHuman) { an.avatar = Resources.Load<GameObject>("Rig").GetComponent<Animator>().avatar; an.Rebind(); }
         var mat = MaterialFor(l);
         foreach (var smr in root.GetComponentsInChildren<SkinnedMeshRenderer>())
         {
-            smr.sharedMaterial = mat;
+            smr.sharedMaterials = Enumerable.Repeat(mat, smr.sharedMesh.subMeshCount).ToArray();   // chaque sous-partie du maillage
             smr.updateWhenOffscreen = true;
         }
         Shape(root, l);

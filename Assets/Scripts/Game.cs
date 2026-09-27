@@ -214,7 +214,7 @@ public class Game : MonoBehaviour
         if (Array.IndexOf(Environment.GetCommandLineArgs(), "-creator") >= 0)
         {
             yield return new WaitForSeconds(2);
-            ui.OpenForTest("creator"); yield return new WaitForSeconds(1.5f); yield return Shot("k-visage");
+            ui.OpenForTest("creator"); ui.CreatorTest(0, true); yield return new WaitForSeconds(1.5f); yield return Shot("k-visage");
             ui.CreatorTest(4, false); yield return new WaitForSeconds(0.5f); yield return Shot("k-silhouette");
             ui.CreatorTest(2, true); yield return new WaitForSeconds(1); yield return Shot("k-hasard1");
             ui.CreatorTest(1, true); yield return new WaitForSeconds(1); yield return Shot("k-hasard2");

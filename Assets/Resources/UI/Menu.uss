@@ -670,3 +670,4 @@ Button.gl.create-btn .gl-face { border-radius: 56px; }
 Button.gl.create-btn .gl-ico { width: 56px; height: 56px; }
 .cr-left .tabs { justify-content: flex-start; }
 .cr-left Button.tab, .cr-left Button.tab:hover, .cr-left Button.tab:active { font-size: 22px; padding: 0 16px; margin: 0 8px 0 0; }
+.cr-hint { position: absolute; bottom: 10px; left: 0; right: 0; -unity-text-align: middle-center; font-size: 18px; color: #6E4C31; }

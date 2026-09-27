@@ -14,6 +14,9 @@ public partial class Ui
     bool creatorFromPicker;
     Transform stage, previewChar;
     Camera previewCam;
+    Animator previewAn;
+    float spinPause, zoom = 1;
+    bool dragging;
 
     void BuildCreator()
     {
@@ -36,6 +39,12 @@ public partial class Ui
         }
         creatorBody = Add(left, new ScrollView(), "settings-scroll");
         creatorPreview = Div(cols, "cr-preview");
+        // Glisser pour tourner le personnage, molette pour zoomer.
+        creatorPreview.RegisterCallback<PointerDownEvent>(e => { dragging = true; creatorPreview.CapturePointer(e.pointerId); });
+        creatorPreview.RegisterCallback<PointerUpEvent>(e => { dragging = false; creatorPreview.ReleasePointer(e.pointerId); spinPause = 4; });
+        creatorPreview.RegisterCallback<PointerMoveEvent>(e => { if (dragging && previewChar) { previewChar.Rotate(0, -e.deltaPosition.x * 0.5f, 0); spinPause = 4; } });
+        creatorPreview.RegisterCallback<WheelEvent>(e => { zoom = Mathf.Clamp(zoom + e.delta.y * 0.05f, 0.5f, 1.6f); e.StopPropagation(); });
+        Text(creatorPreview, "Glisse pour tourner · molette pour zoomer", "cr-hint").pickingMode = PickingMode.Ignore;
         var bottom = Div(panel, "row", "bottom-row");
         Ico(Btn(bottom, "Annuler", CloseCreator, "ghost", "small"), "back");
         Btn(bottom, "Au hasard", () => { look = RandomLook(); CreatorRefresh(); }, "blue", "small");
@@ -79,23 +88,38 @@ public partial class Ui
     }
 
     // L'apercu ne tourne (et ne coute) que pendant que l'ecran est ouvert.
+    // Visage et cheveux : gros plan sur la tete ; le reste : en pied.
     void LateUpdate()
     {
         bool open = current == creatorScreen;
         if (previewCam) previewCam.enabled = open;
-        if (open && previewChar) previewChar.Rotate(0, 25 * Time.deltaTime, 0);
+        if (!open || !previewChar) return;
+        if (!dragging && (spinPause -= Time.deltaTime) <= 0) previewChar.Rotate(0, 20 * Time.deltaTime, 0);
+        bool face = creatorTab <= 1;
+        var head = previewAn ? previewAn.GetBoneTransform(HumanBodyBones.Head) : null;
+        var look = face && head ? head.position + Vector3.up * 0.06f : stage.position + Vector3.up * 0.95f;
+        float dist = (face ? 1.35f : 3.9f) * zoom;
+        var want = look + new Vector3(0, face ? 0.02f : 0.1f, -dist);
+        float k = 1 - Mathf.Exp(-8 * Time.unscaledDeltaTime);
+        var t = previewCam.transform;
+        t.position = Vector3.Lerp(t.position, want, k);
+        camLook = Vector3.Lerp(camLook, look, k);
+        t.LookAt(camLook);
     }
+
+    Vector3 camLook;
 
     void CreatorRefresh()
     {
         float rot = previewChar ? previewChar.localEulerAngles.y : 180;
         if (previewChar) Destroy(previewChar.gameObject);
-        previewChar = Chars.Spawn(look.Encode(), stage, Vector3.zero, rot, out _);
+        previewChar = Chars.Spawn(look.Encode(), stage, Vector3.zero, rot, out previewAn);
         CreatorTab(creatorTab);
     }
 
     void CreatorTab(int k)
     {
+        if (k != creatorTab) zoom = 1;
         creatorTab = k;
         for (int i = 0; i < creatorTabs.Count; i++) creatorTabs[i].EnableInClassList("selected", i == k);
         creatorBody.Clear();
@@ -191,7 +215,7 @@ public partial class Ui
             set(Mathf.RoundToInt(e.newValue));
             if (!previewChar) return;
             Sidekick.Shape(previewChar.gameObject, look);
-            if (label == "Taille") { float rot = previewChar.localEulerAngles.y; Destroy(previewChar.gameObject); previewChar = Chars.Spawn(look.Encode(), stage, Vector3.zero, rot, out _); }
+            if (label == "Taille") { float rot = previewChar.localEulerAngles.y; Destroy(previewChar.gameObject); previewChar = Chars.Spawn(look.Encode(), stage, Vector3.zero, rot, out previewAn); }
         });
     }
 

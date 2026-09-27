@@ -71,6 +71,48 @@ public static class SidekickSetup
         File.WriteAllBytes(args[System.Array.IndexOf(args, "-out") + 1], tex.EncodeToPNG());
     }
 
+    // Perso "Simple" avec chaque palette + liste des maillages montes. -executeMethod SidekickSetup.Simple -out <png>
+    public static void Simple()
+    {
+        ShaderUtil.allowAsyncCompilation = false;
+        UnityEditor.SceneManagement.EditorSceneManager.NewScene(UnityEditor.SceneManagement.NewSceneSetup.DefaultGameObjects);
+        for (int i = 0; i < 4; i++)
+        {
+            var l = new Sidekick.Look { top = "HUMN_BASE_01", bottom = "HUMN_BASE_01", hands = "HUMN_BASE_01", feet = "HUMN_BASE_01", palette = 1 + i, hair = 5 };
+            var g = Sidekick.Build(l, null);
+            g.transform.SetPositionAndRotation(new Vector3(i * 1.0f, 0, 0), Quaternion.Euler(0, 180, 0));
+            if (i == 0) Debug.Log("DIAG maillages : " + string.Join(",", g.GetComponentsInChildren<SkinnedMeshRenderer>().Select(s => s.name + "/" + s.sharedMesh.subMeshCount)));
+        }
+        var cam = Camera.main;
+        cam.transform.SetPositionAndRotation(new Vector3(1.5f, 1.2f, -4f), Quaternion.Euler(5, 0, 0));
+        cam.fieldOfView = 35;
+        var rt = new RenderTexture(1600, 900, 24);
+        cam.targetTexture = rt; cam.Render(); cam.Render();
+        RenderTexture.active = rt;
+        var tex = new Texture2D(1600, 900, TextureFormat.RGB24, false);
+        tex.ReadPixels(new Rect(0, 0, 1600, 900), 0, 0);
+        var args = System.Environment.GetCommandLineArgs();
+        File.WriteAllBytes(args[System.Array.IndexOf(args, "-out") + 1], tex.EncodeToPNG());
+    }
+
+    public static void Sub()
+    {
+        foreach (var n in new[] { "SK_HUMN_BASE_01_11AUPL_HU01", "SK_HUMN_BASE_01_10TORS_HU01", "SK_HUMN_BASE_01_01HEAD_HU01", "SK_SCFI_CIVL_09_10TORS_HU01" })
+        {
+            var go = Resources.Load<GameObject>((n.Contains("HUMN") ? "Meshes/Species/Humans/" : "Meshes/Outfits/Starter/") + n);
+            var smr = go.GetComponentInChildren<SkinnedMeshRenderer>();
+            var m = smr.sharedMesh;
+            var uv = m.uv; var uv2 = new List<Vector2>(); m.GetUVs(1, uv2);
+            for (int s = 0; s < m.subMeshCount; s++)
+            {
+                var tri = m.GetTriangles(s);
+                var cells = new HashSet<string>(); var cells2 = new HashSet<string>();
+                foreach (int i in tri) { cells.Add($"{(int)(uv[i].x * 32)},{(int)(uv[i].y * 32)}"); if (uv2.Count > 0) cells2.Add($"{uv2[i].x:0.00},{uv2[i].y:0.00}"); }
+                Debug.Log($"DIAG {n} sub{s} tris={tri.Length / 3} mats={string.Join(",", smr.sharedMaterials.Select(x => x ? x.name : "null"))} uv0={string.Join(" ", cells.Take(20))} uv1={string.Join(" ", cells2.Take(8))}");
+            }
+        }
+    }
+
     public static void Diag()
     {
         var files = Directory.GetFiles(Parts, "*.fbx", SearchOption.AllDirectories).Select(f => f.Replace('\\', '/')).OrderBy(f => f).ToArray();
