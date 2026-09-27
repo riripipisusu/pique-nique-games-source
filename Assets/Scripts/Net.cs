@@ -215,7 +215,7 @@ public class Net : MonoBehaviour
             if (InGame || seats.ContainsKey(sender) || Lobby.Count >= Games.MaxPlayers(LobbyGame)) return;
             seats[sender] = Lobby.Count;
             Lobby.Add(Clean(p[1]) is var n && n.Length > 0 ? n : "Joueur " + (Lobby.Count + 1));
-            LobbyAvatars.Add(p.Length > 2 && Array.IndexOf(Game.Characters, p[2]) >= 0 ? p[2] : Chars.Default);
+            LobbyAvatars.Add(p.Length > 2 && Chars.Valid(p[2]) ? p[2] : Chars.Default);
             SendLobby();
         }
         else if (p[0] == "act" && InGame && seats.TryGetValue(sender, out int seat) && CanPlay(seat))

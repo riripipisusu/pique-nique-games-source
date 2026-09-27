@@ -648,3 +648,25 @@ Button.chip-btn, Button.chip-btn:active, Button.chip-btn:hover { border-width: 0
 .rt-panel .gl-face { padding: 0 8px; }
 Button.round-act, Button.qz-choice { color: #FFFFFF; -unity-font: url("../Fonts/Fredoka-Bold.ttf"); -unity-font-definition: initial; }
 .update-card { top: 136px; }
+
+/* --- Createur de personnage --------------------------------------------------------- */
+.cr-cols { flex-grow: 1; align-items: stretch; }
+.cr-left { width: 760px; margin-right: 28px; }
+.cr-preview {
+    flex-grow: 1; border-radius: 24px; border-width: 4px; border-color: #2E1B10; background-color: #F7E7C8;
+    -unity-background-scale-mode: scale-to-fit;
+}
+.cr-field { align-items: center; }
+.cr-value { width: 170px; font-size: 24px; -unity-text-align: middle-center; -unity-font: url("../Fonts/Fredoka-Bold.ttf"); -unity-font-definition: initial; }
+.cr-swatches { flex-wrap: wrap; justify-content: flex-end; max-width: 460px; padding: 6px 0; }
+Button.swatch, Button.swatch:hover, Button.swatch:active {
+    width: 42px; height: 42px; margin: 3px; padding: 0; border-radius: 21px; border-width: 4px; border-color: #2E1B10;
+}
+Button.swatch:hover { scale: 1.12 1.12; }
+Button.swatch.selected { border-color: #FF9B2F; border-width: 6px; scale: 1.15 1.15; }
+.cr-field Slider { width: 380px; }
+Button.gl.create-btn { width: 120px; height: 120px; border-radius: 60px; }
+Button.gl.create-btn .gl-face { border-radius: 56px; }
+Button.gl.create-btn .gl-ico { width: 56px; height: 56px; }
+.cr-left .tabs { justify-content: flex-start; }
+.cr-left Button.tab, .cr-left Button.tab:hover, .cr-left Button.tab:active { font-size: 22px; padding: 0 16px; margin: 0 8px 0 0; }

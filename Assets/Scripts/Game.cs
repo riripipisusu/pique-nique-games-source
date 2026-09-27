@@ -48,7 +48,7 @@ public class Game : MonoBehaviour
         Application.runInBackground = true;
         settings = Settings.Load();
         myAvatar = PlayerPrefs.GetString("cc-avatar", Chars.Default);
-        if (Array.IndexOf(Characters, myAvatar) < 0) myAvatar = Chars.Default;   // anciens personnages Quaternius
+        if (!Chars.Valid(myAvatar)) myAvatar = Chars.Default;   // anciens personnages Quaternius
 
         cam = new GameObject("Camera").AddComponent<Camera>();
         cam.tag = "MainCamera";
@@ -208,6 +208,25 @@ public class Game : MonoBehaviour
                 yield return new WaitForSeconds(0.5f);
                 if (turn == 5) yield return Shot("l-case");
             }
+            Application.Quit();
+            yield break;
+        }
+        if (Array.IndexOf(Environment.GetCommandLineArgs(), "-creator") >= 0)
+        {
+            yield return new WaitForSeconds(2);
+            ui.OpenForTest("creator"); yield return new WaitForSeconds(1.5f); yield return Shot("k-visage");
+            ui.CreatorTest(4, false); yield return new WaitForSeconds(0.5f); yield return Shot("k-silhouette");
+            ui.CreatorTest(2, true); yield return new WaitForSeconds(1); yield return Shot("k-hasard1");
+            ui.CreatorTest(1, true); yield return new WaitForSeconds(1); yield return Shot("k-hasard2");
+            var mine = ui.CreatorLook;
+            ui.ShowTitle();
+            SetMyAvatar(mine);
+            quizBots = 4;
+            SelectGame(GameId.Quiz); StartQuizWithBots();
+            yield return new WaitForSeconds(2); introSkip = true;
+            for (float w = 0; w < 15 && !ui.DialogueShown; w += Time.deltaTime) yield return null;   // la video d'intro, puis les regles de Tenna
+            if (ui.DialogueShown) { ui.DialogueKey(true); ui.DialogueKey(false); }
+            yield return new WaitForSeconds(5); yield return Shot("k-quiz");
             Application.Quit();
             yield break;
         }

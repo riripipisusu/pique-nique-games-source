@@ -30,6 +30,7 @@ public partial class Ui : MonoBehaviour
         BuildOnline();
         BuildLobby();
         BuildPicker();
+        BuildCreator();
     }
 
     // --- Outils ---------------------------------------------------------------------
@@ -105,7 +106,7 @@ public partial class Ui : MonoBehaviour
         e.AddToClassList("portrait");
         e.style.width = size;
         e.style.height = size;
-        e.style.backgroundImage = Resources.Load<Texture2D>("Portraits/" + Chars.PortraitName(avatar));
+        e.style.backgroundImage = Chars.Portrait(avatar);
         p.Add(e);
         return e;
     }
@@ -142,7 +143,7 @@ public partial class Ui : MonoBehaviour
 
     static void Hide(VisualElement s) { s.AddToClassList("hidden"); s.RemoveFromClassList("in"); }
 
-    VisualElement[] All => new[] { title, games, setup, picker, settingsScreen, rulesScreen, hud, pause, victory, onlineScreen, lobbyScreen };
+    VisualElement[] All => new[] { title, games, setup, picker, settingsScreen, rulesScreen, hud, pause, victory, onlineScreen, lobbyScreen, creatorScreen };
 
     // Navigation entre ecrans de menu, avec retour arriere.
     void Go(VisualElement s, bool remember = true)
@@ -171,7 +172,8 @@ public partial class Ui : MonoBehaviour
     {
         if (screen == "games") Go(games);
         else if (screen == "setup") { RefreshSetup(); Go(setup); }
-        else if (screen == "avatar") OpenPicker(a => { });
+        else if (screen == "avatar") OpenPicker(a => { }, null);
+        else if (screen == "creator") OpenCreator(null, a => { }, false);
         else if (screen == "settings") { SelectTab(1); Go(settingsScreen); }
         else if (screen == "online") { RefreshOnline(); Go(onlineScreen); }
     }
@@ -204,7 +206,7 @@ public partial class Ui : MonoBehaviour
         Ico(Btn(row, "Quitter", Application.Quit, "red"), "exit");
 
         // Carte "profil" : son personnage (clic = changer), et son prenom.
-        var profile = Btn(title, "", () => OpenPicker(a => { game.SetMyAvatar(a); RefreshProfile(); }), "ghost", "profile");
+        var profile = Btn(title, "", () => OpenPicker(a => { game.SetMyAvatar(a); RefreshProfile(); }, game.myAvatar), "ghost", "profile");
         var face = Face(profile);
         face.Q<Label>().RemoveFromHierarchy();
         profilePortrait = Div(face, "portrait");
@@ -240,7 +242,7 @@ public partial class Ui : MonoBehaviour
 
     void RefreshProfile()
     {
-        profilePortrait.style.backgroundImage = Resources.Load<Texture2D>("Portraits/" + Chars.PortraitName(game.myAvatar));
+        profilePortrait.style.backgroundImage = Chars.Portrait(game.myAvatar);
         profileName.text = PlayerPrefs.GetString("cc-name", "Toi");
     }
 
@@ -389,7 +391,7 @@ public partial class Ui : MonoBehaviour
         {
             int idx = i;
             var row = Div(playerList, "player-row");
-            Ring(Portrait(row, game.avatars[i], () => OpenPicker(a => { game.avatars[idx] = a; RefreshSetup(); }), 60), Board.Colors[i]);
+            Ring(Portrait(row, game.avatars[i], () => OpenPicker(a => { game.avatars[idx] = a; RefreshSetup(); }, game.avatars[idx]), 60), Board.Colors[i]);
             var field = Add(row, new TextField { value = game.names[i], maxLength = 16 }, "name-field");
             field.RegisterValueChangedCallback(e => game.names[idx] = e.newValue);
             var rm = Btn(row, "Retirer", () => { game.names.RemoveAt(idx); game.avatars.RemoveAt(idx); RefreshSetup(); }, "red", "small");
@@ -415,6 +417,10 @@ public partial class Ui : MonoBehaviour
         Text(panel, "Choisis ton personnage", "panel-title");
         var sv = Add(panel, new ScrollView(), "settings-scroll");
         var grid = Div(sv, "avatar-grid");
+        // En tete : creer (ou retoucher) un personnage piece par piece.
+        pickerCreate = Div(grid, "avatar-cell");
+        var create = Ico(Btn(pickerCreate, "", () => OpenCreator(pickCurrent, onPick, true), "green", "round", "create-btn"), "plus");
+        Text(pickerCreate, "Créer", "avatar-name");
         foreach (var c in Game.Characters)
         {
             var cell = Div(grid, "avatar-cell");
@@ -427,7 +433,16 @@ public partial class Ui : MonoBehaviour
     }
 
 
-    void OpenPicker(Action<string> pick) { onPick = pick; Go(picker); }
+    VisualElement pickerCreate;
+    string pickCurrent;
+
+    void OpenPicker(Action<string> pick, string current)
+    {
+        onPick = pick;
+        pickCurrent = current;
+        pickerCreate.style.display = Sidekick.Available ? DisplayStyle.Flex : DisplayStyle.None;
+        Go(picker);
+    }
 
     // --- Parametres -------------------------------------------------------------------
     VisualElement settingsBody;
@@ -1044,7 +1059,7 @@ public partial class Ui : MonoBehaviour
         var n = game.net;
         onlineTitle.text = "En ligne : " + Games.Name(game.gameId);
         myPortraitBox.Clear();
-        Portrait(myPortraitBox, game.myAvatar, () => OpenPicker(a => { game.SetMyAvatar(a); RefreshOnline(); }), 64);
+        Portrait(myPortraitBox, game.myAvatar, () => OpenPicker(a => { game.SetMyAvatar(a); RefreshOnline(); }, game.myAvatar), 64);
         onlineStatus.text = n.Status;
         if (n.InGame) return;
         if (n.Active && n.Lobby.Count > 0 && current == onlineScreen) Go(lobbyScreen);

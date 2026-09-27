@@ -21,7 +21,7 @@ public static class CharSetup
     // Etat -> fichier Mixamo (Assets/Mixamo), boucle ?
     static readonly (string state, string file, bool loop)[] States =
     {
-        ("Idle", "idle", true), ("SitDown", "sit_idle", true), ("SitTalk", "sit_talk", true), ("SitLaugh", "sit_laugh", true),
+        ("Idle", "idle", true), ("SitDown", "sit_idle3", true), ("SitTalk", "sit_talk3", true), ("SitLaugh", "sit_laugh", true),
         ("SitClap", "sit_clap", true), ("Wave", "wave", true), ("Clap", "clap", true), ("Victory", "victory", true),
         ("Dance", "dance", true), ("Defeat", "defeat", false), ("Think", "think", true), ("PickUp", "deal", false),
         ("RecieveHit", "disappointed", false),
@@ -86,6 +86,43 @@ public static class CharSetup
             Debug.Log($"DIAG pack {pack} : " + string.Join(",", AssetDatabase.LoadAssetAtPath<GameObject>(Res + "Chars/" + pack + ".prefab").GetComponentsInChildren<SkinnedMeshRenderer>(true).Select(s => s.name)));
         }
         AssetDatabase.SaveAssets();
+    }
+
+    // Compare des poses assises (clips Mixamo) de profil sur un ami. -executeMethod CharSetup.SitShot -out <png>
+    public static void SitShot()
+    {
+        ShaderUtil.allowAsyncCompilation = false;
+        UnityEditor.SceneManagement.EditorSceneManager.NewScene(UnityEditor.SceneManagement.NewSceneSetup.DefaultGameObjects);
+        var args0 = System.Environment.GetCommandLineArgs();
+        string[] files = System.Array.IndexOf(args0, "-files") >= 0 ? args0[System.Array.IndexOf(args0, "-files") + 1].Split(',') : new[] { "sit_idle", "sit_idle2", "sit_idle3" };
+        for (int i = 0; i < files.Length; i++)
+        {
+            string path = "Assets/Mixamo/" + files[i] + ".fbx";
+            var imp = (ModelImporter)AssetImporter.GetAtPath(path);
+            if (imp.animationType != ModelImporterAnimationType.Human)
+            {
+                imp.animationType = ModelImporterAnimationType.Human;
+                imp.avatarSetup = ModelImporterAvatarSetup.CreateFromThisModel;
+                imp.SaveAndReimport();
+                var cl = imp.defaultClipAnimations;
+                foreach (var c in cl) { c.name = files[i]; c.loopTime = true; c.lockRootRotation = c.lockRootHeightY = c.lockRootPositionXZ = true; c.keepOriginalOrientation = c.keepOriginalPositionY = c.keepOriginalPositionXZ = true; }
+                imp.clipAnimations = cl;
+                imp.SaveAndReimport();
+            }
+            var clip = AssetDatabase.LoadAllAssetsAtPath(path).OfType<AnimationClip>().First(c => !c.name.StartsWith("__preview"));
+            var t = Chars.Spawn("Ami_Caramel", null, new Vector3(i * 1.4f, 0, 0), 90, out var an);
+            clip.SampleAnimation(t.gameObject, clip.length * 0.4f);
+        }
+        var cam = Camera.main;
+        cam.transform.SetPositionAndRotation(new Vector3((files.Length - 1) * 0.7f, 0.8f, -5.5f), Quaternion.Euler(4, 0, 0));
+        cam.fieldOfView = 32;
+        var rt = new RenderTexture(1500, 700, 24);
+        cam.targetTexture = rt; cam.Render(); cam.Render();
+        RenderTexture.active = rt;
+        var tex = new Texture2D(1500, 700, TextureFormat.RGB24, false);
+        tex.ReadPixels(new Rect(0, 0, 1500, 700), 0, 0);
+        var args = System.Environment.GetCommandLineArgs();
+        File.WriteAllBytes(args[System.Array.IndexOf(args, "-out") + 1], tex.EncodeToPNG());
     }
 
     // Planche : chaque personnage d'un pack (lignes) dans chaque variante de couleurs (colonnes). -executeMethod CharSetup.Sheet -out <dossier>
