@@ -164,8 +164,9 @@ public partial class Ui
         if (cur != null && (cur.seat != rtFor || r.round != rtRound)) { rtBets.Clear(); rtFor = cur.seat; rtRound = r.round; }
         bool mine = !game.busy && game.MyTurn && !r.Finished && cur != null;
 
-        rtPlayers.Clear();
-        foreach (var p in r.players)
+        // Pendant le lancer, les regles ont deja paye les gains : on garde l'ancienne liste jusqu'a l'arret de la bille.
+        if (!game.busy || rtPlayers.childCount == 0) rtPlayers.Clear();
+        foreach (var p in rtPlayers.childCount > 0 ? Enumerable.Empty<RPlayer>() : r.players)
         {
             var row = Div(rtPlayers, "rt-player");
             row.EnableInClassList("active", r.Actor == p.seat);

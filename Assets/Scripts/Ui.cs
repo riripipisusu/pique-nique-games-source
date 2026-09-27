@@ -931,8 +931,11 @@ public partial class Ui : MonoBehaviour
         bool mine = !game.busy && game.MyTurn && !b.Finished;
         var cur = b.Current;
         var me = game.Online && game.mySeat >= 0 ? b.players[game.mySeat] : cur ?? b.players[0];
-        balance.text = $"Solde : <b>{me.chips}</b>";
-        betInfo.text = $"Mise : <b>{me.hands.Sum(h => h.bet)}</b>";
+        if (!game.busy || balance.text == "")   // pendant le jeu du croupier, les gains ne sont pas encore montres
+        {
+            balance.text = $"Solde : <b>{me.chips}</b>";
+            betInfo.text = $"Mise : <b>{me.hands.Sum(h => h.bet)}</b>";
+        }
         roundInfo.text = b.Finished ? "Partie terminée" : $"Manche <b>{Math.Min(b.round, b.rounds)}/{b.rounds}</b>";
         string who = cur != null ? $"<color={Hex(Board.Colors[cur.seat])}>{cur.name}</color>" : "";
         bjAction.style.display = DisplayStyle.None;
@@ -997,7 +1000,8 @@ public partial class Ui : MonoBehaviour
             tag.style.left = p.x;
             tag.style.top = p.y;
             tag.EnableInClassList("active", b.Actor == i);
-            ((Label)tag[1][1]).text = b.players[i].broke ? "ruiné" : b.players[i].chips.ToString();
+            // Solde mis a jour une fois l'animation finie (les gains sont deja calcules pendant que le croupier tire).
+            if (!game.busy || ((Label)tag[1][1]).text == "") ((Label)tag[1][1]).text = b.players[i].broke ? "ruiné" : b.players[i].chips.ToString();
             var por = tag[0];
             por.style.borderTopColor = por.style.borderBottomColor = por.style.borderLeftColor = por.style.borderRightColor = Board.Colors[i];
         }
