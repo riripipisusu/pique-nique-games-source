@@ -359,6 +359,8 @@ public class Net : MonoBehaviour
     {
         if (shadow is Quiz && p.Length > 2 && p[1] == "guess")
             p = new[] { "act", "guess", seat.ToString(), game.QuizElapsedMs.ToString(), Clean(p[2]) };
+        if (shadow is Rhythm && p.Length > 2 && (p[1] == "sc" || p[1] == "done")) p[2] = seat.ToString();   // chacun ne donne que son score
+        if (shadow is Rhythm && p.Length > 1 && (p[1] == "go" || p[1] == "end") && seat >= 0) return;          // reserve a l'hote
         if (shadow.Finished || !shadow.TryApply(p.Skip(1).ToArray())) return;
         var msg = string.Join("|", p);
         actions.Add(msg);
@@ -369,9 +371,9 @@ public class Net : MonoBehaviour
     void Update()
     {
         // Quiz : l'hote pilote les phases (fin du temps ou tout le monde a trouve, puis question suivante).
-        if (IsHost && InGame && shadow is Quiz && game.Idle)
+        if (IsHost && InGame && (shadow is Quiz || shadow is Rhythm) && game.Idle)
         {
-            var tick = game.QuizTick((Quiz)shadow);
+            var tick = shadow is Rhythm r ? game.RhythmTick(r) : game.QuizTick((Quiz)shadow);
             if (tick != null) HostAct(new[] { "act", tick });
             return;
         }

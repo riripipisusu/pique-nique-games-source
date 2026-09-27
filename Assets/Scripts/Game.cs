@@ -8,7 +8,7 @@ using UnityEngine.Rendering.Universal;
 using UnityEngine.UIElements;
 
 // Chef d'orchestre : ambiance, camera, entrees, enchainement regles -> animations -> interface.
-public class Game : MonoBehaviour
+public partial class Game : MonoBehaviour
 {
     [RuntimeInitializeOnLoadMethod(RuntimeInitializeLoadType.AfterSceneLoad)]
     static void Boot() { if (!FindAnyObjectByType<Game>()) new GameObject("Game").AddComponent<Game>(); }
@@ -23,7 +23,7 @@ public class Game : MonoBehaviour
     public Blackjack bj;
     public Roulette rt;
     public Quiz qz;
-    public IMatch Match => (IMatch)rules ?? (IMatch)bj ?? (IMatch)rt ?? qz;
+    public IMatch Match => (IMatch)rules ?? (IMatch)bj ?? (IMatch)rt ?? (IMatch)qz ?? rh;
     public bool busy;
 
     Board board;
@@ -90,6 +90,7 @@ public class Game : MonoBehaviour
         hub = new GameObject("PiqueNique").AddComponent<Hub>();
         qview = new GameObject("PlateauQuiz").AddComponent<QuizView>();
         rview = table.gameObject.AddComponent<RouletteView>();
+        live = new GameObject("SceneLive").AddComponent<RhythmView>();
         rview.Init(table);
         MenuBackdrop();
 
@@ -246,6 +247,31 @@ public class Game : MonoBehaviour
                 yield return new WaitForSeconds(0.5f);
                 if (turn == 5) yield return Shot("l-case");
             }
+            Application.Quit();
+            yield break;
+        }
+        int liveArg = Array.IndexOf(Environment.GetCommandLineArgs(), "-live");
+        if (liveArg >= 0)   // jeu de rythme : chanson choisie, 3 bots, le joueur joue tout seul (rhAuto)
+        {
+            SelectGame(GameId.Rhythm);
+            option = int.Parse(Environment.GetCommandLineArgs()[liveArg + 1]);
+            ui.OpenForTest("setup"); yield return new WaitForSeconds(1); yield return Shot("r0-setup");
+            tvIntroSeen = true;
+            rhAuto = true;
+            StartQuizWithBots();
+            yield return new WaitForSeconds(1.5f); yield return Shot("r1-tenna");
+            while (ui.DialogueShown) { ui.DialogueKey(false); yield return new WaitForSeconds(0.3f); }
+            while (rh.phase != LivePhase.Play) yield return null;
+            yield return new WaitForSeconds(1.5f); yield return Shot("r2-decompte");
+            yield return new WaitForSeconds(6); yield return Shot("r3-jeu"); yield return Fps("live");
+            yield return new WaitForSeconds(8); yield return Shot("r4-jeu");
+            for (int k = 0; k < 6; k++) { yield return new WaitForSeconds(0.07f); yield return Shot("r4-rafale" + k); }
+            tvCloseUp = true;   // Tenna en gros plan pendant sa danse
+            for (int k = 0; k < 8; k++) { yield return new WaitForSeconds(0.35f); yield return Shot("r6-tenna" + k); }
+            tvCloseUp = false;
+            while (!rh.Finished) yield return null;
+            yield return new WaitForSeconds(5); yield return Shot("r5-fin");
+            System.IO.File.WriteAllText(System.IO.Path.Combine(dir, "live.txt"), string.Join(Environment.NewLine, rh.players.Select(p => $"{p.name} {p.score} combo {p.best} parfait {p.perfect} bien {p.good} rate {p.miss}")) + Environment.NewLine + $"max {rh.MaxScore} audio {live.Length:0.0}s");
             Application.Quit();
             yield break;
         }
@@ -526,7 +552,7 @@ public class Game : MonoBehaviour
     float waitUntil;
     public bool Online => net.Active && net.InGame;
     public bool Spectating => Online && net.Watching;
-    public bool MyTurn => Match != null && !Spectating && (Match.Actor == Quiz.Everyone ? qz != null && !qz.players[Math.Max(0, mySeat)].found
+    public bool MyTurn => Match != null && !Spectating && (Match.Actor == Quiz.Everyone ? qz == null || !qz.players[Math.Max(0, mySeat)].found
                                                     : Match.Actor >= 0 && (!Online || Match.Actor == mySeat));
     public bool Idle => inGame && !busy && pending.Count == 0;
     public bool CanAct => inGame && !busy && !paused && Match != null && !Match.Finished && MyTurn && pending.Count == 0 && Time.time > waitUntil;
@@ -557,7 +583,10 @@ public class Game : MonoBehaviour
         rt = null;
         rules = null;
         qz = null;
-        if (Games.TvTime(g))
+        rh = null;
+        live.Hide();
+        if (g == GameId.Rhythm) StartRhythm(n, opt, av);
+        else if (Games.TvTime(g))
         {
             qz = g == GameId.Quiz ? new Quiz(n, opt, seed, Quiz.Pool) : new Quiz(n, opt, seed, Quiz.TriviaPool, true);
             qview.Build(qz, av);
@@ -600,7 +629,7 @@ public class Game : MonoBehaviour
         }
         Casino(g != GameId.Croque);
         // Plateau TV : tout est eclaire de face, uniformement (lumiere directionnelle propre au quiz).
-        if (Games.TvTime(g)) RenderSettings.ambientLight = Board.Hex("9a8f8a");
+        if (Games.TvTime(g)) RenderSettings.ambientLight = Board.Hex(g == GameId.Rhythm ? "3a3450" : "9a8f8a");
         if (!quizLight)
         {
             quizLight = new GameObject("LumiereQuiz").AddComponent<Light>();
@@ -611,7 +640,7 @@ public class Game : MonoBehaviour
             quizLight.shadowStrength = 0.45f;
             quizLight.transform.rotation = Quaternion.Euler(32, 0, 0);   // pile de face : ombres symetriques
         }
-        quizLight.enabled = Games.TvTime(g);
+        quizLight.enabled = Games.TvTime(g) && g != GameId.Rhythm;
         snapCam = true;
         if (!Games.TvTime(g))   // TV Time : la musique demarre apres le generique et les regles
             Sound.I.Music(g == GameId.Croque ? "music_game" : g == GameId.Quiz ? "music_quiz" : "music_blackjack");
@@ -633,7 +662,7 @@ public class Game : MonoBehaviour
     public void Act(string action)
     {
         if (!CanAct) return;
-        if (Online) { if (qz == null) waitUntil = Time.time + 2; net.Act(action); return; }   // quiz : on peut enchainer les propositions
+        if (Online) { if (qz == null && rh == null) waitUntil = Time.time + 2; net.Act(action); return; }   // quiz : on peut enchainer les propositions
         Apply(action);
     }
 
@@ -644,7 +673,7 @@ public class Game : MonoBehaviour
 
     public void PlayerLeft(int seat)
     {
-        string n = rules?.players[seat].name ?? bj?.players[seat].name ?? rt?.players[seat].name ?? qz.players[seat].name;
+        string n = rules?.players[seat].name ?? bj?.players[seat].name ?? rt?.players[seat].name ?? qz?.players[seat].name ?? rh.players[seat].name;
         ui.Say($"{n} est parti : l'hôte joue pour lui.", 3.5f);
     }
 
@@ -705,9 +734,10 @@ public class Game : MonoBehaviour
     {
         busy = true;
         if (!tvIntroSeen) yield return TvIntro();
-        if (!tvRulesSeen.Contains(gameId) && qview.HasTenna) yield return TennaRules(gameId);
+        if (!tvRulesSeen.Contains(gameId) && (rh != null ? live.HasTenna : qview.HasTenna)) yield return TennaRules(gameId);
         Sound.I.PauseMusic(false);
-        Sound.I.Music("music_quiz_game");   // musique de partie (TV_GAME)
+        if (gameId == GameId.Rhythm) Sound.I.PauseMusic(true);   // place a la chanson
+        else Sound.I.Music("music_quiz_game");   // musique de partie (TV_GAME)
         quizPhaseStart = Time.time;
         busy = false;
         ui.Refresh();
@@ -715,6 +745,14 @@ public class Game : MonoBehaviour
 
     static readonly Dictionary<GameId, (string face, string line)[]> TennaLines = new Dictionary<GameId, (string, string)[]>
     {
+        [GameId.Rhythm] = new[]
+        {
+            ("Pog", "MESDAMES ET MESSIEURS, LES LUMIÈRES S'ÉTEIGNENT... BIENVENUE AU PIQUE-NIQUE LIVE, LE CONCERT LE PLUS BRANCHÉ DE LA CHAÎNE !"),
+            ("SmileSketchfab", "Ce soir, nos musiciens montent sur scène ! Les notes descendent dans ton couloir, à gauche de l'écran : deux pistes, gauche et droite."),
+            ("HmmmSketchfab", "Quand une note touche la ligne, frappe ! Piste de gauche : flèche gauche ou F. Piste de droite : flèche droite ou J. Les longues notes, on les TIENT jusqu'au bout !"),
+            ("SmileSketchfab", "Plus tu es pile dans le temps, plus tu marques. Enchaîne les notes sans rater pour faire monter ton combo... et regarde ton personnage se déchaîner !"),
+            ("Pog", "Tout le monde joue la même chanson, en même temps. Le meilleur score gagne ! UN, DEUX, UN, DEUX, TROIS, QUATRE !"),
+        },
         [GameId.Trivia] = new[]
         {
             ("Pog", "MESDAMES ET MESSIEURS, VOICI L'ÉMISSION PHARE DE LA CHAÎNE : LE GRAND QUIZ DE TENNA !"),
@@ -741,18 +779,20 @@ public class Game : MonoBehaviour
         Sound.I.PauseMusic(false);
         Sound.I.Music("music_quiz");   // TV Time pendant que Tenna presente
         tvCloseUp = true;
+        if (rh != null) live.ShowCast(false);   // concert : Tenna seul en scene pendant qu'il explique
         ui.HideIntro();
         var box = ui.ShowDialogue();
         foreach (var (face, line) in lines)
         {
             if (box.skip) break;
-            qview.TennaFace(face, 2.5f);
+            if (rh != null) live.TennaFace(face, 2.5f); else qview.TennaFace(face, 2.5f);
             yield return box.Type(line);
             while (!box.next && !box.skip) yield return null;
             box.next = false;
         }
         ui.HideDialogue();
         tvCloseUp = false;
+        if (rh != null) live.ShowCast(true);
     }
 
     IEnumerator TvIntro()
@@ -871,6 +911,7 @@ public class Game : MonoBehaviour
     {
         var p = action.Split('|');
         if (qz != null) { ApplyQuiz(p); return; }
+        if (rh != null) { ApplyRhythm(p); return; }
         if (rules != null)
         {
             if (p[0] == "draw") DoDraw(); else DoMove(int.Parse(p[1]));
@@ -995,6 +1036,8 @@ public class Game : MonoBehaviour
         MenuBackdrop();
         Casino(false);
         if (quizLight) quizLight.enabled = false;
+        live.Hide();
+        rh = null;
         snapCam = true;
         pitch = 14;
         dist = 6.5f;
@@ -1005,6 +1048,7 @@ public class Game : MonoBehaviour
     // --- Boucle ---------------------------------------------------------------------------
     void Update()
     {
+        RhythmUpdate();
         if (inGame && qz != null)
         {
             // L'image se devoile en 18 s ; seul (hors ligne), c'est ce PC qui pilote les phases.
@@ -1064,12 +1108,22 @@ public class Game : MonoBehaviour
         // Fenetre sans le focus (autre jeu, autre ecran) : la souris et le clavier ne sont pas pour nous.
         bool focus = Focused;
         if (tour.HasValue) { cam.transform.SetPositionAndRotation(tour.Value.position, tour.Value.rotation); return; }
+        cam.fieldOfView = 50;
         if (inGame && qz != null)
         {
             var qp = tvCloseUp ? qview.TennaPose : qview.CamPose;
             cam.transform.SetPositionAndRotation(qp.position, qp.rotation);
             if (dof) dof.active = paused;
             ui.UpdateQuiz(cam);
+            return;
+        }
+        if (inGame && rh != null)
+        {
+            var lp = tvCloseUp ? live.TennaPose : live.CamPose;
+            cam.transform.SetPositionAndRotation(lp.position, lp.rotation);
+            cam.fieldOfView = tvCloseUp ? 50 : live.Fov;
+            if (dof) dof.active = paused;
+            ui.UpdateRhythm();
             return;
         }
         // Roulette : camera fixe a la place du joueur, plan de dessus pendant le lancer ; les mises se posent au clic sur le tapis.

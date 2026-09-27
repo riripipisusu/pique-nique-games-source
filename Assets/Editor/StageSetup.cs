@@ -118,7 +118,7 @@ public static class StageSetup
 
     // Tenna en humanoide (squelette Rigify "DEF-") : il joue alors les clips Mixamo (Assets/Mixamo/t_*.fbx, clap...).
     // Controleur Resources/TennaAnim : Idle (son animation d'origine), Clap, Laugh, Taunt, Point, Excited.
-    static readonly (string human, string bone)[] TennaBones =
+    public static readonly (string human, string bone)[] TennaBones =
     {
         ("Hips", "DEF-spine"), ("Spine", "DEF-spine.001"), ("Chest", "DEF-spine.002"), ("UpperChest", "DEF-spine.003"),
         ("Neck", "DEF-spine.004"), ("Head", "DEF-spine.006"),

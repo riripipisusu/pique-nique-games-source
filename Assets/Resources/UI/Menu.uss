@@ -368,7 +368,7 @@ Toggle:checked .unity-toggle__checkmark { background-color: #5CC23A; }
 .layer { position: absolute; left: 0; right: 0; top: 0; bottom: 0; }
 .game-row { align-items: stretch; margin: 26px 0 24px 0; }
 .game-card {
-    width: 312px; margin: 0 8px; padding: 0;
+    width: 312px; flex-shrink: 1; min-width: 0; margin: 0 8px; padding: 0;   /* 6 jeux et plus : les cartes se serrent */
     border-radius: 26px; border-width: 5px; border-bottom-width: 12px; border-color: #2E1B10;
     background-color: #FFF1D6; align-items: stretch; justify-content: flex-start; overflow: hidden;
     transition-property: scale, translate, border-color; transition-duration: 0.15s;
@@ -709,3 +709,102 @@ Button.pick-game.selected { border-color: #FF9B2F; border-width: 6px; scale: 1.0
 .lobby-themes Button.theme-chip, .lobby-themes Button.theme-chip:hover, .lobby-themes Button.theme-chip:active { font-size: 16px; height: 36px; padding: 0 10px; margin: 3px 6px 3px 0; border-bottom-width: 5px; }
 .lobby-right Button.gl.lg { height: 96px; margin-top: 10px; flex-shrink: 0; }
 .lobby-right .code { height: 80px; font-size: 56px; }
+/* Jeu de rythme : copie de l'interface du jeu d'origine (police 8bitoperator, couloir cyan au centre) */
+.rh-title, .rh-num, .rh-lbl, .rh-combo, .rh-combo-text, .rh-gain, .rh-count, .rh-name, .rh-row-score, .rh-row-combo, .rh-offset, .rh-status, .rh-key {
+    -unity-font: url("../Fonts/8bitoperator_jve.ttf"); -unity-font-definition: initial;
+}
+.rh-title {
+    position: absolute; top: 22px; left: 0; right: 0; -unity-text-align: middle-center; font-size: 34px; color: rgb(255, 255, 255);
+    -unity-text-outline-width: 2px; -unity-text-outline-color: rgb(0, 0, 0);
+}
+.rh-progress { position: absolute; top: 70px; left: 50%; translate: -50% 0; width: 420px; height: 6px; background-color: rgba(255, 255, 255, 0.15); }
+.rh-progress-fill { height: 100%; background-color: rgb(74, 215, 252); }
+.rh-box { position: absolute; left: 50%; translate: -50% 0; top: 100px; width: 180px; height: 540px; }
+.rh-track {
+    flex-grow: 1; flex-direction: row; overflow: hidden; border-width: 5px; border-radius: 0;
+    border-color: rgb(74, 215, 252); background-color: rgba(0, 0, 0, 0.86);
+}
+.rh-beat { position: absolute; left: 0; right: 0; height: 2px; margin-top: -1px; background-color: rgba(150, 150, 150, 0.35); }
+.rh-lane { flex-grow: 1; width: 50%; }
+/* Halo en degrade au-dessus de la cible (texture generee), allume a chaque note reussie et pendant une tenue */
+.rh-flash {
+    position: absolute; left: 6%; right: 6%; top: 0; height: 422px; opacity: 0;   /* du haut du couloir jusqu'a la cible */
+    -unity-background-image-tint-color: rgb(74, 215, 252); -unity-background-scale-mode: stretch-to-fill;
+    transition-property: opacity; transition-duration: 0.28s;
+}
+.rh-lane.pressed .rh-flash { opacity: 0.35; transition-duration: 0s; }
+.rh-lane.held .rh-flash { opacity: 0.8; transition-duration: 0.05s; }
+.rh-lane.hit .rh-flash { opacity: 1; transition-duration: 0s; -unity-background-image-tint-color: rgb(190, 245, 255); }
+.rh-lane.missed .rh-receptor { border-color: rgb(255, 70, 70); background-color: rgba(255, 60, 60, 0.35); }
+.rh-lane.hit .rh-receptor { background-color: rgb(210, 250, 255); border-color: rgb(255, 255, 255); }
+.rh-spark { position: absolute; width: 8px; height: 8px; background-color: rgb(200, 248, 255); }
+.rh-receptor {
+    position: absolute; left: 8%; right: 8%; top: 408px; height: 24px;
+    border-width: 4px; border-color: rgb(74, 215, 252); background-color: rgba(0, 0, 0, 0.5);
+}
+.rh-lane.pressed .rh-receptor, .rh-lane.held .rh-receptor { background-color: rgba(74, 215, 252, 0.6); border-color: rgb(210, 250, 255); }
+.rh-key { position: absolute; top: 452px; left: 0; right: 0; -unity-text-align: middle-center; font-size: 24px; color: rgba(255, 255, 255, 0.4); }
+.rh-note { position: absolute; }
+.rh-head { position: absolute; left: 0; right: 0; bottom: 0; height: 12px; background-color: rgb(74, 215, 252); }
+.rh-stem { position: absolute; top: 0; bottom: 0; left: 50%; width: 10px; margin-left: -5px; background-color: rgb(74, 215, 252); display: none; }
+.rh-note.rh-hold .rh-stem { display: flex; }
+.rh-note.rh-holding .rh-head, .rh-note.rh-holding .rh-stem { background-color: rgb(220, 252, 255); }
+.rh-note.rh-missed .rh-head, .rh-note.rh-missed .rh-stem { background-color: rgba(120, 120, 130, 0.6); }
+.rh-combo {
+    position: absolute; left: 0; right: 0; top: 140px; -unity-text-align: middle-center; font-size: 110px;
+    color: rgba(255, 255, 255, 0.16);
+}
+.rh-combo-text { position: absolute; left: 0; right: 0; top: 250px; -unity-text-align: middle-center; font-size: 40px; color: rgba(255, 255, 255, 0.16); }
+.rh-gain {
+    position: absolute; top: 398px; width: 160px; font-size: 44px; color: rgb(255, 255, 255);
+    -unity-text-outline-width: 2px; -unity-text-outline-color: rgb(0, 0, 0);
+    opacity: 1; translate: 0 0;
+}
+/* Reste lisible un moment, puis s'efface en montant (pas de transition au retour : la note suivante s'affiche net). */
+.rh-gain.pop { opacity: 0; translate: 0 -24px; transition-property: opacity, translate; transition-duration: 0.6s; }
+.rh-gain-left { right: 196px; -unity-text-align: middle-right; }
+.rh-gain-right { left: 196px; -unity-text-align: middle-left; }
+.rh-gain.perfect { color: rgb(255, 236, 110); }
+.rh-gain.miss { color: rgb(255, 70, 70); }
+.rh-scores { position: absolute; bottom: 26px; left: 50%; translate: -50% 0; width: 1180px; flex-direction: row; align-items: flex-end; }
+.rh-pair { flex-direction: row; align-items: flex-end; }
+.rh-num { font-size: 76px; -unity-text-outline-width: 3px; -unity-text-outline-color: rgb(0, 0, 0); margin: 0 14px; }
+.rh-lbl { font-size: 40px; margin-bottom: 10px; -unity-text-outline-width: 2px; -unity-text-outline-color: rgb(0, 0, 0); }
+.rh-teal { color: rgb(0, 180, 182); }
+.rh-cyan { color: rgb(74, 215, 252); }
+.rh-board { position: absolute; top: 110px; right: 30px; width: 340px; padding: 10px 16px; background-color: rgba(0, 0, 0, 0.7); border-width: 3px; border-color: rgb(74, 215, 252); }
+.rh-row { flex-direction: row; align-items: center; margin: 2px 0; }
+.rh-name { font-size: 30px; }
+.rh-row-combo { font-size: 24px; color: rgba(255, 255, 255, 0.55); margin-right: 12px; }
+.rh-row-score { font-size: 30px; color: rgb(255, 255, 255); }
+.rh-count {
+    position: absolute; left: 0; right: 0; top: 34%; -unity-text-align: middle-center; font-size: 130px; color: rgb(255, 255, 255);
+    -unity-text-outline-width: 4px; -unity-text-outline-color: rgb(0, 0, 0);
+}
+.rh-offset {
+    position: absolute; top: 660px; left: 0; right: 0; -unity-text-align: middle-center; font-size: 30px; color: rgb(255, 236, 110);
+    -unity-text-outline-width: 2px; -unity-text-outline-color: rgb(0, 0, 0); opacity: 1;
+}
+.rh-offset.pop { opacity: 0; transition-property: opacity; transition-duration: 2.5s; }
+.rh-status {
+    position: absolute; bottom: 40px; left: 0; right: 0; -unity-text-align: middle-center; font-size: 34px; color: rgb(255, 255, 255);
+    -unity-text-outline-width: 2px; -unity-text-outline-color: rgb(0, 0, 0);
+}
+.rh-picker { flex-grow: 1; width: 100%; }
+.rh-pick-head { align-items: center; margin-bottom: 8px; }
+.rh-cover { width: 110px; height: 110px; margin-right: 18px; border-radius: 12px; border-width: 4px; border-color: #2E1B10; background-color: #2E1B10; -unity-background-scale-mode: scale-to-fit; }
+.rh-tabs { flex-wrap: wrap; margin-bottom: 6px; }
+.rh-tabs > Button { margin: 0 8px 6px 0; }
+.rh-list { height: 250px; border-radius: 14px; background-color: rgba(46, 27, 16, 0.07); }
+.rh-song {
+    flex-direction: row; align-items: center; justify-content: space-between; margin: 3px 6px; padding: 6px 14px;
+    border-radius: 10px; border-width: 3px; border-color: rgba(0, 0, 0, 0); background-color: #FFF8EA;
+}
+.rh-song:hover { background-color: #FFEFCC; }
+.rh-song.selected { border-color: #D9660C; background-color: #FFE0A8; }
+.rh-song-name { font-size: 22px; color: #2E1B10; -unity-font-style: bold; }
+.rh-dif-easy { background-color: #5CC23A; }
+.rh-dif-normal, .rh-dif-medium { background-color: #3AA7F2; }
+.rh-dif-hard { background-color: #F29A2E; }
+.rh-dif-veryhard { background-color: #E0463C; }
+.rh-dif-impossible { background-color: #7A3CFF; }

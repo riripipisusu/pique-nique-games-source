@@ -24,7 +24,7 @@ public static class CharSetup
         ("Idle", "idle", true), ("SitDown", "sit_idle3", true), ("SitTalk", "sit_talk3", true), ("SitLaugh", "sit_laugh", true),
         ("SitClap", "sit_clap", true), ("Wave", "wave", true), ("Clap", "clap", true), ("Victory", "victory", true),
         ("Dance", "dance", true), ("Defeat", "defeat", false), ("Think", "think", true), ("PickUp", "deal", false),
-        ("RecieveHit", "disappointed", false),
+        ("RecieveHit", "disappointed", false), ("Guitar", "guitar", true),
     };
 
     public static void Build()

@@ -260,6 +260,7 @@ public partial class Ui : MonoBehaviour
         [GameId.Roulette] = ("roulette", 1, "1 à 4 joueurs · Casino", "Pleins, chevaux, carrés, rouge ou noir... Le plus riche gagne."),
         [GameId.Quiz] = ("quiz", 2, "1 à 10 joueurs · Images", "Une image floutée se dévoile : films, jeux, drapeaux, pochettes..."),
         [GameId.Trivia] = ("trivia", 2, "1 à 10 joueurs · Culture G", "Tenna pose les questions, en QCM ou en réponse libre."),
+        [GameId.Rhythm] = ("rhythm", 2, "1 à 10 joueurs · Musique", "121 chansons de Deltarune et Undertale : tout le monde joue en rythme, en même temps !"),
     };
 
     int gameFilter = -1;
@@ -392,6 +393,7 @@ public partial class Ui : MonoBehaviour
         // Grand quiz : les cartes ne changent que le mode (bit 0), les themes sont gardes.
         if (game.gameId == GameId.Trivia) { int keep = current & ~1; var raw = pick; pick = v => raw(v | keep); current &= 1; }
         parent.Clear();
+        if (game.gameId == GameId.Rhythm) { SongPicker(parent, current, pick); return; }
         var opts = game.gameId == GameId.Croque
             ? new[] { (0, "Classique", "19 cases en spirale. La carotte ouvre 1 à 3 trous au hasard."), (1, "Amélioré", "25 cases, trous selon un cycle secret à deviner.") }
             : game.gameId == GameId.Trivia
@@ -696,6 +698,13 @@ public partial class Ui : MonoBehaviour
             S("Répondre", "Tape ta réponse puis Entrée, autant de fois que tu veux pendant les 20 secondes. Le titre français ou original, les abréviations connues (GTA, AoT...) et les petites fautes de frappe sont acceptés. Les mauvaises réponses de chacun s'affichent pour tout le monde.");
             S("Les points", "Plus tu trouves vite, plus tu gagnes : 10 points tout de suite, 3 à la dernière seconde, et 2 de bonus pour le premier qui trouve.");
         }
+        else if (game.gameId == GameId.Rhythm)
+        {
+            S("Le but", "Tenna présente le Pique-Nique Live : tout le monde joue la même chanson en même temps, chacun sur son PC. À la fin, le meilleur score gagne.");
+            S("Jouer", "Les notes descendent dans ton couloir, sur deux pistes. Frappe quand une note touche la ligne : piste de gauche avec la flèche gauche (ou F, D, S, Q), piste de droite avec la flèche droite (ou J, K, L, M). Une note allongée se tient jusqu'au bout de la barre.");
+            S("Les points", "De 75 à 100 points par note selon ta précision (« Parfait ! » quand tu tombes pile), plus 50 points par seconde de note tenue jusqu'au bout. Enchaîne les notes pour faire grimper ton combo : ton personnage danse sur scène tant qu'il tient !");
+            S("Les chansons", "121 morceaux de Deltarune (chapitres 1 à 4) et d'Undertale, de Toby Fox, d'après le jeu de rythme fait maison de la bande. Choisis-la dans la liste, ou laisse faire le hasard.");
+        }
         else if (game.gameId == GameId.Roulette)
         {
             S("Le but", "Chaque joueur commence avec 1 000 jetons. Après le nombre de coups choisi, le joueur le plus riche gagne. Un joueur qui n'a plus de quoi miser (10 jetons) est éliminé.");
@@ -767,6 +776,7 @@ public partial class Ui : MonoBehaviour
 
         BuildRouletteHud();
         BuildQuizHud();
+        BuildRhythmHud();
 
         var bannerRow = Div(hud, "banner-row");
         bannerRow.pickingMode = PickingMode.Ignore;
@@ -784,7 +794,9 @@ public partial class Ui : MonoBehaviour
         Show(hud);
         card.AddToClassList("flip");
         card.style.display = DisplayStyle.None;
-        bool bj = game.bj != null, rt = game.rt != null, qz = game.qz != null;
+        bool bj = game.bj != null, rt = game.rt != null, qz = game.qz != null, rh = game.rh != null;
+        rhHud.style.display = rh ? DisplayStyle.Flex : DisplayStyle.None;
+        if (rh) ShowRhythmHud();
         ccHud.style.display = game.rules != null ? DisplayStyle.Flex : DisplayStyle.None;
         bjHud.style.display = bj ? DisplayStyle.Flex : DisplayStyle.None;
         rtHud.style.display = rt ? DisplayStyle.Flex : DisplayStyle.None;
@@ -798,8 +810,8 @@ public partial class Ui : MonoBehaviour
         }
         bubbles.Clear();
         seatTags.Clear();
-        playersBar.style.display = feed.style.display = bj || rt || qz ? DisplayStyle.None : DisplayStyle.Flex;
-        hint.text = bj || rt || qz ? "" : "Clic droit : tourner  ·  Molette : zoom  ·  Échap : pause";
+        playersBar.style.display = feed.style.display = bj || rt || qz || rh ? DisplayStyle.None : DisplayStyle.Flex;
+        hint.text = bj || rt || qz || rh ? "" : "Clic droit : tourner  ·  Molette : zoom  ·  Échap : pause";
         if (rt) ResetRouletteBets();
         if (bj) betAmount = Blackjack.MinBet * 5;
         Refresh();
@@ -838,6 +850,7 @@ public partial class Ui : MonoBehaviour
         else if (game.bj != null) RefreshBlackjack();
         else if (game.rt != null) RefreshRoulette();
         else if (game.qz != null) RefreshQuiz();
+        else if (game.rh != null) RefreshRhythm();
     }
 
     void PlayerCard(int i, string name, string avatar, bool active)
@@ -1083,11 +1096,12 @@ public partial class Ui : MonoBehaviour
         {
             var ranking = (game.bj != null ? game.bj.players.Select(p => (p.name, p.seat, p.chips))
                          : game.rt != null ? game.rt.players.Select(p => (p.name, p.seat, p.chips))
-                         : game.qz.players.Select(p => (p.name, p.seat, chips: p.score)))
+                         : game.qz != null ? game.qz.players.Select(p => (p.name, p.seat, chips: p.score))
+                         : game.rh.players.Select(p => (p.name, p.seat, chips: p.score)))
                 .OrderByDescending(p => p.chips).ToList();
             winTitle.text = $"{ranking[0].name} gagne !";
             winTitle.style.color = Board.Colors[ranking[0].seat];
-            winSub.text = string.Join("\n", ranking.Select((p, i) => $"{i + 1}.  {p.name}  —  {p.chips} {(game.qz != null ? "points" : "jetons")}"));
+            winSub.text = string.Join("\n", ranking.Select((p, i) => $"{i + 1}.  {p.name}  —  {p.chips} {(game.qz != null || game.rh != null ? "points" : "jetons")}"));
         }
         replayBtn.style.display = !game.Online || game.net.IsHost ? DisplayStyle.Flex : DisplayStyle.None;
         ((Label)winMenu.Q(className: "gl-label")).text = game.Online ? "Retour au salon" : "Menu principal";

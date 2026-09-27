@@ -120,7 +120,7 @@ public partial class Ui
     public Dialogue ShowDialogue()
     {
         dialogueRoot = Div(root, "dlg-layer");
-        qzHud.style.visibility = Visibility.Hidden;   // rien du HUD ne doit depasser derriere la boite de Tenna
+        qzHud.style.visibility = rhHud.style.visibility = Visibility.Hidden;   // rien du HUD ne doit depasser derriere la boite de Tenna
         var d = new Dialogue();
         var box = Div(dialogueRoot, "dlg-box");
         Text(box, "TENNA", "dlg-name");
@@ -149,7 +149,7 @@ public partial class Ui
         else { d.next = true; d.hint.text = ""; }
     }
 
-    public void HideDialogue() { dialogueRoot?.RemoveFromHierarchy(); dialogueRoot = null; dialogue = null; qzHud.style.visibility = Visibility.Visible; }
+    public void HideDialogue() { dialogueRoot?.RemoveFromHierarchy(); dialogueRoot = null; dialogue = null; qzHud.style.visibility = rhHud.style.visibility = Visibility.Visible; }
 
     public void HideIntro() { intro?.RemoveFromHierarchy(); intro = null; introAsk = null; }
 

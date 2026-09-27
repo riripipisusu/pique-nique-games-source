@@ -1,6 +1,6 @@
 using System.Collections.Generic;
 
-public enum GameId { Croque, Blackjack, Roulette, Quiz, Trivia }
+public enum GameId { Croque, Blackjack, Roulette, Quiz, Trivia, Rhythm }
 
 // Ce que le reseau a besoin de savoir d'une partie, quel que soit le jeu.
 public interface IMatch
@@ -13,19 +13,20 @@ public interface IMatch
 
 public static class Games
 {
-    public static string Name(GameId g) => g == GameId.Croque ? "Croque-Carotte" : g == GameId.Blackjack ? "Blackjack" : g == GameId.Roulette ? "Roulette française" : g == GameId.Quiz ? "Quiz d'images" : "Le grand quiz de Tenna";
+    public static string Name(GameId g) => g == GameId.Croque ? "Croque-Carotte" : g == GameId.Blackjack ? "Blackjack" : g == GameId.Roulette ? "Roulette française" : g == GameId.Quiz ? "Quiz d'images" : g == GameId.Rhythm ? "Pique-Nique Live" : "Le grand quiz de Tenna";
 
     public static string OptionName(GameId g, int option) =>
-        g == GameId.Croque ? (option == 0 ? "Classique" : "Amélioré") : g == GameId.Blackjack ? option + " manches" : g == GameId.Roulette ? option + " coups" : g == GameId.Quiz ? new[] { "Flou", "Pixelisé", "Mélangé" }[option] : new[] { "QCM", "Réponse libre" }[option & 1];
+        g == GameId.Croque ? (option == 0 ? "Classique" : "Amélioré") : g == GameId.Blackjack ? option + " manches" : g == GameId.Roulette ? option + " coups" : g == GameId.Quiz ? new[] { "Flou", "Pixelisé", "Mélangé" }[option] : g == GameId.Rhythm ? Rhythm.Song(option).t : new[] { "QCM", "Réponse libre" }[option & 1];
 
     public static IMatch Create(GameId g, int option, IList<string> names, int seed) =>
         g == GameId.Croque ? new Rules(option == 0 ? Mode.Classique : Mode.Ameliore, names, seed)
         : g == GameId.Blackjack ? new Blackjack(names, option, seed)
         : g == GameId.Roulette ? new Roulette(names, option, seed)
         : g == GameId.Quiz ? new Quiz(names, option, seed, Quiz.Pool)
+        : g == GameId.Rhythm ? new Rhythm(names, option)
         : (IMatch)new Quiz(names, option, seed, Quiz.TriviaPool, true);
 
-    public static bool TvTime(GameId g) => g == GameId.Quiz || g == GameId.Trivia;
+    public static bool TvTime(GameId g) => g == GameId.Quiz || g == GameId.Trivia || g == GameId.Rhythm;
 
     public static int MaxPlayers(GameId g) => TvTime(g) ? Quiz.MaxPlayers : Rules.MaxPlayers;
 }

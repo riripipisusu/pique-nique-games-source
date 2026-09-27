@@ -242,9 +242,9 @@ public class QuizView : MonoBehaviour
 
     // Gros plan : camera face a Tenna, a hauteur de son ecran-tete, un peu en contre-plongee.
     public bool HasTenna => tenna;
-    public Pose TennaPose
+    public Pose TennaPose => CloseUp(tenna);
+    public static Pose CloseUp(Transform tenna)
     {
-        get
         {
             float h = tenna.lossyScale.y / 0.09f * 2.35f / 2.35f;   // echelle relative au reglage d'origine
             var head = tenna.position + Vector3.up * 2.05f * h;
