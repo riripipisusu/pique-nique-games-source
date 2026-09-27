@@ -61,7 +61,7 @@ public partial class Ui
         qzCredit = Text(qzReveal, "", "qz-credit");
     }
 
-    int Me => Mathf.Max(0, game.mySeat);
+    int Me => game.qz != null && game.mySeat >= 0 && game.mySeat < game.qz.players.Count ? game.mySeat : 0;
 
     // Generique TV Time en plein ecran (image a ses proportions sur fond noir).
     // Clic, Espace ou Entree : "Passer l'introduction ?" (video en pause) ; Oui la coupe, Non ou Echap la reprend.
@@ -231,7 +231,7 @@ public partial class Ui
             Text(row, p.score.ToString(), "qz-score");
         }
         bool guessing = q.phase == QPhase.Guess;
-        qzStatus.text = q.Finished ? "" : !guessing ? (q.round == 0 ? "La partie commence..." : q.trivia ? "Prochaine question..." : "Prochaine image...")
+        qzStatus.text = q.Finished ? "" : game.Spectating ? "Tu regardes la partie : tu joueras à la prochaine !" : !guessing ? (q.round == 0 ? "La partie commence..." : q.trivia ? "Prochaine question..." : "Prochaine image...")
             : q.players[Me].found ? "Trouvé ! Attends les autres..." : q.players[Me].locked ? "Raté... attends la prochaine question !"
             : q.Mcq ? "Choisis ta réponse (clic ou touches 1 à 4)" : "Tape ta réponse puis Entrée";
     }

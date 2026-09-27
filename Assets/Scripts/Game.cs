@@ -37,6 +37,7 @@ public class Game : MonoBehaviour
     Light sun;
     DepthOfField dof;
     bool inGame, paused, snapCam = true;
+    public bool InMatch => inGame;
     float yaw = 35, pitch = 24, dist = 36;
     Func<Vector3> testCam;   // autotest : cadrage force
     Vector3 target = new Vector3(0, 2.5f, 0);
@@ -117,7 +118,7 @@ public class Game : MonoBehaviour
         int at = Array.IndexOf(args, "-autotest");
         if (at >= 0) ui.StartCoroutine(AutoTest(args[at + 1]));
         int nt = Array.IndexOf(args, "-nettest");
-        if (nt >= 0) ui.StartCoroutine(NetTest(args[nt + 1] == "host", (GameId)Enum.Parse(typeof(GameId), args[nt + 2]), args[nt + 3]));
+        if (nt >= 0) ui.StartCoroutine(NetTest(args[nt + 1], (GameId)Enum.Parse(typeof(GameId), args[nt + 2]), args[nt + 3]));
     }
 
     public static int DefaultOption(GameId g) => g == GameId.Croque ? 0 : g == GameId.Blackjack ? 10 : g == GameId.Roulette ? 20 : 0;
@@ -143,34 +144,39 @@ public class Game : MonoBehaviour
     // --- Tests automatiques ---------------------------------------------------------------
     int applied;
 
-    // Deux instances jouent l'une contre l'autre via Relay puis ecrivent leur journal, pour comparer.
-    IEnumerator NetTest(bool host, GameId g, string dir)
+    // Test en ligne : un hote, un invite, et un spectateur qui arrive en pleine partie ("watch").
+    // L'hote cree le salon, choisit le jeu, lance la partie, puis ramene tout le monde au salon ; chacun ecrit son journal.
+    IEnumerator NetTest(string role, GameId g, string dir)
     {
+        bool host = role == "host";
         string codeFile = System.IO.Path.Combine(dir, "code.txt");
+        IEnumerator Shot(string n) { yield return new WaitForEndOfFrame(); var t = ScreenCapture.CaptureScreenshotAsTexture(); System.IO.File.WriteAllBytes(System.IO.Path.Combine(dir, role + "-" + n + ".png"), t.EncodeToPNG()); Destroy(t); }
         yield return new WaitForSeconds(3);
         tvIntroSeen = true; tvRulesSeen.Add(g);          // pas de generique ni de regles pendant le test
-        SetMyAvatar(host ? Chars.All[7] : "Ami_Roux");
-        int opt = g == GameId.Trivia ? 1 | (0b0000011 << 1) : DefaultOption(g);   // grand quiz : reponse libre, cinema + musique
+        SetMyAvatar(host ? Chars.All[7] : role == "join" ? "Ami_Roux" : "Ami_Brune");
         if (host)
         {
-            net.Host("Hôte", g, opt);
+            net.Host("Hôte", GameId.Croque, 0);
             while (net.Code == "") { if (net.Status.StartsWith("Impossible")) break; yield return null; }
             System.IO.File.WriteAllText(codeFile, net.Code);
+            ui.ShowLobby();
             while (net.Lobby.Count < 2) yield return null;
-            yield return new WaitForSeconds(1);
+            net.SetGame(g);                                               // l'hote choisit le jeu dans le salon
+            if (g == GameId.Trivia) net.SetOption(1 | (0b0000011 << 1));   // reponse libre, cinema + musique
+            yield return new WaitForSeconds(1.5f);
+            yield return Shot("salon");
             net.StartMatch();
         }
         else
         {
             while (!System.IO.File.Exists(codeFile)) yield return new WaitForSeconds(0.5f);
-            net.Join(System.IO.File.ReadAllText(codeFile), "Invité");
+            if (role == "watch") yield return new WaitForSeconds(Games.TvTime(g) ? 6 : 12);   // arrive en pleine partie
+            // L'invite colle le message d'invitation entier, pas seulement le code.
+            net.Join("Rejoins-moi sur Pique-Nique's Games ! ... (ou tape le code) : " + System.IO.File.ReadAllText(codeFile), role == "join" ? "Invité" : "Spectateur");
         }
-        while (net.Lobby.Count < 2 && !inGame) yield return null;
-        yield return new WaitForSeconds(1.5f);
-        if (!inGame) { yield return new WaitForEndOfFrame(); var lt = ScreenCapture.CaptureScreenshotAsTexture(); System.IO.File.WriteAllBytes(System.IO.Path.Combine(dir, (host ? "host" : "join") + "-salon.png"), lt.EncodeToPNG()); }
         while (!inGame) yield return null;
         yield return new WaitForSeconds(2);
-        { yield return new WaitForEndOfFrame(); var gt = ScreenCapture.CaptureScreenshotAsTexture(); System.IO.File.WriteAllBytes(System.IO.Path.Combine(dir, (host ? "host" : "join") + "-jeu.png"), gt.EncodeToPNG()); }
+        yield return Shot("jeu");
         while (applied < 30 && !Match.Finished)
         {
             if (qz != null && qz.phase == QPhase.Guess && MyTurn && CanAct)
@@ -179,14 +185,17 @@ public class Game : MonoBehaviour
             yield return new WaitForSeconds(0.2f);
         }
         while (busy || (pending.Count > 0 && applied < 30)) yield return null;
-        yield return new WaitForEndOfFrame();
-        var tex = ScreenCapture.CaptureScreenshotAsTexture();
-        System.IO.File.WriteAllBytes(System.IO.Path.Combine(dir, (host ? "host" : "join") + ".png"), tex.EncodeToPNG());
+        yield return Shot("fin");
         var log = rules?.log ?? bj?.log ?? rt?.log ?? qz.log;
-        System.IO.File.WriteAllText(System.IO.Path.Combine(dir, (host ? "host" : "join") + ".txt"),
-            $"status={net.Status}\nseat={mySeat}\napplied={applied}\noption={net.LobbyOption}\navatars={string.Join(" ; ", net.LobbyAvatars)}\n" +
-            (qz != null ? $"categories={string.Join(",", qz.log.Count > 0 ? new[] { qz.Current?.c ?? "-" } : new string[0])}\n" : "") + string.Join("\n", log));
-        yield return new WaitForSeconds(3);
+        System.IO.File.WriteAllText(System.IO.Path.Combine(dir, role + ".txt"),
+            $"status={net.Status}\nseat={mySeat}\nspectateur={Spectating}\napplied={applied}\noption={net.LobbyOption}\navatars={string.Join(" ; ", net.LobbyAvatars)}\n" + string.Join("\n", log));
+        // Retour au salon : l'hote attend que le spectateur ait fini son rattrapage, puis ramene tout le monde.
+        if (host) { yield return new WaitForSeconds(6); net.ReturnToLobby(); }
+        for (float w = 0; w < 20 && InMatch; w += Time.deltaTime) yield return null;
+        yield return new WaitForSeconds(1.5f);
+        yield return Shot("retour");
+        System.IO.File.AppendAllText(System.IO.Path.Combine(dir, role + ".txt"), $"\nRETOUR salon={!InMatch && net.Active} membres={string.Join(",", net.Lobby)} code={net.Code}");
+        yield return new WaitForSeconds(host ? 4 : 1);
         Application.Quit();
     }
 
@@ -496,7 +505,8 @@ public class Game : MonoBehaviour
     readonly Queue<string> pending = new Queue<string>();
     float waitUntil;
     public bool Online => net.Active && net.InGame;
-    public bool MyTurn => Match != null && (Match.Actor == Quiz.Everyone ? qz != null && !qz.players[Math.Max(0, mySeat)].found
+    public bool Spectating => Online && net.Watching;
+    public bool MyTurn => Match != null && !Spectating && (Match.Actor == Quiz.Everyone ? qz != null && !qz.players[Math.Max(0, mySeat)].found
                                                     : Match.Actor >= 0 && (!Online || Match.Actor == mySeat));
     public bool Idle => inGame && !busy && pending.Count == 0;
     public bool CanAct => inGame && !busy && !paused && Match != null && !Match.Finished && MyTurn && pending.Count == 0 && Time.time > waitUntil;
@@ -507,8 +517,13 @@ public class Game : MonoBehaviour
         StartGame(gameId, option, n, UnityEngine.Random.Range(0, int.MaxValue), avatars.ToList());
     }
 
-    public void StartGame(GameId g, int opt, List<string> n, int seed, List<string> av)
+    // Spectateur qui arrive en cours de partie : les actions deja jouees defilent en accelere, sans le son.
+    bool catchingUp;
+    float catchSince;
+
+    public void StartGame(GameId g, int opt, List<string> n, int seed, List<string> av, bool watch = false)
     {
+        if (watch) { tvIntroSeen = true; tvRulesSeen.Add(g); }
         StopAllCoroutines();
         pending.Clear();
         waitUntil = 0;
@@ -580,6 +595,9 @@ public class Game : MonoBehaviour
         snapCam = true;
         if (!Games.TvTime(g))   // TV Time : la musique demarre apres le generique et les regles
             Sound.I.Music(g == GameId.Croque ? "music_game" : g == GameId.Quiz ? "music_quiz" : "music_blackjack");
+        catchingUp = watch;
+        if (watch) { Time.timeScale = 12; AudioListener.volume = 0; catchSince = Time.realtimeSinceStartup; }
+        if (Spectating) ui.Say("Tu regardes la partie en cours", 4);
     }
 
     // Ambiance : prairie ensoleillee ou salle de casino fermee aux lumieres chaudes.
@@ -923,11 +941,17 @@ public class Game : MonoBehaviour
         AudioListener.pause = false;
     }
 
-    public void ToMenu()
+    public void ToMenu() => LeaveGame(false);
+    public void BackToLobby() => LeaveGame(true);
+
+    // Fin de partie : retour a l'accueil (on quitte le salon) ou au salon en ligne (meme code, memes amis).
+    void LeaveGame(bool lobby)
     {
         StopAllCoroutines();
         Resume();
-        if (net.Active) net.Leave();
+        catchingUp = false;
+        AudioListener.volume = 1;
+        if (net.Active && !lobby) net.Leave();
         pending.Clear();
         inGame = false;
         busy = false;
@@ -942,7 +966,7 @@ public class Game : MonoBehaviour
         snapCam = true;
         pitch = 14;
         dist = 6.5f;
-        ui.ShowTitle();
+        if (lobby) ui.ShowLobby(); else ui.ShowTitle();
         Sound.I.Music("music_menu");
     }
 
@@ -954,6 +978,12 @@ public class Game : MonoBehaviour
             // L'image se devoile en 18 s ; seul (hors ligne), c'est ce PC qui pilote les phases.
             if (qz.phase == QPhase.Guess && !qz.trivia) qview.reveal = Mathf.Clamp01((Time.time - quizPhaseStart) / 18f);
             if (!Online && Idle && !paused && !qz.Finished) { RunBots(); var tick = QuizTick(qz); if (tick != null) Apply(tick); }
+        }
+        if (catchingUp && pending.Count == 0 && !busy && Time.realtimeSinceStartup - catchSince > 1.5f)
+        {
+            catchingUp = false;
+            Time.timeScale = 1;
+            AudioListener.volume = 1;
         }
         if (inGame && !busy && pending.Count > 0 && Match != null && !Match.Finished)
         {

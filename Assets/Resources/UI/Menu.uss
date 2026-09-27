@@ -682,3 +682,15 @@ Button.theme-chip.selected, Button.theme-chip.selected:hover { background-color:
 .tq-grid { flex-shrink: 0; }
 .tq-prop { font-size: 52px; padding: 14px 26px; margin: 8px; flex-shrink: 0; }
 .tq-fact { font-size: 34px; margin-top: 16px; }
+
+/* Salon : choix du jeu par l'hote, pastilles en partie / spectateur */
+.lobby-pick { flex-wrap: wrap; margin: 14px 0 4px 0; }
+Button.pick-game, Button.pick-game:hover, Button.pick-game:active {
+    width: 100px; height: 56px; margin: 0 8px 8px 0; padding: 0; border-radius: 12px; border-width: 4px; border-color: #2E1B10;
+    -unity-background-scale-mode: scale-and-crop; background-color: #F7E7C8;
+}
+Button.pick-game:hover { scale: 1.06 1.06; }
+Button.pick-game.selected { border-color: #FF9B2F; border-width: 6px; scale: 1.08 1.08; }
+.pill-green { background-color: #5CC23A; }
+.pill-grey { background-color: #9A8F8A; }
+.lobby-right .muted { white-space: normal; font-size: 20px; }

@@ -13,6 +13,9 @@ using UnityEngine;
 // Multijoueur en ligne : Sessions Unity (Relay) + messages Netcode.
 // Principe : Rules est deterministe. L'hote tire la graine, puis relaie chaque action
 // (piocher / avancer un lapin) a tout le monde ; chaque PC rejoue la meme partie.
+// Salon persistant : l'hote choisit le jeu, lance des parties successives et ramene tout le monde au salon
+// (meme code). Les membres sont numerotes dans l'ordre d'arrivee ; les "Players" premiers jouent la partie en cours,
+// ceux arrives pendant la partie la regardent (spectateurs : ils recoivent le depart et l'historique des actions).
 public class Net : MonoBehaviour
 {
     const string Channel = "cc";
@@ -27,13 +30,19 @@ public class Net : MonoBehaviour
     public readonly List<string> Lobby = new List<string>();
     public readonly List<string> LobbyAvatars = new List<string>();
     public bool InGame;
+    public int Players;          // nombre de joueurs de la partie en cours (les premiers membres du salon)
+    public bool Watching;        // ce PC regarde la partie en cours sans y jouer
+    public const int SalonMax = 10;
 
     Game game;
     ISession session;
     NetworkManager nm;
     string myName;
     readonly Dictionary<ulong, int> seats = new Dictionary<ulong, int>();
-    readonly HashSet<int> gone = new HashSet<int>();
+    readonly HashSet<int> gone = new HashSet<int>();         // joueurs absents de la partie en cours (l'hote joue pour eux)
+    readonly HashSet<int> disconnected = new HashSet<int>(); // partis pour de bon : retires du salon au retour
+    readonly List<string> actions = new List<string>();     // historique de la partie, pour les spectateurs
+    string startBody;
     IMatch shadow;   // copie instantanee de la partie cote hote, pour valider les actions
     public event Action Changed;
 
@@ -81,7 +90,7 @@ public class Net : MonoBehaviour
             LobbyOption = option;
             Say("Création de la partie...");
             await Init();
-            session = await MultiplayerService.Instance.CreateSessionAsync(new SessionOptions { MaxPlayers = Games.MaxPlayers(g), IsPrivate = true }.WithRelayNetwork());
+            session = await MultiplayerService.Instance.CreateSessionAsync(new SessionOptions { MaxPlayers = SalonMax, IsPrivate = true }.WithRelayNetwork());
             IsHost = true;
             Hook();
             seats.Clear();
@@ -91,6 +100,8 @@ public class Net : MonoBehaviour
             LobbyAvatars.Clear();
             LobbyAvatars.Add(game.myAvatar);
             game.mySeat = 0;
+            InGame = false; Players = 0; Watching = false;
+            gone.Clear(); disconnected.Clear(); actions.Clear();
             Say("Partage le code à tes amis !");
             SendLobby();
         }
@@ -105,13 +116,24 @@ public class Net : MonoBehaviour
             Say("Connexion...");
             await Init();
             IsHost = false;
-            session = await MultiplayerService.Instance.JoinSessionByCodeAsync(code.Trim().ToUpperInvariant());
+            session = await MultiplayerService.Instance.JoinSessionByCodeAsync(CodeFrom(code));
             Hook();
             Say("Connecté ! En attente de l'hôte...");
             if (nm.IsConnectedClient) Send($"hello|{myName}|{game.myAvatar}");
         }
         catch (Exception e) { Fail(e); }
     }
+
+    // Accepte le code seul ou le message d'invitation colle en entier ("... code : ABC123").
+    public static string CodeFrom(string text)
+    {
+        var t = (text ?? "").Trim();
+        int i = t.LastIndexOf(':');
+        if (i >= 0) t = t.Substring(i + 1);
+        return new string(t.Where(char.IsLetterOrDigit).ToArray()).ToUpperInvariant();
+    }
+
+    public string Invite => $"Rejoins-moi sur Pique-Nique's Games ! Lance le jeu, clique sur « Jouer en ligne » puis « Rejoindre » et colle ce message (ou tape le code) : {Code}";
 
     void Fail(Exception e)
     {
@@ -132,6 +154,10 @@ public class Net : MonoBehaviour
         var s = session;
         session = null;
         InGame = false;
+        Players = 0;
+        Watching = false;
+        actions.Clear();
+        disconnected.Clear();
         Lobby.Clear();
         LobbyAvatars.Clear();
         seats.Clear();
@@ -166,19 +192,21 @@ public class Net : MonoBehaviour
             return;
         }
         if (!seats.TryGetValue(id, out int seat)) return;
-        if (!InGame)
-        {
-            seats.Remove(id);
-            Lobby.RemoveAt(seat);
-            LobbyAvatars.RemoveAt(seat);
-            foreach (var k in seats.Keys.ToList()) if (seats[k] > seat) seats[k]--;
-            SendLobby();
-        }
+        seats.Remove(id);
+        if (!InGame || seat >= Players) RemoveMember(seat);   // au salon, ou simple spectateur
         else
         {
-            gone.Add(seat);
-            Broadcast("left|" + seat);
+            disconnected.Add(seat);
+            if (gone.Add(seat)) Broadcast("left|" + seat);
         }
+    }
+
+    void RemoveMember(int seat)
+    {
+        Lobby.RemoveAt(seat);
+        LobbyAvatars.RemoveAt(seat);
+        foreach (var k in seats.Keys.ToList()) if (seats[k] > seat) seats[k]--;
+        SendLobby();
     }
 
     // --- Messages -----------------------------------------------------------------
@@ -201,7 +229,7 @@ public class Net : MonoBehaviour
 
     void SendLobby()
     {
-        Broadcast($"lobby|{LobbyGame}|{LobbyOption}|{string.Join(";", Lobby)}|{string.Join(";", LobbyAvatars)}");
+        Broadcast($"lobby|{LobbyGame}|{LobbyOption}|{string.Join(";", Lobby)}|{string.Join(";", LobbyAvatars)}|{(InGame ? Players : 0)}");
         foreach (var kv in seats) if (kv.Key != nm.LocalClientId) SendTo(kv.Key, "seat|" + kv.Value);
     }
 
@@ -212,14 +240,18 @@ public class Net : MonoBehaviour
         var p = s.Split('|');
         if (p[0] == "hello")
         {
-            if (InGame || seats.ContainsKey(sender) || Lobby.Count >= Games.MaxPlayers(LobbyGame)) return;
+            if (seats.ContainsKey(sender) || Lobby.Count >= SalonMax) return;
             seats[sender] = Lobby.Count;
             Lobby.Add(Clean(p[1]) is var n && n.Length > 0 ? n : "Joueur " + (Lobby.Count + 1));
             LobbyAvatars.Add(p.Length > 2 && Chars.Valid(p[2]) ? p[2] : Chars.Default);
             SendLobby();
+            // Partie en cours : le nouveau venu la regarde (depart + actions deja jouees, rejouees en accelere).
+            if (InGame) { SendTo(sender, "watch|" + startBody); foreach (var a in actions) SendTo(sender, a); }
         }
         else if (p[0] == "act" && InGame && seats.TryGetValue(sender, out int seat) && CanPlay(seat))
             HostAct(p, seat);
+        else if (p[0] == "quit" && InGame && seats.TryGetValue(sender, out int who) && who < Players && gone.Add(who))
+            Broadcast("left|" + who);   // retourne au salon en pleine partie : l'hote joue pour lui
     }
 
     void Apply(string s)
@@ -234,6 +266,7 @@ public class Net : MonoBehaviour
                 Lobby.AddRange(p[3].Split(';'));
                 LobbyAvatars.Clear();
                 LobbyAvatars.AddRange(p[4].Split(';'));
+                if (!IsHost) { int.TryParse(p.Length > 5 ? p[5] : "0", out Players); InGame = Players > 0; }
                 Changed?.Invoke();
                 break;
             case "seat":
@@ -241,8 +274,18 @@ public class Net : MonoBehaviour
                 Changed?.Invoke();
                 break;
             case "start":
+            case "watch":
                 InGame = true;
-                game.StartGame((GameId)Enum.Parse(typeof(GameId), p[1]), int.Parse(p[2]), p[4].Split(';').ToList(), int.Parse(p[3]), p[5].Split(';').ToList());
+                var names = p[4].Split(';').ToList();
+                Players = names.Count;
+                Watching = game.mySeat >= Players;
+                game.StartGame((GameId)Enum.Parse(typeof(GameId), p[1]), int.Parse(p[2]), names, int.Parse(p[3]), p[5].Split(';').ToList(), p[0] == "watch");
+                break;
+            case "tolobby":
+                InGame = false;
+                Watching = false;
+                Players = 0;
+                game.BackToLobby();
                 break;
             case "act":
                 game.Enqueue(s);
@@ -257,14 +300,51 @@ public class Net : MonoBehaviour
     public void SetOption(int option) { if (IsHost && !InGame) { LobbyOption = option; SendLobby(); } }
 
     // Au quiz, tout le monde repond en meme temps ; ailleurs, seul le joueur dont c'est le tour agit.
-    bool CanPlay(int seat) => shadow.Actor == seat || shadow.Actor == Quiz.Everyone;
+    bool CanPlay(int seat) => seat < Players && !gone.Contains(seat) && (shadow.Actor == seat || shadow.Actor == Quiz.Everyone);
 
+    public void SetGame(GameId g)
+    {
+        if (!IsHost || InGame || g == LobbyGame) return;
+        LobbyGame = g;
+        LobbyOption = Game.DefaultOption(g);
+        SendLobby();
+    }
+
+    public int MinPlayers => Games.TvTime(LobbyGame) ? 1 : 2;
+
+    // Nouvelle partie avec les membres du salon (au-dela du maximum du jeu, les derniers arrives regardent).
     public void StartMatch()
     {
-        if (!IsHost || Lobby.Count < (Games.TvTime(LobbyGame) ? 1 : 2)) return;
+        if (!IsHost || Lobby.Count < MinPlayers) return;
+        int n = Math.Min(Lobby.Count, Games.MaxPlayers(LobbyGame));
         int seed = UnityEngine.Random.Range(0, int.MaxValue);
-        shadow = Games.Create(LobbyGame, LobbyOption, Lobby, seed);
-        Broadcast($"start|{LobbyGame}|{LobbyOption}|{seed}|{string.Join(";", Lobby)}|{string.Join(";", LobbyAvatars)}");
+        var names = Lobby.Take(n).ToList();
+        shadow = Games.Create(LobbyGame, LobbyOption, names, seed);
+        gone.Clear();
+        actions.Clear();
+        startBody = $"{LobbyGame}|{LobbyOption}|{seed}|{string.Join(";", names)}|{string.Join(";", LobbyAvatars.Take(n))}";
+        Broadcast("start|" + startBody);
+        SendLobby();
+    }
+
+    // L'hote ramene tout le monde au salon ; ceux partis pour de bon en sont retires.
+    public void ReturnToLobby()
+    {
+        if (!IsHost) return;
+        Broadcast("tolobby");
+        foreach (int seat in disconnected.OrderByDescending(x => x)) { Lobby.RemoveAt(seat); LobbyAvatars.RemoveAt(seat); foreach (var k in seats.Keys.ToList()) if (seats[k] > seat) seats[k]--; }
+        disconnected.Clear();
+        gone.Clear();
+        actions.Clear();
+        SendLobby();
+    }
+
+    // Un invite quitte la partie en cours pour attendre au salon (l'hote joue pour lui).
+    public void QuitToLobby()
+    {
+        if (IsHost) { ReturnToLobby(); return; }
+        if (InGame && !Watching) Send("quit");
+        game.BackToLobby();
     }
 
     public void Act(string action)
@@ -280,7 +360,9 @@ public class Net : MonoBehaviour
         if (shadow is Quiz && p.Length > 2 && p[1] == "guess")
             p = new[] { "act", "guess", seat.ToString(), game.QuizElapsedMs.ToString(), Clean(p[2]) };
         if (shadow.Finished || !shadow.TryApply(p.Skip(1).ToArray())) return;
-        Broadcast(string.Join("|", p));
+        var msg = string.Join("|", p);
+        actions.Add(msg);
+        Broadcast(msg);
     }
 
     // ponytail: un joueur parti est joue par l'hote avec une strategie simple (IMatch.Bot).

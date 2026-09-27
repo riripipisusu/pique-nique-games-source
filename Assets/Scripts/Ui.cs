@@ -173,7 +173,7 @@ public partial class Ui : MonoBehaviour
         else if (screen == "setup") { RefreshSetup(); Go(setup); }
         else if (screen == "avatar") OpenPicker(a => { }, null);
         else if (screen == "settings") { SelectTab(1); Go(settingsScreen); }
-        else if (screen == "online") { RefreshOnline(); Go(onlineScreen); }
+        else if (screen == "online") OpenOnline();
     }
 
     public void ShowTitle()
@@ -199,6 +199,7 @@ public partial class Ui : MonoBehaviour
         Text(title, "Des jeux de société à partager entre amis", "tagline");
         var col = Div(title, "menu-col");
         Ico(Btn(col, "Jouer", () => { RefreshGames(); Go(games); }, "lg"), "play");
+        Ico(Btn(col, "Jouer en ligne", OpenOnline, "green", "lg"), "globe");
         var row = Div(col, "menu-row");
         Ico(Btn(row, "Paramètres", () => { SelectTab(tab); Go(settingsScreen); }, "blue"), "gear");
         Ico(Btn(row, "Quitter", Application.Quit, "red"), "exit");
@@ -353,7 +354,7 @@ public partial class Ui : MonoBehaviour
         Ico(Btn(bottom, "Retour", Back, "ghost", "small"), "back");
         Ico(Btn(bottom, "Règles", () => { RefreshRules(); Go(rulesScreen); }, "ghost", "small"), "book");
         Div(bottom, "grow");
-        Ico(Btn(bottom, "Jouer en ligne", () => { RefreshOnline(); Go(onlineScreen); }), "globe");
+        Ico(Btn(bottom, "Jouer en ligne", OpenOnline), "globe");
         localBtn = Ico(Btn(bottom, "Jouer sur ce PC", () => game.StartGame(), "green"), "monitor");
     }
 
@@ -930,7 +931,7 @@ public partial class Ui : MonoBehaviour
         betLabel.text = "";
         bool mine = !game.busy && game.MyTurn && !b.Finished;
         var cur = b.Current;
-        var me = game.Online && game.mySeat >= 0 ? b.players[game.mySeat] : cur ?? b.players[0];
+        var me = game.Online && game.mySeat >= 0 && game.mySeat < b.players.Count ? b.players[game.mySeat] : cur ?? b.players[0];
         if (!game.busy || balance.text == "")   // pendant le jeu du croupier, les gains ne sont pas encore montres
         {
             balance.text = $"Solde : <b>{me.chips}</b>";
@@ -1027,7 +1028,7 @@ public partial class Ui : MonoBehaviour
 
     // --- Pause & victoire -------------------------------------------------------------
     Label winTitle, winSub;
-    Button replayBtn;
+    Button replayBtn, winMenu;
 
     void BuildPause()
     {
@@ -1039,10 +1040,19 @@ public partial class Ui : MonoBehaviour
         var row = Div(panel, "menu-row");
         Ico(Btn(row, "Règles", () => { RefreshRules(); Go(rulesScreen); }, "ghost"), "book");
         Ico(Btn(row, "Paramètres", () => { SelectTab(tab); Go(settingsScreen); }, "blue"), "gear");
-        Ico(Btn(panel, "Quitter la partie", () => game.ToMenu(), "red"), "exit");
+        pauseLobby = Ico(Btn(panel, "Retour au salon", () => game.net.QuitToLobby(), "green"), "back");
+        pauseQuit = Ico(Btn(panel, "Quitter la partie", () => game.ToMenu(), "red"), "exit");
     }
 
-    public void ShowPause() { history.Clear(); history.Push(hud); current = null; Go(pause, false); }
+    Button pauseLobby, pauseQuit;
+
+    public void ShowPause()
+    {
+        // En ligne : "Retour au salon" (l'hote y ramene tout le monde, un invite y attend la prochaine partie).
+        pauseLobby.style.display = game.Online ? DisplayStyle.Flex : DisplayStyle.None;
+        ((Label)pauseQuit.Q(className: "gl-label")).text = game.Online ? "Quitter le salon" : "Quitter la partie";
+        history.Clear(); history.Push(hud); current = null; Go(pause, false);
+    }
 
     void BuildVictory()
     {
@@ -1055,7 +1065,8 @@ public partial class Ui : MonoBehaviour
         winSub.style.unityTextAlign = TextAnchor.MiddleCenter;
         var row = Div(panel, "row");
         row.style.marginTop = 20;
-        Ico(Btn(row, "Menu principal", () => game.ToMenu(), "ghost"), "exit").style.marginRight = 20;
+        winMenu = Ico(Btn(row, "Menu principal", () => { if (game.Online) game.net.QuitToLobby(); else game.ToMenu(); }, "ghost"), "exit");
+        winMenu.style.marginRight = 20;
         replayBtn = Ico(Btn(row, "Rejouer !", () => game.Replay(), "lg"), "play");
     }
 
@@ -1079,6 +1090,7 @@ public partial class Ui : MonoBehaviour
             winSub.text = string.Join("\n", ranking.Select((p, i) => $"{i + 1}.  {p.name}  —  {p.chips} {(game.qz != null ? "points" : "jetons")}"));
         }
         replayBtn.style.display = !game.Online || game.net.IsHost ? DisplayStyle.Flex : DisplayStyle.None;
+        ((Label)winMenu.Q(className: "gl-label")).text = game.Online ? "Retour au salon" : "Menu principal";
         current = null;
         Go(victory, false);
     }
@@ -1100,12 +1112,13 @@ public partial class Ui : MonoBehaviour
         myPortraitBox = Div(me);
         onlineName = Add(me, new TextField { value = PlayerPrefs.GetString("cc-name", "Joueur"), maxLength = 16 }, "name-field");
         onlineName.style.marginLeft = 14;
-        Text(panel, "Créer une partie", "h2");
-        Text(panel, "Tu recevras un code à donner à tes amis.", "p");
-        Ico(Btn(panel, "Héberger une partie", () => { SaveName(); game.net.Host(onlineName.value, game.gameId, game.option); }), "globe");
-        Text(panel, "Rejoindre une partie", "h2");
+        Text(panel, "Créer un salon", "h2");
+        Text(panel, "Tu recevras un code (ou un message d'invitation) à envoyer à tes amis, sur Discord par exemple. Dans le salon, tu choisis le jeu.", "p");
+        Ico(Btn(panel, "Créer un salon", () => { SaveName(); game.net.Host(onlineName.value, game.gameId, game.option); }), "globe");
+        Text(panel, "Rejoindre un salon", "h2");
+        Text(panel, "Tape le code, ou colle le message d'invitation reçu.", "p");
         var row = Div(panel, "row");
-        codeField = Add(row, new TextField { maxLength = 8 }, "name-field");
+        codeField = Add(row, new TextField { maxLength = 300 }, "name-field");   // code, ou message d'invitation colle en entier
         var join = Ico(Btn(row, "Rejoindre", () => { SaveName(); game.net.Join(codeField.value, onlineName.value); }, "blue", "small"), "play");
         join.style.marginLeft = 12;
         onlineStatus = Text(panel, "", "p", "status");
@@ -1114,8 +1127,29 @@ public partial class Ui : MonoBehaviour
 
     void SaveName() { PlayerPrefs.SetString("cc-name", onlineName.value); RefreshProfile(); }
 
-    VisualElement lobbyArt;
+    VisualElement lobbyArt, lobbyPick;
     Label lobbyCount, lobbyMeta;
+    Button inviteBtn;
+
+    void OpenOnline()
+    {
+        if (game.net.Active) { ShowLobby(); return; }
+        // Invitation dans le presse-papiers : on pre-remplit le code.
+        var clip = GUIUtility.systemCopyBuffer ?? "";
+        if (clip.Contains("Pique-Nique's Games")) codeField.value = Net.CodeFrom(clip);
+        RefreshOnline();
+        Go(onlineScreen);
+    }
+
+    public void ShowLobby()
+    {
+        history.Clear();
+        foreach (var s in All) Hide(s);
+        current = null;
+        history.Push(title);
+        Go(lobbyScreen, false);
+        RefreshOnline();
+    }
 
     void BuildLobby()
     {
@@ -1138,7 +1172,10 @@ public partial class Ui : MonoBehaviour
         var cr = Div(right, "row");
         lobbyCode = Text(cr, "", "code");
         Ico(Btn(cr, "Copier", () => GUIUtility.systemCopyBuffer = game.net.Code, "blue"), "copy");
-        Text(right, "Donne ce code à tes amis pour qu'ils te rejoignent.", "muted");
+        var inv = Div(right, "row");
+        inviteBtn = Ico(Btn(inv, "Copier l'invitation (Discord)", () => { GUIUtility.systemCopyBuffer = game.net.Invite; lobbyStatus.text = "Invitation copiée : colle-la dans Discord !"; }, "ghost", "small"), "copy");
+        Text(right, "Tes amis la collent dans « Rejoindre » : même code pour toutes les parties.", "muted");
+        lobbyPick = Div(right, "row", "lobby-pick");
         var gc = Div(right, "row", "lobby-game");
         lobbyArt = Div(gc, "lobby-art");
         var gt = Div(gc);
@@ -1153,19 +1190,35 @@ public partial class Ui : MonoBehaviour
     public void RefreshOnline()
     {
         var n = game.net;
-        onlineTitle.text = "En ligne : " + Games.Name(game.gameId);
+        onlineTitle.text = "Jouer en ligne";
         myPortraitBox.Clear();
         Portrait(myPortraitBox, game.myAvatar, () => OpenPicker(a => { game.SetMyAvatar(a); RefreshOnline(); }, game.myAvatar), 64);
         onlineStatus.text = n.Status;
-        if (n.InGame) return;
+        if (n.InGame && game.InMatch) return;
         if (n.Active && n.Lobby.Count > 0 && current == onlineScreen) Go(lobbyScreen);
         if (!n.Active && current == lobbyScreen) Go(onlineScreen, false);
         lobbyGame.text = Games.Name(n.LobbyGame);
         lobbyMeta.text = GameInfo[n.LobbyGame].meta;
         lobbyArt.style.backgroundImage = Resources.Load<Texture2D>("UI/Games/" + GameInfo[n.LobbyGame].art);
-        lobbyCount.text = $"{n.Lobby.Count} / {Games.MaxPlayers(n.LobbyGame)} joueurs";
+        int max = Games.MaxPlayers(n.LobbyGame);
+        lobbyCount.text = $"{n.Lobby.Count} dans le salon · jusqu'à {max} joueurs";
         lobbyCode.text = n.Code;
-        lobbyStatus.text = n.IsHost ? (n.Lobby.Count < 2 ? "En attente d'au moins un autre joueur..." : "Tout le monde est là ? Lance la partie !") : "En attente de l'hôte...";
+        lobbyStatus.text = n.InGame ? "Partie en cours... Tu joueras à la prochaine !"
+            : n.IsHost ? (n.Lobby.Count < n.MinPlayers ? "En attente d'au moins un autre joueur..." : n.Lobby.Count > max ? $"Les {max} premiers jouent, les autres regardent." : "Tout le monde est là ? Choisis le jeu et lance la partie !")
+            : "L'hôte choisit le jeu...";
+        // L'hote choisit le jeu parmi les vignettes.
+        lobbyPick.Clear();
+        lobbyPick.style.display = n.IsHost && !n.InGame ? DisplayStyle.Flex : DisplayStyle.None;
+        foreach (var g in GameInfo.Keys)
+        {
+            var gid = g;
+            var b = new Button(() => { Sound.I.UI("tick"); n.SetGame(gid); });
+            b.AddToClassList("pick-game");
+            b.EnableInClassList("selected", g == n.LobbyGame);
+            b.style.backgroundImage = Resources.Load<Texture2D>("UI/Games/" + GameInfo[g].art);
+            b.tooltip = Games.Name(g);
+            lobbyPick.Add(b);
+        }
         lobbyList.Clear();
         for (int i = 0; i < n.Lobby.Count; i++)
         {
@@ -1174,6 +1227,7 @@ public partial class Ui : MonoBehaviour
             Text(row, n.Lobby[i], "lobby-name").style.color = Board.Colors[i];
             if (i == 0) Text(row, "Hôte", "pill", "pill-gold");
             if (i == game.mySeat) Text(row, "Toi", "pill", "pill-blue");
+            if (n.InGame) Text(row, i < n.Players ? "En partie" : "Spectateur", "pill", i < n.Players ? "pill-green" : "pill-grey");
         }
         var g0 = game.gameId;
         game.gameId = n.LobbyGame;
@@ -1182,7 +1236,7 @@ public partial class Ui : MonoBehaviour
         lobbyThemes.SetEnabled(n.IsHost);
         game.gameId = g0;
         lobbyOptions.SetEnabled(n.IsHost);
-        startBtn.style.display = n.IsHost ? DisplayStyle.Flex : DisplayStyle.None;
-        startBtn.SetEnabled(n.Lobby.Count >= 2);
+        startBtn.style.display = n.IsHost && !n.InGame ? DisplayStyle.Flex : DisplayStyle.None;
+        startBtn.SetEnabled(n.Lobby.Count >= n.MinPlayers);
     }
 }
