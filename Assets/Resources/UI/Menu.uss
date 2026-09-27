@@ -657,3 +657,6 @@ Button.round-act, Button.qz-choice { color: #FFFFFF; -unity-font: url("../Fonts/
 .pick-row { flex-wrap: wrap; }
 .avatar-cell.pick-color { width: 84px; margin: 2px; }
 .pick-name { font-size: 28px; margin-right: 24px; -unity-font: url("../Fonts/Fredoka-Bold.ttf"); -unity-font-definition: initial; color: #2E1B10; }
+
+/* Carte piochee de Croque-Carotte : l'illustration remplit la carte */
+.action .card { width: 150px; height: 210px; border-width: 0; border-radius: 0; background-color: rgba(0, 0, 0, 0); -unity-background-scale-mode: scale-to-fit; }

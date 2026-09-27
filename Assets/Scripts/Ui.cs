@@ -783,9 +783,9 @@ public partial class Ui : MonoBehaviour
     public void ShowCard(Card c)
     {
         card.style.display = DisplayStyle.Flex;
-        card.EnableInClassList("carrot-card", c.carrot);
-        cardValue.text = c.carrot ? (c.turns == 2 ? "Double\ncarotte" : "Carotte !") : c.steps.ToString();
-        cardSub.text = c.carrot ? "la carotte tourne..." : (c.steps > 1 ? "cases" : "case");
+        // Illustrations des cartes (Resources/UI/CroqueCards, cf. Tools/cards_croque.py).
+        card.style.backgroundImage = Resources.Load<Texture2D>("UI/CroqueCards/" + (c.carrot ? (c.turns == 2 ? "carotte2" : "carotte") : c.steps.ToString()));
+        cardValue.text = cardSub.text = "";
         card.AddToClassList("flip");
         card.schedule.Execute(() => card.RemoveFromClassList("flip")).StartingIn(30);
     }
