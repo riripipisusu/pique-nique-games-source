@@ -694,3 +694,18 @@ Button.pick-game.selected { border-color: #FF9B2F; border-width: 6px; scale: 1.0
 .pill-green { background-color: #5CC23A; }
 .pill-grey { background-color: #9A8F8A; }
 .lobby-right .muted { white-space: normal; font-size: 20px; }
+
+/* Salon : tout tient dans l'ecran (titre visible, pas de chevauchement) */
+.lobby-list { height: 360px; }
+.lobby-game { margin: 12px 0 8px 0; padding: 10px; }
+.lobby-game > VisualElement { flex-shrink: 1; flex-grow: 1; }
+.lobby-game .mode-name { font-size: 28px; white-space: normal; }
+.lobby-art { width: 150px; height: 84px; flex-shrink: 0; }
+.lobby-pick { margin: 8px 0 0 0; }
+.lobby-options .mode-card { min-height: 0; padding: 8px 10px; }
+.lobby-options .mode-name { font-size: 19px; white-space: normal; }
+.lobby-options .mode-desc { font-size: 15px; margin-top: 2px; }
+.lobby-themes .h2 { margin: 8px 0 4px 0; font-size: 24px; }
+.lobby-themes Button.theme-chip, .lobby-themes Button.theme-chip:hover, .lobby-themes Button.theme-chip:active { font-size: 16px; height: 36px; padding: 0 10px; margin: 3px 6px 3px 0; border-bottom-width: 5px; }
+.lobby-right Button.gl.lg { height: 96px; margin-top: 10px; flex-shrink: 0; }
+.lobby-right .code { height: 80px; font-size: 56px; }
