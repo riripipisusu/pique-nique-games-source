@@ -148,9 +148,12 @@ public class Game : MonoBehaviour
     {
         string codeFile = System.IO.Path.Combine(dir, "code.txt");
         yield return new WaitForSeconds(3);
+        tvIntroSeen = true; tvRulesSeen.Add(g);          // pas de generique ni de regles pendant le test
+        SetMyAvatar(host ? Chars.All[7] : "Ami_Roux");
+        int opt = g == GameId.Trivia ? 1 | (0b0000011 << 1) : DefaultOption(g);   // grand quiz : reponse libre, cinema + musique
         if (host)
         {
-            net.Host("Hôte", g, DefaultOption(g));
+            net.Host("Hôte", g, opt);
             while (net.Code == "") { if (net.Status.StartsWith("Impossible")) break; yield return null; }
             System.IO.File.WriteAllText(codeFile, net.Code);
             while (net.Lobby.Count < 2) yield return null;
@@ -162,7 +165,12 @@ public class Game : MonoBehaviour
             while (!System.IO.File.Exists(codeFile)) yield return new WaitForSeconds(0.5f);
             net.Join(System.IO.File.ReadAllText(codeFile), "Invité");
         }
+        while (net.Lobby.Count < 2 && !inGame) yield return null;
+        yield return new WaitForSeconds(1.5f);
+        if (!inGame) { yield return new WaitForEndOfFrame(); var lt = ScreenCapture.CaptureScreenshotAsTexture(); System.IO.File.WriteAllBytes(System.IO.Path.Combine(dir, (host ? "host" : "join") + "-salon.png"), lt.EncodeToPNG()); }
         while (!inGame) yield return null;
+        yield return new WaitForSeconds(2);
+        { yield return new WaitForEndOfFrame(); var gt = ScreenCapture.CaptureScreenshotAsTexture(); System.IO.File.WriteAllBytes(System.IO.Path.Combine(dir, (host ? "host" : "join") + "-jeu.png"), gt.EncodeToPNG()); }
         while (applied < 30 && !Match.Finished)
         {
             if (qz != null && qz.phase == QPhase.Guess && MyTurn && CanAct)
@@ -176,7 +184,8 @@ public class Game : MonoBehaviour
         System.IO.File.WriteAllBytes(System.IO.Path.Combine(dir, (host ? "host" : "join") + ".png"), tex.EncodeToPNG());
         var log = rules?.log ?? bj?.log ?? rt?.log ?? qz.log;
         System.IO.File.WriteAllText(System.IO.Path.Combine(dir, (host ? "host" : "join") + ".txt"),
-            $"status={net.Status}\nseat={mySeat}\napplied={applied}\n" + string.Join("\n", log));
+            $"status={net.Status}\nseat={mySeat}\napplied={applied}\noption={net.LobbyOption}\navatars={string.Join(" ; ", net.LobbyAvatars)}\n" +
+            (qz != null ? $"categories={string.Join(",", qz.log.Count > 0 ? new[] { qz.Current?.c ?? "-" } : new string[0])}\n" : "") + string.Join("\n", log));
         yield return new WaitForSeconds(3);
         Application.Quit();
     }
