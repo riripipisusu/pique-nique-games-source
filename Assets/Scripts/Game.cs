@@ -102,6 +102,8 @@ public class Game : MonoBehaviour
         net = Net.Create(this);
         ui.Init(this, doc);
         net.Changed += ui.RefreshOnline;
+        int ntest = Array.IndexOf(Environment.GetCommandLineArgs(), "-nettest");
+        if (ntest < 0 || Environment.GetCommandLineArgs()[ntest + 1] == "host") DiscordLink.Create(this);   // test : seul l'hote parle a Discord
 
         ApplySettings();
         StartCoroutine(TerrainReady());
@@ -939,6 +941,16 @@ public class Game : MonoBehaviour
         paused = false;
         Time.timeScale = 1;
         AudioListener.pause = false;
+    }
+
+    // Invitation Discord acceptee : on quitte ce qu'on fait et on rejoint le salon de l'ami.
+    public void JoinFromDiscord(string code) => StartCoroutine(JoinSoon(code));
+
+    IEnumerator JoinSoon(string code)
+    {
+        if (inGame || net.Active) { ToMenu(); yield return new WaitForSecondsRealtime(1.5f); }
+        ui.OpenForTest("online");
+        net.Join(code, PlayerPrefs.GetString("cc-name", "Joueur"));
     }
 
     public void ToMenu() => LeaveGame(false);
