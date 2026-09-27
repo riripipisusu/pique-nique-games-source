@@ -297,66 +297,29 @@ public class QuizView : MonoBehaviour
             {
                 bool screen = m.GetTexture("_EmissionMap");
                 if (!screen) m.SetTexture("_EmissionMap", m.GetTexture("_BaseMap"));
-                m.SetColor("_EmissionColor", screen ? UnityEngine.Color.white * 1.25f : UnityEngine.Color.white * 0.4f);
+                m.SetColor("_EmissionColor", screen ? UnityEngine.Color.white * 0.95f : UnityEngine.Color.white * 0.35f);
+                if (screen) { m.SetColor("_BaseColor", UnityEngine.Color.black); m.SetFloat("_Smoothness", 0); }   // ecran allume : ignore les projecteurs
                 m.EnableKeyword("_EMISSION");
             }
-        // Pivot autour de Tenna : ses reactions (sauts, tete secouee) bougent le pivot, son animation d'origine continue dessous.
-        var pivot = new GameObject("TennaPivot").transform;
-        pivot.SetParent(t.parent, false);
-        pivot.SetPositionAndRotation(t.position, t.rotation);
-        t.SetParent(pivot, true);
-        tennaPivot = pivot;
+        tennaAn = t.GetComponent<Animator>();
         StartCoroutine(TennaDebug(t));
         tennaFace = t.GetComponentInChildren<SkinnedMeshRenderer>();
         tenna = t;
     }
 
-    Transform tennaPivot;
-    Coroutine tennaMove;
+    Animator tennaAn;
+    float tennaBusy;
+    int tennaBad;
 
-    // Reactions de Tenna : "good" bond + tour sur lui-meme, "bad" tete secouee et epaules tombantes, "win" sautille de joie.
+    // Reactions de Tenna (clips Mixamo, cf. StageSetup.TennaHuman) : il applaudit une bonne reponse,
+    // rit ou se moque d'une mauvaise, trepigne de joie a la fin. Une reaction n'en coupe pas une autre.
     public void TennaReact(string kind)
     {
-        if (!tennaPivot) return;
-        if (tennaMove != null && kind == "bad") return;   // les mauvaises reponses pleuvent : on ne relance pas en boucle
-        if (tennaMove != null) StopCoroutine(tennaMove);
-        tennaMove = StartCoroutine(TennaMove(kind));
-    }
-
-    IEnumerator TennaMove(string kind)
-    {
-        var p0 = tennaPivot.localPosition;
-        var r0 = tennaPivot.localRotation;
-        float h = tenna.lossyScale.y / 0.09f;            // echelle relative au reglage d'origine
-        float dur = kind == "good" ? 0.8f : kind == "bad" ? 1.1f : 2.4f;
-        for (float t = 0; t < dur; t += Time.deltaTime)
-        {
-            float k = t / dur;
-            var up = Vector3.zero;
-            var rot = Quaternion.identity;
-            if (kind == "good")
-            {
-                up = Vector3.up * Mathf.Sin(k * Mathf.PI) * 0.55f * h;
-                rot = Quaternion.Euler(0, Mathf.SmoothStep(0, 360, k), 0);
-            }
-            else if (kind == "bad")
-            {
-                float fade = 1 - k;
-                rot = Quaternion.Euler(Mathf.Sin(k * Mathf.PI) * 12, Mathf.Sin(k * Mathf.PI * 6) * 22 * fade, 0);   // se penche et fait non
-                up = Vector3.down * Mathf.Sin(k * Mathf.PI) * 0.08f * h;
-            }
-            else
-            {
-                up = Vector3.up * Mathf.Abs(Mathf.Sin(k * Mathf.PI * 4)) * 0.4f * h;
-                rot = Quaternion.Euler(0, Mathf.Sin(k * Mathf.PI * 4) * 25, Mathf.Sin(k * Mathf.PI * 8) * 6);
-            }
-            tennaPivot.localPosition = p0 + up;
-            tennaPivot.localRotation = r0 * rot;
-            yield return null;
-        }
-        tennaPivot.localPosition = p0;
-        tennaPivot.localRotation = r0;
-        tennaMove = null;
+        if (!tennaAn || !tennaAn.runtimeAnimatorController) return;
+        if (Time.time < tennaBusy && kind == "bad") return;
+        string state = kind == "good" ? "Clap" : kind == "bad" ? (tennaBad++ % 2 == 0 ? "Laugh" : "Taunt") : kind == "point" ? "Point" : "Excited";
+        tennaAn.CrossFadeInFixedTime(state, 0.2f);
+        tennaBusy = Time.time + 2.5f;
     }
 
     IEnumerator TennaDebug(Transform t)

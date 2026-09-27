@@ -257,8 +257,9 @@ public class Game : MonoBehaviour
                 if (mode == 0) { yield return new WaitForSeconds(3); yield return Shot("t0-regles"); ui.DialogueKey(true); ui.DialogueKey(false); }
                 while (qz.phase != QPhase.Guess) yield return null;
                 yield return new WaitForSeconds(6); yield return Shot("t" + mode + "-question");
+                if (mode == 1) { Act("guess|zzzz"); yield return new WaitForSeconds(1.0f); yield return Shot("t1-tenna-rire"); yield return new WaitForSeconds(2.5f); }
                 if (mode == 0) Act("guess|" + qz.Current.p[0]); else Act("guess|" + qz.Current.d.ToLower());
-                if (mode == 1) { yield return new WaitForSeconds(0.35f); yield return Shot("t1-tenna-content"); System.IO.File.AppendAllText(System.IO.Path.Combine(dir, "themes.txt"), qz.Current.c + Environment.NewLine); }
+                if (mode == 1) { yield return new WaitForSeconds(0.9f); yield return Shot("t1-tenna-content"); System.IO.File.AppendAllText(System.IO.Path.Combine(dir, "themes.txt"), qz.Current.c + Environment.NewLine); }
                 while (qz.phase != QPhase.Reveal) yield return null;
                 yield return new WaitForSeconds(1); yield return Shot("t" + mode + "-reponse");
                 ToMenu();
@@ -801,6 +802,7 @@ public class Game : MonoBehaviour
                     qview.reveal = 1;
                     if (qz.trivia) qview.RevealAnswer(qz.Current);
                     qview.TennaFace("SmileSketchfab", 3);
+                    qview.TennaReact("point");
                     Sound.I.Play("tick");
                     ui.QuizReveal();
                     break;
