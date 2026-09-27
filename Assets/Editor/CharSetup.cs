@@ -90,39 +90,6 @@ public static class CharSetup
         AssetDatabase.SaveAssets();
     }
 
-    // Melanges de test : -executeMethod CharSetup.MixSheet -out <png>
-    public static void MixSheet()
-    {
-        ShaderUtil.allowAsyncCompilation = false;
-        foreach (var (_, fbx, _) in Packs) { var mi = (ModelImporter)AssetImporter.GetAtPath(fbx); if (!mi.isReadable) { mi.isReadable = true; mi.SaveAndReimport(); } }
-        UnityEditor.SceneManagement.EditorSceneManager.NewScene(UnityEditor.SceneManagement.NewSceneSetup.DefaultGameObjects);
-        var looks = new[]
-        {
-            new Mix.Look { head = "City/Character_Female_Jacket/1", top = "City/Character_Male_Hoodie/2", bottom = "Farm/SM_Chr_FarmGirl_01/1", feet = "City/Character_Male_Jacket/1", skin = "A" },
-            new Mix.Look { head = "Fantasy/Character_Male_Wizard/2", top = "City/Character_BusinessMan_Suit/1", bottom = "City/Character_BusinessMan_Suit/1", feet = "Fantasy/Character_Male_King/1", skin = "B" },
-            new Mix.Look { head = "Farm/SM_Chr_Farmer_Male_Old_01/1", top = "City/Character_Female_Police/1", bottom = "Farm/SM_Chr_Farmer_Male_01/3", feet = "Farm/SM_Chr_Farmer_Male_01/3", skin = "C" },
-            new Mix.Look { head = "City/Character_Male_Hoodie/3", top = "Fantasy/Character_Male_King/1", bottom = "City/Character_Male_Jacket/2", feet = "City/Character_Male_Hoodie/1", skin = "B" },
-            new Mix.Look { head = "Fantasy/Character_Female_Witch/1", top = "City/Character_Female_Jacket/4", bottom = "City/Character_Female_Jacket/2", feet = "Fantasy/Character_Female_Druid/1", skin = "A" },
-            new Mix.Look { head = "City/Character_BusinessWoman/2", top = "Farm/SM_Chr_Farmer_Female_01/4", bottom = "City/Character_Male_Hoodie/4", feet = "Farm/SM_Chr_Farmer_Female_01/1", skin = "C" },
-        };
-        for (int i = 0; i < looks.Length; i++)
-        {
-            var g = Mix.Build(looks[i], null);
-            AssetDatabase.LoadAllAssetsAtPath("Assets/Mixamo/idle.fbx").OfType<AnimationClip>().First(c => !c.name.StartsWith("__")).SampleAnimation(g, 1f);
-            g.transform.SetPositionAndRotation(new Vector3(i * 1.1f, 0, 0), Quaternion.Euler(0, i % 2 == 0 ? 180 : 150, 0));
-        }
-        var cam = Camera.main;
-        cam.transform.SetPositionAndRotation(new Vector3(2.75f, 1.0f, -5.8f), Quaternion.Euler(3, 0, 0));
-        cam.fieldOfView = 36;
-        var rt = new RenderTexture(1800, 800, 24);
-        cam.targetTexture = rt; cam.Render(); cam.Render();
-        RenderTexture.active = rt;
-        var tex = new Texture2D(1800, 800, TextureFormat.RGB24, false);
-        tex.ReadPixels(new Rect(0, 0, 1800, 800), 0, 0);
-        var args = System.Environment.GetCommandLineArgs();
-        File.WriteAllBytes(args[System.Array.IndexOf(args, "-out") + 1], tex.EncodeToPNG());
-    }
-
     public static void Bones()
     {
         foreach (var (pack, _, _) in Packs)

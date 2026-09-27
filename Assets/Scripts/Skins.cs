@@ -49,7 +49,6 @@ public static class Chars
 
     public static string Label(string id)
     {
-        if (Sidekick.IsLook(id) || Mix.IsLook(id)) return "Personnalisé";
         if (Friends.ContainsKey(id)) return id.Substring(4);   // "Ami_Roux" -> "Roux"
         var p = Resolve(id).Split('/');
         var m = Models.FirstOrDefault(x => p.Length > 1 && x.mesh == p[1]);
@@ -58,17 +57,30 @@ public static class Chars
 
     public static string PortraitName(string id) => id.Replace('/', '_');
 
-    public static bool Valid(string id) => System.Array.IndexOf(Game.Characters, id) >= 0 || Mix.IsLook(id) || (Sidekick.IsLook(id) && Sidekick.Available);
+    public static int Palettes(string pack) => pack == "Fantasy" ? 5 : 4;
 
-    // Portrait : image precalculee (Resources/Portraits) ou, pour un personnage cree, rendu a la volee (mis en cache).
+    // Toutes les couleurs d'un modele : palettes (vetements, cheveux) x teints A/B/C.
+    public static IEnumerable<string> Variants(string pack, string mesh) =>
+        from pal in Enumerable.Range(1, Palettes(pack)) from skin in new[] { "A", "B", "C" } select $"{pack}/{mesh}/0{pal}_{skin}";
+
+    public static bool Valid(string id)
+    {
+        if (id == null) return false;
+        if (Friends.ContainsKey(id)) return true;
+        var p = id.Split('/');
+        return p != null && p.Length == 3 && Models.Any(m => m.pack == p[0] && m.mesh == p[1]) && Resources.Load<Material>($"CharMats/{p[0]}_{p[2]}");
+    }
+
+    // Portrait : image precalculee (Resources/Portraits) ou, pour une autre couleur, rendu a la volee (mis en cache).
     static readonly Dictionary<string, Texture2D> shots = new Dictionary<string, Texture2D>();
     public static Texture2D Portrait(string id)
     {
-        if (!Sidekick.IsLook(id) && !Mix.IsLook(id)) return Resources.Load<Texture2D>("Portraits/" + PortraitName(id));
+        var baked = Resources.Load<Texture2D>("Portraits/" + PortraitName(id));
+        if (baked) return baked;
         if (shots.TryGetValue(id, out var tex) && tex) return tex;
         var stage = new GameObject("PortraitStudio").transform;
         stage.position = new Vector3(0, -400, 0);
-        var who = Spawn(id, stage, Vector3.zero, 180, out var an);
+        Spawn(id, stage, Vector3.zero, 180, out var an);
         var head = an.GetBoneTransform(HumanBodyBones.Head).position + Vector3.up * 0.1f;
         var cam = new GameObject("PortraitCam").AddComponent<Camera>();
         cam.transform.SetParent(stage, false);
@@ -78,6 +90,12 @@ public static class Chars
         cam.nearClipPlane = 0.05f;
         cam.transform.position = head + new Vector3(0, 0.03f, -1.6f);
         cam.transform.LookAt(head);
+        var lamp = new GameObject("PortraitLamp").AddComponent<Light>();   // lampe de studio, comme les portraits precalcules
+        lamp.transform.SetParent(stage, false);
+        lamp.type = LightType.Point;
+        lamp.range = 4;
+        lamp.intensity = 3;
+        lamp.transform.position = head + new Vector3(-0.5f, 0.4f, -1.0f);
         var rt = new RenderTexture(256, 256, 24, RenderTextureFormat.ARGB32);
         cam.targetTexture = rt;
         cam.Render();
@@ -89,37 +107,16 @@ public static class Chars
         RenderTexture.active = prev;
         cam.targetTexture = null;
         rt.Release();
-        Object.Destroy(stage.gameObject);
+        Object.DestroyImmediate(stage.gameObject);
         return shots[id] = tex;
     }
 
     public static Transform Spawn(string id, Transform parent, Vector3 localPos, float rotY, out Animator an, float height = 1.8f)
     {
-        GameObject g;
-        float size;
-        if (Sidekick.IsLook(id) && Sidekick.Available)
-        {
-            var look = Sidekick.Look.Decode(id);
-            g = Sidekick.Build(look, parent);
-            var headMesh = g.GetComponentInChildren<SkinnedMeshRenderer>();   // la tete porte le squelette : son maillage donne le haut du crane (sans coiffure ni chapeau)
-            size = (headMesh.bounds.max.y - g.transform.position.y) * 100f / Mathf.Clamp(look.height, 80, 120);
-        }
-        else if (Mix.IsLook(id))
-        {
-            var look = Mix.Look.Decode(id);
-            g = Mix.Build(look, parent);
-            var rs = g.GetComponentsInChildren<SkinnedMeshRenderer>();
-            var b = rs[0].bounds; foreach (var r in rs) b.Encapsulate(r.bounds);
-            size = b.size.y * 100f / Mathf.Clamp(look.height, 80, 120);
-        }
-        else
-        {
-            g = SpawnSynty(id, parent, out var body);
-            size = body.bounds.size.y;
-        }
+        var g = SpawnSynty(id, parent, out var body);
         g.transform.localPosition = localPos;
         g.transform.localRotation = Quaternion.Euler(0, rotY, 0);
-        g.transform.localScale *= height / Mathf.Max(0.01f, size);
+        g.transform.localScale *= height / Mathf.Max(0.01f, body.bounds.size.y);
         an = g.GetComponent<Animator>();
         an.runtimeAnimatorController = Resources.Load<RuntimeAnimatorController>("CharAnim");
         an.applyRootMotion = false;

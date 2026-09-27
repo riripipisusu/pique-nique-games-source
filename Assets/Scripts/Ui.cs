@@ -30,7 +30,6 @@ public partial class Ui : MonoBehaviour
         BuildOnline();
         BuildLobby();
         BuildPicker();
-        BuildCreator();
     }
 
     // --- Outils ---------------------------------------------------------------------
@@ -143,7 +142,7 @@ public partial class Ui : MonoBehaviour
 
     static void Hide(VisualElement s) { s.AddToClassList("hidden"); s.RemoveFromClassList("in"); }
 
-    VisualElement[] All => new[] { title, games, setup, picker, settingsScreen, rulesScreen, hud, pause, victory, onlineScreen, lobbyScreen, creatorScreen };
+    VisualElement[] All => new[] { title, games, setup, picker, settingsScreen, rulesScreen, hud, pause, victory, onlineScreen, lobbyScreen };
 
     // Navigation entre ecrans de menu, avec retour arriere.
     void Go(VisualElement s, bool remember = true)
@@ -173,7 +172,6 @@ public partial class Ui : MonoBehaviour
         if (screen == "games") Go(games);
         else if (screen == "setup") { RefreshSetup(); Go(setup); }
         else if (screen == "avatar") OpenPicker(a => { }, null);
-        else if (screen == "creator") OpenCreator(null, a => { }, false);
         else if (screen == "settings") { SelectTab(1); Go(settingsScreen); }
         else if (screen == "online") { RefreshOnline(); Go(onlineScreen); }
     }
@@ -410,38 +408,98 @@ public partial class Ui : MonoBehaviour
     // --- Choix du personnage ---------------------------------------------------------------
     Action<string> onPick;
 
+    // Choix du personnage : onglets par style, un portrait par modele, puis toutes ses couleurs (palette x teint).
+    static readonly (string label, string pack)[] PickTabs = { ("Mes amis", ""), ("Moderne", "City"), ("Fantaisie", "Fantasy"), ("Ferme", "Farm") };
+    readonly List<Button> pickTabs = new List<Button>();
+    VisualElement pickGrid, pickColors, pickColorsBox;
+    Label pickName;
+    string pickSel;
+    int pickTab;
+
     void BuildPicker()
     {
         picker = Screen("dim");
         var panel = Panel(picker, "settings-panel");
         Text(panel, "Choisis ton personnage", "panel-title");
-        var sv = Add(panel, new ScrollView(), "settings-scroll");
-        var grid = Div(sv, "avatar-grid");
-        // En tete : creer (ou retoucher) un personnage piece par piece.
-        pickerCreate = Div(grid, "avatar-cell");
-        var create = Ico(Btn(pickerCreate, "", () => OpenCreator(pickCurrent, onPick, true), "green", "round", "create-btn"), "plus");
-        Text(pickerCreate, "Créer", "avatar-name");
-        foreach (var c in Game.Characters)
+        var bar = Div(panel, "tabs");
+        for (int i = 0; i < PickTabs.Length; i++)
         {
-            var cell = Div(grid, "avatar-cell");
-            Portrait(cell, c, () => { onPick?.Invoke(c); Back(); }, 120);
-            Text(cell, Chars.Label(c), "avatar-name");
+            int k = i;
+            var t = new Button(() => { Sound.I.UI("tick"); PickerTab(k); }) { text = PickTabs[i].label };
+            t.AddToClassList("tab");
+            bar.Add(t);
+            pickTabs.Add(t);
         }
-        var bottom = Div(panel, "row");
-        bottom.style.justifyContent = Justify.Center;
+        pickGrid = Div(Add(panel, new ScrollView(), "settings-scroll", "pick-scroll"), "avatar-grid");
+        pickColorsBox = Div(panel, "pick-colors");
+        Text(pickColorsBox, "Couleurs", "h2").style.marginTop = 0;
+        pickColors = Div(pickColorsBox, "row", "pick-row");
+        var bottom = Div(panel, "row", "bottom-row");
         Ico(Btn(bottom, "Annuler", Back, "ghost", "small"), "back");
+        Div(bottom, "grow");
+        pickName = Text(bottom, "", "pick-name");
+        Ico(Btn(bottom, "Choisir", () => { var id = pickSel; Back(); onPick?.Invoke(id); }, "green"), "check");
     }
-
-
-    VisualElement pickerCreate;
-    string pickCurrent;
 
     void OpenPicker(Action<string> pick, string current)
     {
         onPick = pick;
-        pickCurrent = current;
-        pickerCreate.style.display = DisplayStyle.Flex;
+        pickSel = Chars.Valid(current) ? current : Chars.Default;
+        var pack = pickSel.Split('/')[0];
+        PickerTab(Chars.Friends.ContainsKey(pickSel) ? 0 : Math.Max(1, Array.FindIndex(PickTabs, t => t.pack == pack)));
         Go(picker);
+    }
+
+    static string Mesh(string id) => Chars.Friends.ContainsKey(id) ? id : id.Split('/')[1];
+
+    VisualElement PickCell(VisualElement parent, string id, string label, float size, Action click)
+    {
+        var cell = Div(parent, "avatar-cell");
+        var b = new Button(() => { Sound.I.UI("tick"); click(); });
+        b.AddToClassList("portrait");
+        b.style.width = b.style.height = size;
+        b.style.backgroundImage = Chars.Portrait(id);
+        cell.Add(b);
+        if (label != null) Text(cell, label, "avatar-name");
+        return cell;
+    }
+
+    void PickerTab(int k)
+    {
+        pickTab = k;
+        for (int i = 0; i < pickTabs.Count; i++) pickTabs[i].EnableInClassList("selected", i == k);
+        pickGrid.Clear();
+        if (k == 0)
+            foreach (var f in Chars.Friends.Keys)
+                PickCell(pickGrid, f, Chars.Label(f), 120, () => { pickSel = f; PickerRefresh(); }).userData = f;
+        else
+            foreach (var m in Chars.Models.Where(m => m.pack == PickTabs[k].pack))
+            {
+                // Le portrait montre la couleur choisie si c'est le perso actuel, sinon sa couleur par defaut.
+                string shown = !Chars.Friends.ContainsKey(pickSel) && Mesh(pickSel) == m.mesh ? pickSel : Chars.All.First(a => a.Split('/')[1] == m.mesh);
+                PickCell(pickGrid, shown, m.label, 120, () => { if (Chars.Friends.ContainsKey(pickSel) || Mesh(pickSel) != m.mesh) pickSel = shown; PickerRefresh(); }).userData = m.mesh;
+            }
+        PickerRefresh();
+    }
+
+    void PickerRefresh()
+    {
+        foreach (var cell in pickGrid.Children()) cell.EnableInClassList("selected", (string)cell.userData == Mesh(pickSel));
+        pickName.text = Chars.Label(pickSel);
+        pickColors.Clear();
+        bool friend = Chars.Friends.ContainsKey(pickSel);
+        pickColorsBox.style.display = friend ? DisplayStyle.None : DisplayStyle.Flex;
+        if (friend) return;
+        var p = pickSel.Split('/');
+        foreach (var v in Chars.Variants(p[0], p[1]))
+        {
+            var cell = PickCell(pickColors, v, null, 76, () => { pickSel = v; PickerRefresh(); });
+            cell.AddToClassList("pick-color");
+            cell.EnableInClassList("selected", v == pickSel);
+        }
+        // Le portrait de la grille suit la couleur choisie.
+        foreach (var cell in pickGrid.Children())
+            if ((string)cell.userData == p[1]) cell.Q<Button>().style.backgroundImage = Chars.Portrait(pickSel);
     }
 
     // --- Parametres -------------------------------------------------------------------
