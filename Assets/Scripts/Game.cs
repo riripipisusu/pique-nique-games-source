@@ -119,6 +119,8 @@ public class Game : MonoBehaviour
             }));
         int at = Array.IndexOf(args, "-autotest");
         if (at >= 0) ui.StartCoroutine(AutoTest(args[at + 1]));
+        int dj = Array.IndexOf(args, "-discordjoin");   // test : invitation Discord simulee (code lu dans <dir>/code.txt)
+        if (dj >= 0) ui.StartCoroutine(DiscordJoinTest(args[dj + 1]));
         int nt = Array.IndexOf(args, "-nettest");
         if (nt >= 0) ui.StartCoroutine(NetTest(args[nt + 1], (GameId)Enum.Parse(typeof(GameId), args[nt + 2]), args[nt + 3]));
     }
@@ -145,6 +147,22 @@ public class Game : MonoBehaviour
 
     // --- Tests automatiques ---------------------------------------------------------------
     int applied;
+
+    IEnumerator DiscordJoinTest(string dir)
+    {
+        string f = System.IO.Path.Combine(dir, "code.txt");
+        while (!System.IO.File.Exists(f)) yield return new WaitForSecondsRealtime(0.5f);
+        yield return new WaitForSecondsRealtime(1);
+        JoinFromDiscord(System.IO.File.ReadAllText(f).Trim());
+        for (float w = 0; w < 40 && !inGame; w += Time.unscaledDeltaTime) yield return null;
+        yield return new WaitForSecondsRealtime(3);
+        yield return new WaitForEndOfFrame();
+        var t = ScreenCapture.CaptureScreenshotAsTexture();
+        System.IO.File.WriteAllBytes(System.IO.Path.Combine(dir, "discord.png"), t.EncodeToPNG());
+        System.IO.File.WriteAllText(System.IO.Path.Combine(dir, "discord.txt"), $"actif={net.Active} code={net.Code} membres={string.Join(",", net.Lobby)} enJeu={inGame} statut={net.Status}");
+        yield return new WaitForSecondsRealtime(2);
+        Application.Quit();
+    }
 
     // Test en ligne : un hote, un invite, et un spectateur qui arrive en pleine partie ("watch").
     // L'hote cree le salon, choisit le jeu, lance la partie, puis ramene tout le monde au salon ; chacun ecrit son journal.
@@ -944,12 +962,14 @@ public class Game : MonoBehaviour
     }
 
     // Invitation Discord acceptee : on quitte ce qu'on fait et on rejoint le salon de l'ami.
-    public void JoinFromDiscord(string code) => StartCoroutine(JoinSoon(code));
+    public void JoinFromDiscord(string code) => ui.StartCoroutine(JoinSoon(code));   // sur l'UI : ToMenu arrete les coroutines du jeu
 
     IEnumerator JoinSoon(string code)
     {
         if (inGame || net.Active) { ToMenu(); yield return new WaitForSecondsRealtime(1.5f); }
+        yield return new WaitForSecondsRealtime(0.5f);   // lance par Discord : on laisse l'accueil s'installer
         ui.OpenForTest("online");
+        Debug.Log("Discord : connexion au salon " + code);
         net.Join(code, PlayerPrefs.GetString("cc-name", "Joueur"));
     }
 

@@ -25,6 +25,8 @@ public class DiscordLink : MonoBehaviour
     {
         game = g;
         client = new Client();
+        client.AddLogCallback((m, sev) => Debug.Log("Discord SDK [" + sev + "] " + m), LoggingSeverity.Info);
+        Debug.Log("Discord : lancement avec arguments = " + string.Join(" ", Environment.GetCommandLineArgs()));
         client.SetApplicationId(AppId);
         bool ok = client.RegisterLaunchCommand(AppId, "");   // Discord pourra lancer ce jeu quand un ami accepte une invitation
         Debug.Log("Discord : commande de lancement enregistree = " + ok);
@@ -34,8 +36,8 @@ public class DiscordLink : MonoBehaviour
     // Invitation acceptee (ou bouton Rejoindre) : le secret est le code du salon.
     void Join(string code)
     {
+        Debug.Log("Discord : invitation recue, secret = '" + code + "'");
         if (string.IsNullOrEmpty(code) || game.net.Code == code) return;
-        Debug.Log("Discord : rejoindre le salon " + code);
         game.JoinFromDiscord(code);
     }
 
