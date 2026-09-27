@@ -332,6 +332,7 @@ public partial class Ui : MonoBehaviour
         setupTitle = Text(panel, "", "panel-title");
         Text(panel, "Options", "h2");
         setupOptions = Div(panel, "row");
+        setupThemes = Div(panel, "themes");
         localTitle = Text(panel, "Joueurs sur ce PC (chacun son tour)", "h2");
         playerList = Div(panel);
         addPlayer = Ico(Btn(panel, "Ajouter un joueur", () =>
@@ -356,8 +357,39 @@ public partial class Ui : MonoBehaviour
         localBtn = Ico(Btn(bottom, "Jouer sur ce PC", () => game.StartGame(), "green"), "monitor");
     }
 
+    VisualElement setupThemes, lobbyThemes;
+
+    // Grand quiz : familles de themes a cocher (au moins une reste cochee).
+    void ThemeChips(VisualElement parent, GameId g, int option, Action<int> pick)
+    {
+        parent.Clear();
+        parent.style.display = g == GameId.Trivia ? DisplayStyle.Flex : DisplayStyle.None;
+        if (g != GameId.Trivia) return;
+        Text(parent, "Thèmes", "h2");
+        var row = Div(parent, "row", "theme-row");
+        int all = (1 << Quiz.Families.Length) - 1;
+        int mask = Quiz.ThemeMask(option) == 0 ? all : Quiz.ThemeMask(option);
+        for (int i = 0; i < Quiz.Families.Length; i++)
+        {
+            int bit = 1 << i;
+            bool on = (mask & bit) != 0;
+            var b = new Button(() =>
+            {
+                Sound.I.UI("tick");
+                int m = mask ^ bit;
+                if (m == 0) return;                                 // jamais zero theme
+                pick((option & 1) | ((m == all ? 0 : m) << 1));
+            }) { text = Quiz.Families[i].label };
+            b.AddToClassList("theme-chip");
+            b.EnableInClassList("selected", on);
+            row.Add(b);
+        }
+    }
+
     void OptionCards(VisualElement parent, int current, Action<int> pick)
     {
+        // Grand quiz : les cartes ne changent que le mode (bit 0), les themes sont gardes.
+        if (game.gameId == GameId.Trivia) { int keep = current & ~1; var raw = pick; pick = v => raw(v | keep); current &= 1; }
         parent.Clear();
         var opts = game.gameId == GameId.Croque
             ? new[] { (0, "Classique", "19 cases en spirale. La carotte ouvre 1 à 3 trous au hasard."), (1, "Amélioré", "25 cases, trous selon un cycle secret à deviner.") }
@@ -383,6 +415,7 @@ public partial class Ui : MonoBehaviour
     {
         setupTitle.text = Games.Name(game.gameId);
         OptionCards(setupOptions, game.option, v => { game.option = v; RefreshSetup(); });
+        ThemeChips(setupThemes, game.gameId, game.option, v => { game.option = v; RefreshSetup(); });
         while (game.avatars.Count < game.names.Count) game.avatars.Add(Chars.Default);
         playerList.Clear();
         for (int i = 0; i < game.names.Count; i++)
@@ -1108,6 +1141,7 @@ public partial class Ui : MonoBehaviour
         lobbyGame = Text(gt, "", "mode-name");
         lobbyMeta = Text(gt, "", "game-meta");
         lobbyOptions = Div(right, "row", "lobby-options");
+        lobbyThemes = Div(right, "themes", "lobby-themes");
         Div(right, "grow");
         startBtn = Ico(Btn(right, "Lancer la partie", () => game.net.StartMatch(), "lg"), "play");
     }
@@ -1140,6 +1174,8 @@ public partial class Ui : MonoBehaviour
         var g0 = game.gameId;
         game.gameId = n.LobbyGame;
         OptionCards(lobbyOptions, n.LobbyOption, v => n.SetOption(v));
+        ThemeChips(lobbyThemes, n.LobbyGame, n.LobbyOption, v => n.SetOption(v));
+        lobbyThemes.SetEnabled(n.IsHost);
         game.gameId = g0;
         lobbyOptions.SetEnabled(n.IsHost);
         startBtn.style.display = n.IsHost ? DisplayStyle.Flex : DisplayStyle.None;

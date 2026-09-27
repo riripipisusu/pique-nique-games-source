@@ -50,8 +50,10 @@ public class QuizView : MonoBehaviour
         if (q == null) { if (qRoot != null) qRoot.style.display = DisplayStyle.None; return; }
         if (qRoot == null) BuildQuestionPanel();
         qRoot.style.display = DisplayStyle.Flex;
+        qTopic.text = Topic(q);
         qText.text = q.q;
-        qAnswer.text = "";
+        qAnswer.text = qFact.text = "";
+        qAnswer.style.display = DisplayStyle.Flex;
         for (int k = 0; k < 4; k++)
         {
             qProps[k].style.display = mcq ? DisplayStyle.Flex : DisplayStyle.None;
@@ -63,7 +65,10 @@ public class QuizView : MonoBehaviour
     public void RevealAnswer(QuizQuestion q)
     {
         if (qRoot == null) return;
-        qAnswer.text = q.d;
+        bool mcq = qProps[0].style.display != DisplayStyle.None;
+        qAnswer.text = mcq ? "" : "C'était : " + q.d;          // en QCM, la bonne proposition s'allume deja
+        qAnswer.style.display = mcq ? DisplayStyle.None : DisplayStyle.Flex;
+        qFact.text = q.h ?? "";
         for (int k = 0; k < 4; k++) qProps[k].EnableInClassList("good", q.p[k] == q.d);
     }
 
@@ -87,10 +92,22 @@ public class QuizView : MonoBehaviour
         qRoot.styleSheets.Add(Resources.Load<StyleSheet>("UI/Menu"));
         qRoot.AddToClassList("root");
         qRoot.AddToClassList("tq");
+        qTopic = new Label(); qTopic.AddToClassList("tq-topic"); qRoot.Add(qTopic);
         qText = new Label(); qText.AddToClassList("tq-text"); qRoot.Add(qText);
         var grid = new VisualElement(); grid.AddToClassList("tq-grid"); qRoot.Add(grid);
         for (int k = 0; k < 4; k++) { var l = new Label(); l.AddToClassList("tq-prop"); l.AddToClassList("choice-" + k); grid.Add(l); qProps.Add(l); }
         qAnswer = new Label(); qAnswer.AddToClassList("tq-answer"); qRoot.Add(qAnswer);
+        qFact = new Label(); qFact.AddToClassList("tq-fact"); qRoot.Add(qFact);
+    }
+
+    Label qTopic, qFact;
+
+    // Sujet du quiz OpenQuizzDB d'ou vient la question ("Quiz « Zinedine Zidane » · ...") : donne le contexte
+    // des questions du genre "Quel est son numero ?".
+    public static string Topic(QuizQuestion q)
+    {
+        var m = System.Text.RegularExpressions.Regex.Match(q.cr ?? "", @"«\s*(.+?)\s*»");
+        return m.Success ? m.Groups[1].Value : q.c;
     }
 
     // Image telechargee (ou abandonnee apres echec : on n'attend pas indefiniment).
@@ -273,9 +290,73 @@ public class QuizView : MonoBehaviour
             t.position += Vector3.up * (transform.TransformPoint(new Vector3(0, 0.12f, 0)).y - foot);
         }
         foreach (var smr in t.GetComponentsInChildren<SkinnedMeshRenderer>()) smr.updateWhenOffscreen = true;
+        // Tenna seul s'eclaire un peu lui-meme (le plateau et les joueurs gardent leur lumiere) :
+        // corps a 40 % de sa propre texture, ecran-visage plus lumineux.
+        foreach (var r in t.GetComponentsInChildren<Renderer>())
+            foreach (var m in r.materials)
+            {
+                bool screen = m.GetTexture("_EmissionMap");
+                if (!screen) m.SetTexture("_EmissionMap", m.GetTexture("_BaseMap"));
+                m.SetColor("_EmissionColor", screen ? UnityEngine.Color.white * 1.25f : UnityEngine.Color.white * 0.4f);
+                m.EnableKeyword("_EMISSION");
+            }
+        // Pivot autour de Tenna : ses reactions (sauts, tete secouee) bougent le pivot, son animation d'origine continue dessous.
+        var pivot = new GameObject("TennaPivot").transform;
+        pivot.SetParent(t.parent, false);
+        pivot.SetPositionAndRotation(t.position, t.rotation);
+        t.SetParent(pivot, true);
+        tennaPivot = pivot;
         StartCoroutine(TennaDebug(t));
         tennaFace = t.GetComponentInChildren<SkinnedMeshRenderer>();
         tenna = t;
+    }
+
+    Transform tennaPivot;
+    Coroutine tennaMove;
+
+    // Reactions de Tenna : "good" bond + tour sur lui-meme, "bad" tete secouee et epaules tombantes, "win" sautille de joie.
+    public void TennaReact(string kind)
+    {
+        if (!tennaPivot) return;
+        if (tennaMove != null && kind == "bad") return;   // les mauvaises reponses pleuvent : on ne relance pas en boucle
+        if (tennaMove != null) StopCoroutine(tennaMove);
+        tennaMove = StartCoroutine(TennaMove(kind));
+    }
+
+    IEnumerator TennaMove(string kind)
+    {
+        var p0 = tennaPivot.localPosition;
+        var r0 = tennaPivot.localRotation;
+        float h = tenna.lossyScale.y / 0.09f;            // echelle relative au reglage d'origine
+        float dur = kind == "good" ? 0.8f : kind == "bad" ? 1.1f : 2.4f;
+        for (float t = 0; t < dur; t += Time.deltaTime)
+        {
+            float k = t / dur;
+            var up = Vector3.zero;
+            var rot = Quaternion.identity;
+            if (kind == "good")
+            {
+                up = Vector3.up * Mathf.Sin(k * Mathf.PI) * 0.55f * h;
+                rot = Quaternion.Euler(0, Mathf.SmoothStep(0, 360, k), 0);
+            }
+            else if (kind == "bad")
+            {
+                float fade = 1 - k;
+                rot = Quaternion.Euler(Mathf.Sin(k * Mathf.PI) * 12, Mathf.Sin(k * Mathf.PI * 6) * 22 * fade, 0);   // se penche et fait non
+                up = Vector3.down * Mathf.Sin(k * Mathf.PI) * 0.08f * h;
+            }
+            else
+            {
+                up = Vector3.up * Mathf.Abs(Mathf.Sin(k * Mathf.PI * 4)) * 0.4f * h;
+                rot = Quaternion.Euler(0, Mathf.Sin(k * Mathf.PI * 4) * 25, Mathf.Sin(k * Mathf.PI * 8) * 6);
+            }
+            tennaPivot.localPosition = p0 + up;
+            tennaPivot.localRotation = r0 * rot;
+            yield return null;
+        }
+        tennaPivot.localPosition = p0;
+        tennaPivot.localRotation = r0;
+        tennaMove = null;
     }
 
     IEnumerator TennaDebug(Transform t)

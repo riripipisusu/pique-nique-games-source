@@ -205,7 +205,8 @@ public partial class Ui
         if (game.qz.Mcq)
             for (int k = 0; k < 4; k++) qzChoiceBtns[k].EnableInClassList("good", q.p[k] == q.d);
         qzCredit.text = string.Join("\n", new[] { q.h, q.cr }.Where(x => !string.IsNullOrEmpty(x)));
-        qzReveal.style.display = DisplayStyle.Flex;
+        // Grand quiz : la reponse et l'anecdote s'affichent sur l'ecran geant, pas dans un encadre par-dessus.
+        qzReveal.style.display = game.qz.trivia ? DisplayStyle.None : DisplayStyle.Flex;
         qzInput.SetEnabled(false);
         Sound.I.Play(game.qz.players[Me].found ? "bj_chips" : "lose", 0.6f);
     }

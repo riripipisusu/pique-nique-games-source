@@ -63,8 +63,31 @@ public class Quiz : IMatch
     readonly List<QuizQuestion> order;
     readonly int seed;
 
+    // Grand quiz : les 22 themes d'OpenQuizzDB regroupes en familles. L'option de partie vaut mode (bit 0)
+    // + familles choisies (bits 1 et suivants, 0 = toutes) : elle passe telle quelle en ligne.
+    public static readonly (string label, string[] themes)[] Families =
+    {
+        ("Cinéma et télé", new[] { "Cinéma", "Télévision", "Célébrités" }),
+        ("Musique", new[] { "Musique" }),
+        ("Sport et loisirs", new[] { "Sports", "Loisirs" }),
+        ("Histoire et géo", new[] { "Histoire", "Géographie", "Pays du monde", "Tourisme", "Archéologie" }),
+        ("Sciences et nature", new[] { "Sciences", "Nature", "Animaux", "Informatique", "Web" }),
+        ("Arts et lettres", new[] { "Littérature", "Arts", "Bande dessinée" }),
+        ("Vie quotidienne", new[] { "Vie quotidienne", "Gastronomie", "Culture générale" }),
+    };
+    public static int ThemeMask(int option) => option >> 1;
+    public static bool HasFamily(int option, int f) => ThemeMask(option) == 0 || (ThemeMask(option) & (1 << f)) != 0;
+
     public Quiz(IEnumerable<string> names, int mode, int seed, IList<QuizQuestion> pool, bool trivia = false)
     {
+        if (trivia)
+        {
+            int option = mode;
+            mode &= 1;
+            var keep = new HashSet<string>(Families.Where((f, i) => HasFamily(option, i)).SelectMany(f => f.themes));
+            var chosen = pool.Where(q => keep.Contains(q.c)).ToList();
+            if (chosen.Count >= 20) pool = chosen;
+        }
         this.mode = mode;
         this.trivia = trivia;
         this.seed = seed;

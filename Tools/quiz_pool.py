@@ -219,7 +219,11 @@ if category("pochette_album", ["spotify_client_id", "spotify_client_secret"]):
                   and any(x["name"].lower() == artist.lower() for x in a["artists"])]
         names = set()
         for a in albums:
-            title = re.sub(r"\s*[\(\[].*?(deluxe|remaster|edition|version|anniversary).*?[\)\]]", "", a["name"], flags=re.I).strip()
+            # Pas d'enregistrements en concert, de remix ni de musiques de film : seulement les albums studio.
+            if re.search(r"\blive\b|unplugged|alive 19|alive 20|in concert|remix|soundtrack|motion picture|original score|music from|inspired by|\(spilled\)", a["name"], re.I): continue
+            title = re.sub(r"\s*[\(\[].*?(deluxe|remaster|edition|édition|version|anniversary).*?[\)\]]", "", a["name"], flags=re.I)
+            title = re.sub(r"\s+-\s+.*\b(edition|deluxe|remaster(ed)?|version)\b.*$", "", title, flags=re.I)
+            title = re.sub(r"\s+(deluxe|platinum edition)\b.*$", "", title, flags=re.I).strip()
             if title.lower() in names: continue
             names.add(title.lower())
             add("pochette_album", a["images"][0]["url"], answers(title, artist), f"{artist} — {title}", "sp:" + a["id"])

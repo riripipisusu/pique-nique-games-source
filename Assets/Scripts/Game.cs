@@ -248,8 +248,9 @@ public class Game : MonoBehaviour
             foreach (int mode in new[] { 0, 1 })
             {
                 SelectGame(GameId.Trivia);
+                if (mode == 1) option = 1 | (0b0010011 << 1);   // reponse libre, themes : cinema, musique, vie quotidienne
                 ui.OpenForTest("setup"); yield return new WaitForSeconds(1); yield return Shot("t" + mode + "-setup");
-                quizBots = 4; option = mode;
+                quizBots = 4; if (mode == 0) option = 0;
                 StartQuizWithBots();
                 yield return new WaitForSeconds(2); introSkip = true;
                 while (mode == 0 && !ui.DialogueShown) yield return null;
@@ -257,6 +258,7 @@ public class Game : MonoBehaviour
                 while (qz.phase != QPhase.Guess) yield return null;
                 yield return new WaitForSeconds(6); yield return Shot("t" + mode + "-question");
                 if (mode == 0) Act("guess|" + qz.Current.p[0]); else Act("guess|" + qz.Current.d.ToLower());
+                if (mode == 1) { yield return new WaitForSeconds(0.35f); yield return Shot("t1-tenna-content"); System.IO.File.AppendAllText(System.IO.Path.Combine(dir, "themes.txt"), qz.Current.c + Environment.NewLine); }
                 while (qz.phase != QPhase.Reveal) yield return null;
                 yield return new WaitForSeconds(1); yield return Shot("t" + mode + "-reponse");
                 ToMenu();
@@ -784,12 +786,14 @@ public class Game : MonoBehaviour
                 case QEv.Found:
                     qview.SetFound(e.seat, true);
                     qview.TennaFace("Pog");
+                    qview.TennaReact("good");
                     Sound.I.Play(e.seat == mySeat || !Online ? "win" : "bj_chip1");
                     ui.QuizFound(e.seat, e.points);
                     break;
                 case QEv.Wrong:
                     qview.Wrong(e.seat);
                     qview.TennaFace("HmmmSketchfab", 0.6f);
+                    qview.TennaReact("bad");
                     ui.QuizWrong(e.seat, e.text);
                     break;
                 case QEv.Reveal:
@@ -804,6 +808,8 @@ public class Game : MonoBehaviour
                     qview.reveal = 1;
                     var best = qz.players.Max(pl => pl.score);
                     foreach (var pl in qz.players.Where(pl => pl.score == best)) qview.Winner(pl.seat);
+                    qview.TennaFace("Pog", 4);
+                    qview.TennaReact("win");
                     StartCoroutine(QuizEnd());
                     break;
             }
