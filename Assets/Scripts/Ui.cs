@@ -105,7 +105,7 @@ public partial class Ui : MonoBehaviour
         e.AddToClassList("portrait");
         e.style.width = size;
         e.style.height = size;
-        e.style.backgroundImage = Resources.Load<Texture2D>("Portraits/" + avatar);
+        e.style.backgroundImage = Resources.Load<Texture2D>("Portraits/" + Chars.PortraitName(avatar));
         p.Add(e);
         return e;
     }
@@ -217,7 +217,7 @@ public partial class Ui : MonoBehaviour
         var corner = Div(title, "corner");
         SoundBtn(corner);
         Text(title, "Version " + Application.version, "version");
-        Text(title, "Décors Synty Studios · Modèles Kenney & Quaternius (CC0) · Lapins : Poly Art de Malbers Animations  ·  Questions : OpenQuizzDB (CC BY-SA) · Tenna : rig de ThatAverageJoe · Sons de roulette : Pixabay · Musiques : MMAudio, Geoff Harvey (Pixabay), « A Conversation with Saul » de Matthew Pablo (CC-BY 3.0)", "credits");
+        Text(title, "Décors Synty Studios · Modèles Kenney (CC0) · Personnages Synty, animations Mixamo · Lapins : Poly Art de Malbers Animations  ·  Questions : OpenQuizzDB (CC BY-SA) · Tenna : rig de ThatAverageJoe · Sons de roulette : Pixabay · Musiques : MMAudio, Geoff Harvey (Pixabay), « A Conversation with Saul » de Matthew Pablo (CC-BY 3.0)", "credits");
         updateCard = Div(title, "panel", "update-card");
         updateCard.style.display = DisplayStyle.None;
         updateText = Text(updateCard, "", "p");
@@ -240,7 +240,7 @@ public partial class Ui : MonoBehaviour
 
     void RefreshProfile()
     {
-        profilePortrait.style.backgroundImage = Resources.Load<Texture2D>("Portraits/" + game.myAvatar);
+        profilePortrait.style.backgroundImage = Resources.Load<Texture2D>("Portraits/" + Chars.PortraitName(game.myAvatar));
         profileName.text = PlayerPrefs.GetString("cc-name", "Toi");
     }
 
@@ -383,7 +383,7 @@ public partial class Ui : MonoBehaviour
     {
         setupTitle.text = Games.Name(game.gameId);
         OptionCards(setupOptions, game.option, v => { game.option = v; RefreshSetup(); });
-        while (game.avatars.Count < game.names.Count) game.avatars.Add("Casual_Male");
+        while (game.avatars.Count < game.names.Count) game.avatars.Add(Chars.Default);
         playerList.Clear();
         for (int i = 0; i < game.names.Count; i++)
         {
@@ -419,14 +419,13 @@ public partial class Ui : MonoBehaviour
         {
             var cell = Div(grid, "avatar-cell");
             Portrait(cell, c, () => { onPick?.Invoke(c); Back(); }, 120);
-            Text(cell, Pretty(c), "avatar-name");
+            Text(cell, Chars.Label(c), "avatar-name");
         }
         var bottom = Div(panel, "row");
         bottom.style.justifyContent = Justify.Center;
         Ico(Btn(bottom, "Annuler", Back, "ghost", "small"), "back");
     }
 
-    static string Pretty(string c) => c.Replace("_Male", " (H)").Replace("_Female", " (F)").Replace("_", " ").Replace("Casual", "Décontracté").Replace("OldClassy", "Chic").Replace("Worker", "Ouvrier").Replace("Suit", "Costume").Replace("Chef", "Chef").Replace("Doctor", "Docteur").Replace("Young", "jeune").Replace("Old", "âgé").Replace("Knight", "Chevalier").Replace("Golden", "doré").Replace("Soldier", "Soldat").Replace("BlueSoldier", "Soldat bleu").Replace("Wizard", "Sorcier").Replace("Witch", "Sorcière").Replace("Zombie", "Zombie").Replace("Pirate", "Pirate").Replace("Hair", "coiffé").Replace("Hat", "à toque").Replace("Bald", "chauve").Replace("Sand", "du désert").Replace("Goblin", "Gobelin").Replace("Elf", "Elfe");
 
     void OpenPicker(Action<string> pick) { onPick = pick; Go(picker); }
 
@@ -749,8 +748,8 @@ public partial class Ui : MonoBehaviour
         for (int i = 0; i < lines.Count; i++) Text(feed, lines[i], "feed-line").EnableInClassList("last", i == lines.Count - 1);
     }
 
-    string Avatar(int seat) => game.Online ? (seat < game.net.LobbyAvatars.Count ? game.net.LobbyAvatars[seat] : "Casual_Male")
-                                           : (seat < game.avatars.Count ? game.avatars[seat] : "Casual_Male");
+    string Avatar(int seat) => game.Online ? (seat < game.net.LobbyAvatars.Count ? game.net.LobbyAvatars[seat] : Chars.Default)
+                                           : (seat < game.avatars.Count ? game.avatars[seat] : Chars.Default);
 
     void RefreshCroque()
     {
@@ -1060,7 +1059,7 @@ public partial class Ui : MonoBehaviour
         for (int i = 0; i < n.Lobby.Count; i++)
         {
             var row = Div(lobbyList, "player-row");
-            Ring(Portrait(row, i < n.LobbyAvatars.Count ? n.LobbyAvatars[i] : "Casual_Male", null, 56), Board.Colors[i]);
+            Ring(Portrait(row, i < n.LobbyAvatars.Count ? n.LobbyAvatars[i] : Chars.Default, null, 56), Board.Colors[i]);
             Text(row, n.Lobby[i], "lobby-name").style.color = Board.Colors[i];
             if (i == 0) Text(row, "Hôte", "pill", "pill-gold");
             if (i == game.mySeat) Text(row, "Toi", "pill", "pill-blue");

@@ -137,8 +137,7 @@ public static class Setup
         AssetDatabase.SaveAssets();
 
         RabbitSetup.Build();
-        AssetDatabase.ImportAsset(Res + "Characters", ImportAssetOptions.ImportRecursive | ImportAssetOptions.ForceUpdate);
-        CharacterController();
+        CharSetup.Build();
         Portraits();
         AssetDatabase.DeleteAsset(Res + "Base.mat");
         AssetDatabase.SaveAssets();
@@ -146,36 +145,6 @@ public static class Setup
         SelfCheck();
     }
 
-    // Tous les personnages Quaternius partagent le meme squelette : un seul controleur suffit.
-    static void CharacterController()
-    {
-        string dir = Res + "CharAnim/";
-        Directory.CreateDirectory(dir);
-        var clips = AssetDatabase.LoadAllAssetsAtPath(Res + "Characters/Casual_Male.fbx").OfType<AnimationClip>().Where(c => !c.name.StartsWith("__preview")).ToArray();
-        Debug.Log("DIAG char clips: " + string.Join(", ", clips.Select(c => c.name)));
-        string ctrlPath = Res + "CharAnim.controller";
-        AssetDatabase.DeleteAsset(ctrlPath);
-        var ctrl = UnityEditor.Animations.AnimatorController.CreateAnimatorControllerAtPath(ctrlPath);
-        var sm = ctrl.layers[0].stateMachine;
-        string[] loops = { "Idle", "Walk", "Run" };
-        foreach (var n in new[] { "Idle", "Walk", "Run", "PickUp", "Victory", "Defeat", "RecieveHit", "Death", "SitDown" })
-        {
-            var src = clips.FirstOrDefault(c => c.name.EndsWith(n) && !clips.Any(o => o != c && o.name.EndsWith(n) && o.name.Length < c.name.Length));
-            if (!src) { Debug.LogWarning("DIAG clip manquant: " + n); continue; }
-            var copy = Object.Instantiate(src);
-            copy.name = n;
-            var s = AnimationUtility.GetAnimationClipSettings(copy);
-            s.loopTime = loops.Contains(n);
-            AnimationUtility.SetAnimationClipSettings(copy, s);
-            AssetDatabase.DeleteAsset(dir + n + ".anim");
-            AssetDatabase.CreateAsset(copy, dir + n + ".anim");
-            var state = sm.AddState(n);
-            state.motion = copy;
-            if (n == "Idle") sm.defaultState = state;
-        }
-    }
-
-    // Portrait de chaque personnage (tete et epaules), pour l'ecran de choix d'avatar.
     public static void Portraits()
     {
         string dir = Res + "Portraits/";
@@ -194,25 +163,22 @@ public static class Setup
         RenderSettings.ambientLight = new Color(0.9f, 0.9f, 0.95f);
         var rt = new RenderTexture(256, 256, 24, RenderTextureFormat.ARGB32);
         cam.targetTexture = rt;
-        var names = Directory.GetFiles(Res + "Characters", "*.fbx").Select(Path.GetFileNameWithoutExtension).Concat(Chars.Looks.Keys);
-        foreach (var name in names)
+        foreach (var old in Directory.GetFiles(dir, "*.png")) AssetDatabase.DeleteAsset(old.Replace('\\', '/'));
+        foreach (var name in Game.Characters)
         {
-            var prefab = AssetDatabase.LoadAssetAtPath<GameObject>(Res + "Characters/" + Chars.ModelOf(name) + ".fbx");
-            var c = (GameObject)Object.Instantiate(prefab);
-            Chars.ApplySkin(c, name);
-            c.transform.rotation = Quaternion.Euler(0, 180, 0);
-            var rs = c.GetComponentsInChildren<Renderer>();
+            var c = Chars.Spawn(name, null, Vector3.zero, 180, out _).gameObject;
+            var rs = c.GetComponentsInChildren<Renderer>().Where(r => r.enabled).ToArray();
             var b = rs[0].bounds;
             foreach (var r in rs) b.Encapsulate(r.bounds);
-            var head = new Vector3(b.center.x, b.max.y - b.size.y * 0.24f, b.center.z);
-            cam.transform.position = head + new Vector3(0, b.size.y * 0.05f, -b.size.y * 1.5f);
+            var head = new Vector3(b.center.x, b.max.y - b.size.y * 0.15f, b.center.z);   // T-pose : on cadre serre sur la tete
+            cam.transform.position = head + new Vector3(0, b.size.y * 0.03f, -b.size.y * 0.95f);
             cam.transform.LookAt(head);
             cam.Render();
             RenderTexture.active = rt;
             var tex = new Texture2D(256, 256, TextureFormat.RGBA32, false);
             tex.ReadPixels(new Rect(0, 0, 256, 256), 0, 0);
             tex.Apply();
-            File.WriteAllBytes(dir + name + ".png", tex.EncodeToPNG());
+            File.WriteAllBytes(dir + Chars.PortraitName(name) + ".png", tex.EncodeToPNG());
             RenderTexture.active = null;
             Object.DestroyImmediate(tex);
             Object.DestroyImmediate(c);
@@ -230,16 +196,6 @@ public static class Setup
         var m = new Material(Shader.Find(shader));
         init?.Invoke(m);
         AssetDatabase.CreateAsset(m, path);
-    }
-
-    public static void DiagChar()
-    {
-        var go = AssetDatabase.LoadAssetAtPath<GameObject>(Res + "Characters/Casual_Male.fbx");
-        foreach (var r in go.GetComponentsInChildren<Renderer>())
-            foreach (var m in r.sharedMaterials)
-                Debug.Log($"DIAG mat {r.name}/{m.name} shader={m.shader.name} color={m.color} tex={m.mainTexture} keywords={string.Join(",", m.shaderKeywords)} surf={(m.HasProperty("_Surface") ? m.GetFloat("_Surface") : -1)} metal={(m.HasProperty("_Metallic") ? m.GetFloat("_Metallic") : -1)}");
-        var imp = (ModelImporter)AssetImporter.GetAtPath(Res + "Characters/Casual_Male.fbx");
-        Debug.Log("DIAG importer materialImportMode=" + imp.materialImportMode + " location=" + imp.materialLocation);
     }
 
     static void Diagnose()

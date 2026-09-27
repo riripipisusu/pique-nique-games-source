@@ -1,3 +1,4 @@
+using System.Collections.Generic;
 using UnityEngine;
 
 // Le coin pique-nique de l'ecran d'accueil : nappe, panier, gouter, jeux de societe et amis.
@@ -10,7 +11,6 @@ public class Hub : MonoBehaviour
     const float SeatBack = 0.35f; // la caisse est sous le bassin, un peu en arriere des pieds
 
     Material lit;
-    Transform me;
 
     // La bande d'amis, assise en arc de cercle face a la camera (qui regarde depuis -z).
     static readonly string[] Friends = { "Ami_Caramel", "Ami_Brune", "Ami_Platine", "Ami_Brun", "Ami_Roux" };
@@ -37,14 +37,15 @@ public class Hub : MonoBehaviour
         return g;
     }
 
-    void Model(string name, Vector3 pos, float scale, float rot)
+    Transform Model(string name, Vector3 pos, float scale, float rot)
     {
         var prefab = Synty.Get(name) ?? Resources.Load<GameObject>("Models/" + name);
-        if (!prefab) { Debug.LogWarning("Modele introuvable : " + name); return; }
+        if (!prefab) { Debug.LogWarning("Modele introuvable : " + name); return null; }
         var g = Instantiate(prefab, transform);
         g.transform.localPosition = pos;
         g.transform.localRotation = Quaternion.Euler(0, rot, 0);
         g.transform.localScale = Vector3.one * scale;
+        return g.transform;
     }
 
     void Build()
@@ -98,18 +99,40 @@ public class Hub : MonoBehaviour
             var pos = new Vector3(Mathf.Sin(ang), 0, Mathf.Cos(ang)) * 2.45f;
             float rot = ang * Mathf.Rad2Deg + 180;
             var face = Quaternion.Euler(0, rot, 0);
-            Model("SM_Prop_Camp_Crate_01", pos - face * new Vector3(0, 0, SeatBack), 0.6f, rot + 90);
+            var crate = Model("SM_Prop_Camp_Crate_01", pos - face * new Vector3(0, 0, SeatBack), 0.6f, rot + 90);
             Chars.Spawn(Friends[i], transform, pos, rot, out var an);
-            an.Play("SitDown", 0, 0.95f);
+            an.Play("SitDown", 0, i * 0.19f);
+            friendAn.Add(an);
+            seats.Add(crate);
         }
     }
 
-    // Le personnage du joueur, debout au bord de la nappe, qui salue.
-    public void SetMe(string avatar)
+    // La bande discute : de temps en temps, quelqu'un parle, rit ou applaudit, puis se rassoit tranquillement.
+    readonly List<Animator> friendAn = new List<Animator>();
+    static readonly string[] Moods = { "SitDown", "SitDown", "SitTalk", "SitTalk", "SitLaugh", "SitClap" };
+    float nextMood = 3;
+    readonly List<Transform> seats = new List<Transform>();
+    int fitFrames = 3;
+
+    // Une fois la pose assise calculee par l'animation, chacun se pose sur sa caisse : bassin au-dessus du centre, assis sur le dessus.
+    void LateUpdate()
     {
-        if (me) Destroy(me.gameObject);
-        float a = -150 * Mathf.Deg2Rad; // debout au bord droit de la nappe
-        me = Chars.Spawn(avatar, transform, new Vector3(Mathf.Sin(a), 0, Mathf.Cos(a)) * 3.1f, -150 + 180, out var an);
-        an.Play("Victory");
+        if (fitFrames <= 0 || --fitFrames > 0) return;
+        for (int i = 0; i < seats.Count; i++)
+        {
+            var hips = friendAn[i] ? friendAn[i].GetBoneTransform(HumanBodyBones.Hips) : null;
+            var box = seats[i] ? seats[i].GetComponentInChildren<Renderer>() : null;
+            if (!hips || !box) continue;
+            var b = box.bounds;
+            friendAn[i].transform.position += new Vector3(b.center.x - hips.position.x, b.max.y + 0.1f - hips.position.y, b.center.z - hips.position.z);
+        }
+    }
+
+    void Update()
+    {
+        if (friendAn.Count == 0 || (nextMood -= Time.deltaTime) > 0) return;
+        nextMood = Random.Range(2.5f, 6f);
+        var an = friendAn[Random.Range(0, friendAn.Count)];
+        if (an) an.CrossFadeInFixedTime(Moods[Random.Range(0, Moods.Length)], 0.6f);
     }
 }

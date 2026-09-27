@@ -17,7 +17,7 @@ public class Game : MonoBehaviour
     public GameId gameId = GameId.Croque;
     public int option;                            // Croque : 0 classique / 1 ameliore ; Blackjack : nombre de manches
     public readonly List<string> names = new List<string> { "Joueur 1", "Joueur 2" };
-    public readonly List<string> avatars = new List<string> { "Casual_Male", "Casual_Female" };
+    public readonly List<string> avatars = new List<string> { Chars.All[0], Chars.All[5] };
     public string myAvatar;
     public Rules rules;
     public Blackjack bj;
@@ -41,23 +41,14 @@ public class Game : MonoBehaviour
     Func<Vector3> testCam;   // autotest : cadrage force
     Vector3 target = new Vector3(0, 2.5f, 0);
 
-    public static readonly string[] Characters =
-    {
-        "Ami_Caramel", "Ami_Brune", "Ami_Platine", "Ami_Brun", "Ami_Roux",
-        "Casual_Male", "Casual_Female", "Casual2_Male", "Casual2_Female", "Casual3_Male", "Casual3_Female", "Casual_Bald",
-        "Suit_Male", "Suit_Female", "OldClassy_Male", "OldClassy_Female", "Worker_Male", "Worker_Female",
-        "Chef_Male", "Chef_Female", "Chef_Hat", "Doctor_Male_Young", "Doctor_Female_Young", "Doctor_Male_Old", "Doctor_Female_Old",
-        "Cowboy_Male", "Cowboy_Female", "Cowboy_Hair", "Pirate_Male", "Pirate_Female", "Kimono_Male", "Kimono_Female",
-        "Ninja_Male", "Ninja_Female", "Ninja_Male_Hair", "Ninja_Sand", "Ninja_Sand_Female", "Knight_Male", "Knight_Golden_Male",
-        "Knight_Golden_Female", "Viking_Male", "Viking_Female", "Soldier_Male", "Soldier_Female", "BlueSoldier_Male",
-        "BlueSoldier_Female", "Wizard", "Witch", "Elf", "Goblin_Male", "Goblin_Female", "Zombie_Male", "Zombie_Female",
-    };
+    public static readonly string[] Characters = Chars.Friends.Keys.Concat(Chars.All).ToArray();
 
     void Start()
     {
         Application.runInBackground = true;
         settings = Settings.Load();
-        myAvatar = PlayerPrefs.GetString("cc-avatar", "Casual_Male");
+        myAvatar = PlayerPrefs.GetString("cc-avatar", Chars.Default);
+        if (Array.IndexOf(Characters, myAvatar) < 0) myAvatar = Chars.Default;   // anciens personnages Quaternius
 
         cam = new GameObject("Camera").AddComponent<Camera>();
         cam.tag = "MainCamera";
@@ -99,7 +90,6 @@ public class Game : MonoBehaviour
         qview = new GameObject("PlateauQuiz").AddComponent<QuizView>();
         rview = table.gameObject.AddComponent<RouletteView>();
         rview.Init(table);
-        hub.SetMe(myAvatar);
         MenuBackdrop();
 
         var uiGo = new GameObject("UI");
@@ -142,7 +132,6 @@ public class Game : MonoBehaviour
     {
         myAvatar = a;
         PlayerPrefs.SetString("cc-avatar", a);
-        hub.SetMe(a);
     }
 
     public void Replay()
@@ -225,7 +214,7 @@ public class Game : MonoBehaviour
         if (Array.IndexOf(Environment.GetCommandLineArgs(), "-uitour") >= 0)
         {
             yield return new WaitForSeconds(2); yield return Shot("u-titre");
-            foreach (var s in new[] { "games", "setup", "settings", "online" })
+            foreach (var s in new[] { "games", "setup", "settings", "online", "avatar" })
             {
                 SelectGame(GameId.Croque);
                 ui.OpenForTest(s); yield return new WaitForSeconds(1); yield return Shot("u-" + s);
@@ -296,7 +285,7 @@ public class Game : MonoBehaviour
             // Partie hors ligne a 4 : on joue les propositions des autres a la main.
             // 10 joueurs : le maximum du quiz.
             names.Clear(); names.AddRange(new[] { "Anastasia", "Léo", "Camille", "Ana", "Hugo", "Inès", "Tom", "Lina", "Noé", "Zoé" });
-            avatars.Clear(); avatars.AddRange(new[] { "Ami_Caramel", "Ami_Brun", "Ami_Platine", "Ami_Brune", "Ami_Roux", "Casual2_Female", "Cowboy_Male", "Witch", "Ninja_Male_Hair", "Chef_Female" });
+            avatars.Clear(); avatars.AddRange(new[] { "Ami_Caramel", "Ami_Brun", "Ami_Platine", "Ami_Brune", "Ami_Roux", Chars.All[3], Chars.All[12], Chars.All[33], Chars.All[20], Chars.All[43] });
             SelectGame(GameId.Quiz);
             option = 2;
             StartGame();
@@ -390,7 +379,7 @@ public class Game : MonoBehaviour
         ui.OpenForTest("setup"); yield return new WaitForSeconds(1); yield return Shot("3-setup");
         ui.OpenForTest("avatar"); yield return new WaitForSeconds(1); yield return Shot("4-avatars");
         names.Clear(); names.AddRange(new[] { "Anastasia", "Léo", "Camille" });
-        avatars.Clear(); avatars.AddRange(new[] { "Casual_Female", "Cowboy_Male", "Witch" });
+        avatars.Clear(); avatars.AddRange(new[] { Chars.All[2], Chars.All[12], Chars.All[33] });
         SelectGame(GameId.Blackjack);
         StartGame();
         yield return new WaitForSeconds(2);
@@ -614,7 +603,7 @@ public class Game : MonoBehaviour
     // et tente une ou deux mauvaises reponses avant. Seulement hors ligne.
     public int quizBots = 3;
     static readonly string[] BotNames = { "Robo-Léa", "Bip-Bop", "Tchou-Tchou", "Mr Zap", "Pixel", "Gigi-Bot", "Watt", "Nova", "Boulon" };
-    static readonly string[] BotAvatars = { "Ami_Caramel", "Ami_Brun", "Ami_Platine", "Ami_Brune", "Ami_Roux", "Cowboy_Male", "Witch", "Ninja_Male_Hair", "Chef_Female" };
+    static readonly string[] BotAvatars = { "Ami_Caramel", "Ami_Brun", "Ami_Platine", "Ami_Brune", "Ami_Roux", Chars.All[12], Chars.All[33], Chars.All[20], Chars.All[43] };
     readonly List<(int seat, float at, string text)> botPlan = new List<(int, float, string)>();
 
     public void StartQuizWithBots()

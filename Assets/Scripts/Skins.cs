@@ -1,80 +1,84 @@
 using System.Collections.Generic;
+using System.Linq;
 using UnityEngine;
 
-// Personnages Quaternius : apparition, taille, animation et couleur de peau.
+// Personnages Synty (packs Fantasy Characters, City, Farm ; cf. Editor/CharSetup) animes par les clips Mixamo.
+// Un personnage = "Pack/Maillage/Variante" : la variante choisit l'atlas de couleurs (01..05 = palette, A/B/C = teint).
 public static class Chars
 {
-    // Le pack (2019) laisse la peau quasi noire, a colorer soi-meme :
-    // chaque personnage recoit une teinte de peau stable, tiree de son nom.
-    static readonly Color[] Tones =
+    public const string Default = "City/Character_Male_Hoodie/01_A";
+
+    static readonly (string pack, string mesh, string label)[] Models =
     {
-        new Color(0.98f, 0.82f, 0.69f), new Color(0.93f, 0.73f, 0.58f), new Color(0.80f, 0.58f, 0.42f),
-        new Color(0.60f, 0.42f, 0.30f), new Color(0.42f, 0.29f, 0.21f),
+        ("City", "Character_Male_Hoodie", "Sweat à capuche"), ("City", "Character_Male_Jacket", "Veste (H)"),
+        ("City", "Character_Female_Jacket", "Veste (F)"), ("City", "Character_Female_Coat", "Manteau"),
+        ("City", "Character_BusinessMan_Shirt", "Employé"), ("City", "Character_BusinessMan_Suit", "Homme d'affaires"),
+        ("City", "Character_BusinessWoman", "Femme d'affaires"), ("City", "Character_Female_Police", "Policière"),
+        ("City", "Character_Male_Police", "Policier"),
+        ("Fantasy", "Character_Female_Peasant_01", "Paysanne"), ("Fantasy", "Character_Female_Peasant_02", "Villageoise"),
+        ("Fantasy", "Character_Male_Peasant_01", "Paysan"), ("Fantasy", "Character_Male_Baird", "Barde"),
+        ("Fantasy", "Character_Male_Rouge_01", "Voleur"), ("Fantasy", "Character_Female_Gypsy", "Bohémienne"),
+        ("Fantasy", "Character_Female_Druid", "Druidesse"), ("Fantasy", "Character_Female_Witch", "Sorcière"),
+        ("Fantasy", "Character_Male_Sorcerer", "Sorcier"), ("Fantasy", "Character_Male_Wizard", "Magicien"),
+        ("Fantasy", "Character_Female_Queen", "Reine"), ("Fantasy", "Character_Male_King", "Roi"),
+        ("Farm", "SM_Chr_FarmBoy_01", "Jeune fermier"), ("Farm", "SM_Chr_FarmGirl_01", "Jeune fermière"),
+        ("Farm", "SM_Chr_Farmer_Female_01", "Fermière"), ("Farm", "SM_Chr_Farmer_Male_01", "Fermier"),
+        ("Farm", "SM_Chr_Farmer_Male_Old_01", "Vieux fermier"), ("Farm", "SM_Chr_Scarecrow_01", "Épouvantail"),
     };
 
-    // La bande d'amis : un modele Quaternius recolore (cheveux, peau, vetements) par personne.
-    public static readonly Dictionary<string, (string model, string[] colors)> Looks = new Dictionary<string, (string, string[])>
+    // La bande d'amis (d'apres leurs photos).
+    public static readonly Dictionary<string, string> Friends = new Dictionary<string, string>
     {
-        ["Ami_Caramel"] = ("Casual2_Female", new[] { "Skin=f3d2bd", "Hair=a86c3a", "Shirt=161414", "Pants=141214", "Belt=2a2222" }),
-        ["Ami_Brune"] = ("Casual3_Female", new[] { "Skin=e9c2a2", "Hair=0e0a0a", "Shirt=1b1a1d", "Pants=1e1c26", "Belt=2a2222" }),
-        ["Ami_Platine"] = ("Cowboy_Hair", new[] { "Skin=f1cfb6", "Hair=f0e6c2", "Jacket=ecebe6", "Top=ecebe6", "Scarf=ecebe6", "Pants=4a5d7c" }),
-        ["Ami_Brun"] = ("Casual_Male", new[] { "Skin=dcab86", "Hair=16100c", "Shirt=eeebe4", "Pants=2b3444", "Belt=3a2a1c" }),
-        ["Ami_Roux"] = ("Casual2_Male", new[] { "Skin=f2cdb0", "Hair=b0512a", "Shirt=2f6b4a", "Pants=6b5a44", "Belt=3a2a1c" }),
+        ["Ami_Caramel"] = "City/Character_Female_Jacket/03_A",
+        ["Ami_Brune"] = "City/Character_BusinessWoman/01_B",
+        ["Ami_Platine"] = "City/Character_Female_Jacket/01_A",
+        ["Ami_Brun"] = "City/Character_BusinessMan_Shirt/01_A",
+        ["Ami_Roux"] = "City/Character_Male_Jacket/02_A",
     };
 
-    public static string ModelOf(string character) => Looks.TryGetValue(character, out var l) ? l.model : character;
-
-    // Recolore les materiaux dont le nom commence par une cle (Hair, Skin, Shirt...).
-    public static void Recolor(GameObject g, string character)
+    // Au choix : deux variantes (palette et teint differents) par modele City/Fantasy, une pour la ferme.
+    public static readonly string[] All = Models.SelectMany((m, i) =>
     {
-        if (!Looks.TryGetValue(character, out var look)) return;
-        foreach (var r in g.GetComponentsInChildren<Renderer>())
-        {
-            var mats = r.sharedMaterials;
-            for (int i = 0; i < mats.Length; i++)
-                foreach (var c in look.colors)
-                {
-                    var kv = c.Split('=');
-                    if (mats[i] && mats[i].name.StartsWith(kv[0])) { mats[i] = new Material(mats[i]) { color = Board.Hex(kv[1]) }; break; }
-                }
-            r.sharedMaterials = mats;
-        }
+        int pal = m.pack == "Fantasy" ? 5 : 4;
+        var a = $"{m.pack}/{m.mesh}/0{1 + i % pal}_{(i % 2 == 0 ? "A" : "B")}";
+        var b = $"{m.pack}/{m.mesh}/0{1 + (i + 2) % pal}_C";
+        return m.pack == "Farm" ? new[] { a } : new[] { a, b };
+    }).ToArray();
+
+    static string Resolve(string id) => Friends.TryGetValue(id, out var f) ? f : id;
+
+    public static string Label(string id)
+    {
+        if (Friends.ContainsKey(id)) return id.Substring(4);   // "Ami_Roux" -> "Roux"
+        var p = Resolve(id).Split('/');
+        var m = Models.FirstOrDefault(x => p.Length > 1 && x.mesh == p[1]);
+        return m.label ?? id;
     }
 
-    public static void ApplySkin(GameObject g, string character)
-    {
-        if (Looks.ContainsKey(character)) { Recolor(g, character); return; }
-        int h = 0;
-        foreach (char c in character) h = h * 31 + c;
-        var tone = Tones[Mathf.Abs(h) % Tones.Length];
-        foreach (var r in g.GetComponentsInChildren<Renderer>())
-        {
-            var mats = r.sharedMaterials;
-            bool changed = false;
-            for (int i = 0; i < mats.Length; i++)
-            {
-                if (!mats[i] || !mats[i].name.StartsWith("Skin") || mats[i].color.maxColorComponent > 0.05f) continue;
-                mats[i] = new Material(mats[i]) { color = tone };
-                changed = true;
-            }
-            if (changed) r.sharedMaterials = mats;
-        }
-    }
+    public static string PortraitName(string id) => id.Replace('/', '_');
 
-    public static Transform Spawn(string model, Transform parent, Vector3 localPos, float rotY, out Animator an, float height = 1.8f)
+    public static Transform Spawn(string id, Transform parent, Vector3 localPos, float rotY, out Animator an, float height = 1.8f)
     {
-        var prefab = Resources.Load<GameObject>("Characters/" + ModelOf(model)) ?? Resources.Load<GameObject>("Characters/Casual_Male");
+        var p = Resolve(id).Split('/');
+        var prefab = p.Length == 3 ? Resources.Load<GameObject>("Chars/" + p[0]) : null;
+        var mat = p.Length == 3 ? Resources.Load<Material>($"CharMats/{p[0]}_{p[2]}") : null;
+        if (!prefab || !mat) { p = Default.Split('/'); prefab = Resources.Load<GameObject>("Chars/" + p[0]); mat = Resources.Load<Material>($"CharMats/{p[0]}_{p[2]}"); }
         var g = Object.Instantiate(prefab, parent);
-        ApplySkin(g, Looks.ContainsKey(model) ? model : prefab.name);
+        SkinnedMeshRenderer body = null;
+        foreach (var s in g.GetComponentsInChildren<SkinnedMeshRenderer>(true))
+        {
+            bool on = s.name == p[1];
+            s.gameObject.SetActive(on);
+            if (on) { s.sharedMaterial = mat; body = s; }
+        }
+        foreach (var r in g.GetComponentsInChildren<MeshRenderer>(true)) r.enabled = false;   // armes et accessoires du pack
         g.transform.localPosition = localPos;
         g.transform.localRotation = Quaternion.Euler(0, rotY, 0);
-        var rs = g.GetComponentsInChildren<Renderer>();
-        var b = rs[0].bounds;
-        foreach (var r in rs) b.Encapsulate(r.bounds);
-        g.transform.localScale *= height / Mathf.Max(0.01f, b.size.y);
-        an = g.GetComponentInChildren<Animator>() ?? g.AddComponent<Animator>();
+        g.transform.localScale *= height / Mathf.Max(0.01f, body.bounds.size.y);
+        an = g.GetComponent<Animator>();
         an.runtimeAnimatorController = Resources.Load<RuntimeAnimatorController>("CharAnim");
         an.applyRootMotion = false;
+        an.cullingMode = AnimatorCullingMode.CullUpdateTransforms;
         return g.transform;
     }
 }

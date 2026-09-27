@@ -385,7 +385,7 @@ public class QuizView : MonoBehaviour
             var p = new Podium { root = root, color = col, glow = Glow(col, 1.2f) };
             if (standTemplate)
             {
-                StagePodium(p, i, n, q.players[i].name, col, avatars.Count > i ? avatars[i] : "Casual_Male");
+                StagePodium(p, i, n, q.players[i].name, col, avatars.Count > i ? avatars[i] : Chars.Default);
                 seats.Add(p);
                 continue;
             }
@@ -402,7 +402,7 @@ public class QuizView : MonoBehaviour
             face.SetTexture("_BaseMap", rt);
             Box(PrimitiveType.Quad, new Vector3(0, 0.5f, -0.305f), new Vector3(w * 0.86f, 0.688f, 1), face, root);
             BuildPodiumUi(p, rt, q.players[i].name, col);
-            Chars.Spawn(avatars.Count > i ? avatars[i] : "Casual_Male", root, new Vector3(0, 0.4f, 0.62f), 180, out p.an, size);
+            Chars.Spawn(avatars.Count > i ? avatars[i] : Chars.Default, root, new Vector3(0, 0.4f, 0.62f), 180, out p.an, size);
             p.head = new GameObject("tete").transform;
             p.head.SetParent(root, false);
             p.head.localPosition = new Vector3(0, 0.4f + size + 0.25f, 0.62f);

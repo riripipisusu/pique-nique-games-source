@@ -41,7 +41,7 @@ public class Table : MonoBehaviour
         BuildRoom();
         BuildTable(transform, true);
         // Tables voisines : roulette et poker, chacune avec son croupier.
-        foreach (var (x, table, dealer) in new[] { (-5.2f, "SM_Prop_Roulette_Table_01", "Suit_Female"), (5.2f, "SM_Prop_Poker_Table_01", "OldClassy_Male") })
+        foreach (var (x, table, dealer) in new[] { (-5.2f, "SM_Prop_Roulette_Table_01", "City/Character_BusinessWoman/04_B"), (5.2f, "SM_Prop_Poker_Table_01", "City/Character_BusinessMan_Suit/03_C") })
         {
             var other = new GameObject("AutreTable").transform;
             other.SetParent(transform, false);
@@ -326,7 +326,7 @@ public class Table : MonoBehaviour
         root = new GameObject("Manche").transform;
         root.SetParent(transform, false);
         ClearRound();
-        if (!dealerAn) Chars.Spawn("Suit_Male", transform, new Vector3(0, 0, 0.55f), 180, out dealerAn);
+        if (!dealerAn) Chars.Spawn("City/Character_BusinessMan_Suit/04_A", transform, new Vector3(0, 0, 0.55f), 180, out dealerAn);
         for (int s = 0; s < seats; s++)
         {
             var seatPos = OnArc(s, R + 0.8f); seatPos.y = 0;
