@@ -12,6 +12,7 @@ public partial class Ui : MonoBehaviour
     VisualElement current;
     readonly Stack<VisualElement> history = new Stack<VisualElement>();
 
+    public bool Has(string cls) => root.Q(className: cls) != null;   // autotest
     public void Init(Game g, UIDocument doc)
     {
         game = g;

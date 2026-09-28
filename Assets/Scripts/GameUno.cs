@@ -84,14 +84,18 @@ public partial class Game
         {
             // Roue des couleurs : clic sur une part = couleur choisie ; clic droit, Echap ou clic a cote = annuler.
             if (Input.GetMouseButtonDown(1) || Input.GetKeyDown(KeyCode.Escape)) { uview.HideWheel(); return; }
-            if (!Input.GetMouseButtonDown(0)) return;
-            int c = uview.WedgeUnder(cam.ScreenPointToRay(Input.mousePosition));
-            uview.HideWheel(c);
-            if (c >= 0) ui.UnoPlayColor(c);
+            if (Input.GetMouseButtonDown(0)) WheelClick(Input.mousePosition);
             return;
         }
         if (!uview.DeckReady || !Input.GetMouseButtonDown(0)) return;
         if (uview.DeckUnder(cam.ScreenPointToRay(Input.mousePosition))) Act("draw");
+    }
+
+    public void WheelClick(Vector2 screen)
+    {
+        int c = uview.WedgeUnder(cam.ScreenPointToRay(screen));
+        uview.HideWheel(c);
+        if (c >= 0) ui.UnoPlayColor(c);
     }
 
     void UnoBots()

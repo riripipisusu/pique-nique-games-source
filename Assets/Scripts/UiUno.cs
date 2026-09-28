@@ -193,7 +193,7 @@ public partial class Ui
         unoRound.style.display = DisplayStyle.Flex;
     }
 
-    void TryPlayUno(int card)
+    public void TryPlayUno(int card)
     {
         var u = game.uno;
         if (u != null && UnoPlaying && u.CanJumpIn(UnoMe, card)) { game.UnoCall($"jump|{UnoMe}|{card}"); return; }   // intervention

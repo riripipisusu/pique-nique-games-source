@@ -96,7 +96,9 @@ public class Hub : MonoBehaviour
         for (int i = 0; i < Friends.Length; i++)
         {
             float ang = (-5 + i * 42) * Mathf.Deg2Rad; // cote oppose a la camera du menu (qui regarde depuis -115 deg)
-            var pos = new Vector3(Mathf.Sin(ang), 0, Mathf.Cos(ang)) * 2.45f;
+            // Nappe carree (2 m du centre au bord) : face a un coin, on recule pour que les pieds restent dans l'herbe.
+            float edge = 2f / Mathf.Max(Mathf.Abs(Mathf.Sin(ang)), Mathf.Abs(Mathf.Cos(ang)));
+            var pos = new Vector3(Mathf.Sin(ang), 0, Mathf.Cos(ang)) * Mathf.Max(2.45f, edge + 0.3f);
             float rot = ang * Mathf.Rad2Deg + 180;
             var face = Quaternion.Euler(0, rot, 0);
             var crate = Model("SM_Prop_Camp_Crate_01", pos - face * new Vector3(0, 0, SeatBack), 0.6f, rot + 90);

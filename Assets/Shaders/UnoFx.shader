@@ -8,13 +8,15 @@ Shader "PiqueNique/UnoFx"
         _Tint ("Teinte", Color) = (0.5, 0.5, 0.5, 0.5)
         [Enum(UnityEngine.Rendering.BlendMode)] _SrcBlend ("Source", Float) = 5
         [Enum(UnityEngine.Rendering.BlendMode)] _DstBlend ("Destination", Float) = 10
+        [Enum(Off, 0, On, 1)] _ZWrite ("ZWrite", Float) = 0
+        [Enum(UnityEngine.Rendering.CullMode)] _Cull ("Cull", Float) = 0
     }
     SubShader
     {
         Tags { "RenderType" = "Transparent" "Queue" = "Transparent" "RenderPipeline" = "UniversalPipeline" "IgnoreProjector" = "True" }
         Blend [_SrcBlend] [_DstBlend]
-        ZWrite Off
-        Cull Off
+        ZWrite [_ZWrite]
+        Cull [_Cull]
         Pass
         {
             Name "Unlit"

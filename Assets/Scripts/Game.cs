@@ -261,9 +261,10 @@ public partial class Game : MonoBehaviour
             StartQuizWithBots();
             yield return new WaitForSeconds(0.9f); yield return Shot("n1-donne");
             yield return new WaitForSeconds(2.5f); yield return Shot("n1-debut");
+            if (Array.IndexOf(Environment.GetCommandLineArgs(), "-unofx") >= 0) { yield return uview.TestUnoFx(Shot); Application.Quit(); yield break; }
             int shots = 0, turns = 0;
             var fxKinds = new System.Collections.Generic.HashSet<int>();   // un effet de chaque sorte
-            bool reversedShot = false, forwardShot = false, wheelShot = false, revealShot = false, unoShot = false, catchShot = false, fxShot = false, challengeShot = false, swapShot = false;
+            bool reversedShot = false, forwardShot = false, wheelShot = false, revealShot = false, unoShot = false, catchShot = false, skipShot = false, fxShot = false, challengeShot = false, swapShot = false;
             var bad = new System.Text.StringBuilder();
             while (!uno.Finished && turns < 400)
             {
@@ -276,7 +277,22 @@ public partial class Game : MonoBehaviour
                     if (uno.dir > 0 && !forwardShot) { forwardShot = true; yield return Shot("n2-sens-plus"); }
                     if (uno.players[0].hand.Count == 2 && !unoShot) { unoShot = true; ui.Refresh(); yield return new WaitForSeconds(0.3f); yield return Shot("n7-bouton-uno"); }
                     var a = uno.Bot();
-                    if (a[0] == "play" && Uno.IsWild(int.Parse(a[1])) && !wheelShot) { wheelShot = true; uview.ShowWheelPick(); yield return new WaitForSeconds(0.6f); yield return Shot("n5-roue"); uview.HideWheel(); }
+                    if (a[0] == "play" && Uno.IsWild(int.Parse(a[1])) && !wheelShot)   // roue : survol de chaque part puis clic, pointeur virtuel
+                    {
+                        wheelShot = true;
+                        ui.TryPlayUno(int.Parse(a[1])); yield return new WaitForSeconds(0.6f); yield return Shot("n5-roue");
+                        for (int c = 0; c < 4; c++)
+                        {
+                            uview.TestMouse = uview.WedgeScreen(c); yield return new WaitForSeconds(0.25f); yield return Shot("n5-roue-survol-" + "RYGB"[c]);
+                            if (uview.WedgeUnder(cam.ScreenPointToRay(uview.Mouse)) != c) bad.AppendLine("roue : part " + c + " mal visee");
+                        }
+                        int col = int.Parse(a[2]);
+                        WheelClick(uview.WedgeScreen(col)); uview.TestMouse = null;
+                        yield return new WaitForSeconds(0.4f); yield return Shot("n5-roue-choix-" + "RYGB"[col]);
+                        if (uno.color != col) bad.AppendLine($"roue : couleur {uno.color} au lieu de {col}");
+                        turns++;
+                        continue;
+                    }
                     if (uno.players[0].hand.Count == 2 && turns % 2 == 0) UnoCall("uno|0");
                     Act(string.Join("|", a.Take(3)) + (a.Length > 3 ? "|0" : ""));
                     turns++;
@@ -284,6 +300,7 @@ public partial class Game : MonoBehaviour
                 if (busy && uno.discard.Count > 1 && Uno.Kind(uno.Top) >= Uno.Skip && Uno.Kind(uno.Top) != Uno.Wild && fxKinds.Add(Uno.Kind(uno.Top))) { fxShot = true; yield return new WaitForSeconds(0.45f); yield return Shot("n9-effet-" + Uno.Code(uno.Top)); }
                 if (!challengeShot && uno.phase == UPhase.Challenge && uno.turn == 0) { challengeShot = true; ui.Refresh(); yield return new WaitForSeconds(0.4f); yield return Shot("n10-contestation"); }
                 if (!swapShot && uno.phase == UPhase.SwapPick && uno.turn == 0) { swapShot = true; ui.Refresh(); yield return new WaitForSeconds(0.4f); yield return Shot("n11-echange"); }
+                if (!skipShot && ui.Has("uno-skip-mark")) { skipShot = true; yield return new WaitForSeconds(0.3f); yield return Shot("n12-passe"); }
                 if (!catchShot && uno.vulnerable > 0) { catchShot = true; ui.Refresh(); yield return new WaitForSeconds(0.3f); yield return Shot("n8-contre-uno"); }
                 if (!revealShot && uno.Actor != 0 && uno.discard.Count > 0 && Uno.IsWild(uno.Top) && busy) { revealShot = true; yield return new WaitForSeconds(0.45f); yield return Shot("n6-joker-adverse"); }
                 yield return null;

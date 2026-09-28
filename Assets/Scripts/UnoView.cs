@@ -415,7 +415,8 @@ public class UnoView : MonoBehaviour
     static string ColorLetter(int color) => "RYGB"[Mathf.Clamp(color, 0, 3)].ToString();
 
     // Lance l'animation "state" de l'effet "name" en "at", a l'echelle "scale" (1 unite d'origine = scale metre).
-    Transform PlayFx(string name, string state, Vector3 at, float scale, float life = -1)
+    // upright : effet modele debout (face vers -z), comme le mot "UNO", au lieu de a plat.
+    Transform PlayFx(string name, string state, Vector3 at, float scale, float life = -1, bool upright = false)
     {
         var prefab = FxPrefab(name);
         if (!prefab) return null;
@@ -423,7 +424,7 @@ public class UnoView : MonoBehaviour
         root.SetParent(transform, false);
         root.position = at;
         var cam = CamPose;
-        root.rotation = Quaternion.LookRotation(cam.rotation * Vector3.up, cam.position - at);
+        root.rotation = upright ? Quaternion.LookRotation(at - cam.position, cam.rotation * Vector3.up) : Quaternion.LookRotation(cam.rotation * Vector3.up, cam.position - at);
         root.localScale = Vector3.one * scale;
         var g = Instantiate(prefab, root);
         g.transform.localPosition = Vector3.zero;
@@ -497,11 +498,25 @@ public class UnoView : MonoBehaviour
         yield break;
     }
 
+    // autotest : UNO et "!" chez moi puis chez un adversaire, une capture pour chacun
+    public IEnumerator TestUnoFx(System.Func<string, IEnumerator> shot)
+    {
+        foreach (int s in new[] { me, (me + 1) % seats.Count })
+        {
+            StartCoroutine(CallUno(s)); yield return new WaitForSeconds(0.5f); yield return shot("n13-uno-" + s);
+            yield return new WaitForSeconds(1.5f);
+            StartCoroutine(Exclamation(s)); yield return new WaitForSeconds(0.35f); yield return shot("n14-pas-dit-" + s);
+            yield return new WaitForSeconds(1.2f);
+        }
+        ShowWheelPick(); yield return new WaitForSeconds(0.6f); yield return shot("n15-roue");
+        HideWheel(0); yield return new WaitForSeconds(0.35f); yield return shot("n15-roue-rouge");
+    }
+
     // "UNO !" : le mot en relief et ses etoiles, au-dessus du joueur.
     IEnumerator CallUno(int seat)
     {
         var at = seat == me ? MyFxPos : AboveTag(seat);
-        PlayFx("CallUno", "CallUNO", at, 0.12f);
+        PlayFx("CallUno", "CallUNO", at, 0.12f, upright: true);
         yield break;
     }
 
@@ -667,7 +682,7 @@ public class UnoView : MonoBehaviour
     {
         var mesh = Resources.Load<Mesh>("UnoFX/Exclamation_Mesh");
         if (!mesh) yield break;
-        var at = seat == me ? MyFxPos : AboveTag(seat);
+        var at = seat == me ? MyFxPos : AboveTag(seat) + Vector3.up * 0.2f;   // le "!" est grand : sinon sa base passe sous la vignette
         var root = new GameObject("pas dit UNO").transform;
         root.SetParent(transform, false);
         root.position = at;
@@ -723,8 +738,14 @@ public class UnoView : MonoBehaviour
     // Vue de face (verifie a l'ecran) : vert en haut, jaune a droite, rouge en bas, bleu a gauche.
     const float WheelOpen = 0.33f, WheelStep = 0.99f, WheelSelFrom = 0.66f, WheelSelTo = 1.32f;
     static readonly int[] WheelBoneColor = { 0, 1, 2, 3 };
+    static readonly string[] WedgeName = { "Wild_Red", "Wild_Yellow", "Wild_Green", "Wild_Blue" };
+    static readonly Color[] WedgeColor = { Board.Hex("e5322d"), Board.Hex("f7c315"), Board.Hex("3aa84a"), Board.Hex("1f6fc5") };   // comme l'interface
     static readonly string[] WheelBone = { "Bone_Red_02", "Bone_Yellow_02", "Bone_Green_02", "Bone_Blue_02" };
     Transform wheel;
+    public Vector2? TestMouse;   // autotest : pointeur virtuel (on ne simule pas la vraie souris)
+    public Vector2 Mouse => TestMouse ?? (Vector2)Input.mousePosition;
+    // autotest : point ecran au milieu de la part c (meme repere que WedgeUnder)
+    public Vector2 WedgeScreen(int c) => Camera.main.WorldToScreenPoint(wheel.TransformPoint(c == 2 ? new Vector3(0, 0, 3) : c == 0 ? new Vector3(0, 0, -3) : c == 1 ? new Vector3(3, 0, 0) : new Vector3(-3, 0, 0)));
     readonly Transform[] wedgeBones = new Transform[4];
     Animator wheelAn;
     float wheelLen = 5.03f;
@@ -740,6 +761,25 @@ public class UnoView : MonoBehaviour
         var g = Instantiate(prefab, wheel).transform;
         g.localPosition = Vector3.zero; g.localRotation = Quaternion.identity;
         wheel.localScale = Vector3.one * 0.14f;
+        // Deux materiaux comme a l'origine : les 4 parts opaques (sinon le rouge vire au marron sur la nappe),
+        // le halo "Wild_glow" en additif, sans profondeur, dessine apres.
+        foreach (var r in g.GetComponentsInChildren<Renderer>(true))
+        {
+            var m = new Material(r.sharedMaterial);
+            bool glow = r.name == "Wild_glow";
+            m.SetColor("_Tint", new Color(0.5f, 0.5f, 0.5f, glow ? 0.5f : 1f));
+            int wc = System.Array.FindIndex(WedgeName, n => r.name == n);
+            if (wc >= 0)   // la texture melange deux couleurs par part (le bleu y est turquoise) : couleur Uno franche
+            {
+                m.SetTexture("_MainTex", Texture2D.whiteTexture);
+                m.SetColor("_Tint", WedgeColor[wc] * 0.5f);
+            }
+            m.SetFloat("_SrcBlend", (float)(glow ? UnityEngine.Rendering.BlendMode.SrcAlpha : UnityEngine.Rendering.BlendMode.One));
+            m.SetFloat("_DstBlend", (float)(glow ? UnityEngine.Rendering.BlendMode.One : UnityEngine.Rendering.BlendMode.Zero));
+            m.SetFloat("_ZWrite", glow ? 0 : 1);
+            m.renderQueue = glow ? 3010 : 3000;
+            r.sharedMaterials = Enumerable.Repeat(m, r.sharedMaterials.Length).ToArray();
+        }
         for (int c = 0; c < 4; c++) wedgeBones[c] = g.GetComponentsInChildren<Transform>(true).FirstOrDefault(t => t.name == WheelBone[c]);
         wheelAn = g.GetComponent<Animator>();
         if (wheelAn) { wheelAn.speed = 0; var clip = wheelAn.runtimeAnimatorController.animationClips.FirstOrDefault(); if (clip) wheelLen = clip.length; }
@@ -836,7 +876,7 @@ public class UnoView : MonoBehaviour
     {
         if (!WheelPicking || !wheel) return;
         var cam = Camera.main;
-        hover = cam ? WedgeUnder(cam.ScreenPointToRay(Input.mousePosition)) : -1;
+        hover = cam ? WedgeUnder(cam.ScreenPointToRay(Mouse)) : -1;
         if (hover != lastHover && hover >= 0) Sound.I.UI("hover");
         lastHover = hover;
         SampleWheel(WheelOpen);
