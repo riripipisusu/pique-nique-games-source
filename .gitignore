@@ -72,3 +72,7 @@
 /Assets/Resources/Chevaux/De.meta
 /Assets/Board Game Items/
 /Assets/Board Game Items.meta
+
+# Pions de Serpents et echelles (pack Board Game Items) : dans les builds, pas dans le depot
+/Assets/Resources/Serpents/Pions/
+/Assets/Resources/Serpents/Pions.meta

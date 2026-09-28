@@ -258,6 +258,7 @@ public partial class Ui : MonoBehaviour
     {
         [GameId.Croque] = ("croque", 0, "2 à 4 joueurs · Plateau", "Grimpe la montagne jusqu'au potager... mais gare aux trous quand la carotte tourne !"),
         [GameId.Chevaux] = ("chevaux", 0, "2 à 4 joueurs · Plateau", "Un 6 pour sortir, fais le tour du plateau et grimpe l'escalier jusqu'au centre !"),
+        [GameId.Serpents] = ("serpents", 0, "2 à 4 joueurs · Plateau", "Grimpe aux échelles, évite les serpents : le premier sur la case 100 gagne !"),
         [GameId.Uno] = ("uno", 0, "2 à 10 joueurs · Cartes", "Même couleur ou même symbole, et n'oublie pas de crier UNO !"),
         [GameId.Blackjack] = ("blackjack", 1, "2 à 4 joueurs · Cartes", "Approche-toi de 21 sans dépasser et bats le croupier."),
         [GameId.Roulette] = ("roulette", 1, "1 à 4 joueurs · Casino", "Pleins, chevaux, carrés, rouge ou noir... Le plus riche gagne."),
@@ -451,7 +452,9 @@ public partial class Ui : MonoBehaviour
         if (game.gameId == GameId.Uno || game.gameId == GameId.Bac) { int keep = current & ~3; var raw = pick; pick = v => raw(v | keep); current &= 3; }   // les regles maison sont gardees
         parent.Clear();
         if (game.gameId == GameId.Rhythm) { SongPicker(parent, current, pick); return; }
-        var opts = game.gameId == GameId.Bac
+        var opts = game.gameId == GameId.Serpents
+            ? new[] { (0, "Classique", "10 échelles, 10 serpents, il faut tomber pile sur 100.") }
+            : game.gameId == GameId.Bac
             ? new[] { (1, "Partie courte", "3 manches."), (0, "Partie normale", "5 manches."), (2, "Longue partie", "8 manches.") }
             : game.gameId == GameId.Chevaux
             ? new[] { (0, "4 chevaux", "La partie complète."), (1, "3 chevaux", "Un peu plus courte."), (2, "2 chevaux", "Partie moyenne."), (3, "1 cheval", "Partie express !") }
@@ -779,6 +782,14 @@ public partial class Ui : MonoBehaviour
             S("Contester un +4", "On n'a le droit de poser un +4 que si on n'a aucune carte de la couleur demandée. Le joueur visé peut « Dénoncer » : si c'était du bluff, le poseur pioche 4 cartes à sa place ; si le +4 était réglo, celui qui a dénoncé en pioche 6 !");
             S("Règles maison (options)", "Cumul : un +2 se contre avec un +2 (ou un +4), un +4 avec un +4, et le suivant pioche le total. 7-0 : un 7 échange ta main avec le joueur de ton choix, un 0 fait tourner toutes les mains. Intervention : si tu as la carte exactement identique à celle du dessus, tu peux la poser même hors de ton tour. Piocher jusqu'à jouer : on pioche jusqu'à trouver une carte qui va. Jeu forcé : une carte piochée qui va doit être posée.");
         }
+        else if (game.gameId == GameId.Serpents)
+        {
+            S("Le but", "Être le premier à amener son pion sur la case 100, en haut du plateau. On part hors du plateau, à côté de la case 1.");
+            S("À ton tour", "Lance le dé : maintiens le clic pour le prendre en main, puis lâche-le d'un geste vers le plateau (ou appuie sur Espace, ou sur le bouton). Ton pion avance tout seul d'autant de cases, en suivant les numéros.");
+            S("Échelles et serpents", "Tu t'arrêtes au pied d'une échelle ? Tu grimpes tout en haut ! Tu t'arrêtes sur la tête d'un serpent ? Tu glisses jusqu'au bout de sa queue...");
+            S("Case occupée", "Tu arrives sur une case où se trouve déjà un autre pion (même après une échelle ou un serpent) ? Pas de chance : tu retournes au départ !");
+            S("L'arrivée", "Il faut tomber pile sur la case 100 : si le dé est trop fort, ton pion va jusqu'à 100 puis recule de ce qui dépasse.");
+        }
         else if (game.gameId == GameId.Bac)
         {
             S("Le but", "Trouver et écrire des mots correspondant aux catégories choisies. À chaque manche, une lettre est tirée au hasard : tous tes mots doivent commencer par cette lettre. Le joueur qui a le plus de points à la fin des manches gagne.");
@@ -892,8 +903,8 @@ public partial class Ui : MonoBehaviour
         if (un) ShowUnoHud();
         rhHud.style.display = rh ? DisplayStyle.Flex : DisplayStyle.None;
         if (rh) ShowRhythmHud();
-        ccHud.style.display = game.rules != null || game.ch != null ? DisplayStyle.Flex : DisplayStyle.None;
-        hud.EnableInClassList("chx", game.ch != null);
+        ccHud.style.display = game.rules != null || game.ch != null || game.sp != null ? DisplayStyle.Flex : DisplayStyle.None;
+        hud.EnableInClassList("chx", game.ch != null || game.sp != null);
         hud.EnableInClassList("bacx", game.bac != null);
         bjHud.style.display = bj ? DisplayStyle.Flex : DisplayStyle.None;
         rtHud.style.display = rt ? DisplayStyle.Flex : DisplayStyle.None;
@@ -908,7 +919,7 @@ public partial class Ui : MonoBehaviour
         bubbles.Clear();
         seatTags.Clear();
         playersBar.style.display = feed.style.display = bj || rt || qz || rh || un || bc ? DisplayStyle.None : DisplayStyle.Flex;
-        hint.text = bj || rt || qz || rh || un || bc ? "" : game.ch != null ? "Maintiens le clic pour prendre le dé, lâche-le d'un geste pour le lancer  ·  Molette : zoom  ·  Échap : pause" : "Clic droit : tourner  ·  Molette : zoom  ·  Échap : pause";
+        hint.text = bj || rt || qz || rh || un || bc ? "" : game.ch != null || game.sp != null ? "Maintiens le clic pour prendre le dé, lâche-le d'un geste pour le lancer  ·  Molette : zoom  ·  Échap : pause" : "Clic droit : tourner  ·  Molette : zoom  ·  Échap : pause";
         if (rt) ResetRouletteBets();
         if (bj) betAmount = Blackjack.MinBet * 5;
         Refresh();
@@ -951,6 +962,7 @@ public partial class Ui : MonoBehaviour
         else if (game.uno != null) RefreshUno();
         else if (game.ch != null) RefreshChevaux();
         else if (game.bac != null) RefreshBac();
+        else if (game.sp != null) RefreshSerpents();
     }
 
     void PlayerCard(int i, string name, string avatar, bool active)
@@ -1192,6 +1204,13 @@ public partial class Ui : MonoBehaviour
             winTitle.text = $"{w.name} gagne !";
             winTitle.style.color = Board.Colors[w.color];
             winSub.text = "Ses trois lapins festoient au potager.";
+        }
+        else if (game.sp != null)
+        {
+            var w = game.sp.players[game.sp.winner];
+            winTitle.text = $"{w.name} gagne !";
+            winTitle.style.color = SerpentsView.ColorOf(game.sp.winner);
+            winSub.text = string.Join("\n", game.sp.players.OrderByDescending(p => p.pos).Select((p, i) => $"{i + 1}.  {p.name}  —  case {p.pos}"));
         }
         else if (game.ch != null)
         {

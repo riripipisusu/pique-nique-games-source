@@ -23,7 +23,7 @@ public partial class Game : MonoBehaviour
     public Blackjack bj;
     public Roulette rt;
     public Quiz qz;
-    public IMatch Match => (IMatch)rules ?? (IMatch)bj ?? (IMatch)rt ?? (IMatch)qz ?? (IMatch)rh ?? (IMatch)uno ?? (IMatch)ch ?? bac;
+    public IMatch Match => (IMatch)rules ?? (IMatch)bj ?? (IMatch)rt ?? (IMatch)qz ?? (IMatch)rh ?? (IMatch)uno ?? (IMatch)ch ?? (IMatch)bac ?? sp;
     public bool busy;
 
     Board board;
@@ -93,6 +93,7 @@ public partial class Game : MonoBehaviour
         live = new GameObject("SceneLive").AddComponent<RhythmView>();
         uview = new GameObject("NappeUno").AddComponent<UnoView>();
         cview = new GameObject("PlateauChevaux").AddComponent<ChevauxView>();
+        sview = new GameObject("PlateauSerpents").AddComponent<SerpentsView>();
         rview.Init(table);
         MenuBackdrop();
 
@@ -327,6 +328,19 @@ public partial class Game : MonoBehaviour
             cview.Speed = 5;   // test : animations accelerees (sans toucher aux reglages enregistres)
             yield return new WaitForSeconds(1.5f); yield return Shot("c1-debut");
             yield return ChevauxTest(dir, Shot);
+            Application.Quit();
+            yield break;
+        }
+        if (Array.IndexOf(Environment.GetCommandLineArgs(), "-serpents") >= 0)   // serpents et echelles : 4 joueurs joues automatiquement
+        {
+            SelectGame(GameId.Serpents);
+            names.Clear(); names.AddRange(new[] { "Anastasia", "Léo", "Camille", "Maya" });
+            avatars.Clear(); avatars.AddRange(new[] { Chars.All[0], Chars.All[5], Chars.All[12], Chars.All[20] });
+            ui.OpenForTest("setup"); yield return new WaitForSeconds(1); yield return Shot("s0-setup");
+            StartGame();
+            sview.Speed = 3;   // test : animations accelerees
+            yield return new WaitForSeconds(1.5f); yield return Shot("s1-debut");
+            yield return SerpentsTest(dir, Shot);
             Application.Quit();
             yield break;
         }
@@ -646,6 +660,7 @@ public partial class Game : MonoBehaviour
         table.speed = settings.animSpeed;
         if (rview) rview.speed = settings.animSpeed;
         if (cview) cview.Speed = settings.animSpeed;
+        if (sview) sview.Speed = settings.animSpeed;
         table.back = settings.cardBack;
         board.showNumbers = settings.tileNumbers;
         settings.Save();
@@ -700,12 +715,15 @@ public partial class Game : MonoBehaviour
         uno = null;
         ch = null;
         bac = null;
+        sp = null;
         live.Hide();
         uview.Hide();
         cview.Hide();
+        sview.Hide();
         if (g == GameId.Rhythm) StartRhythm(n, opt, av);
         else if (g == GameId.Chevaux) StartChevaux(n, opt, seed);
         else if (g == GameId.Bac) StartBac(n, opt, seed, av, text);
+        else if (g == GameId.Serpents) StartSerpents(n, opt, seed);
         else if (g == GameId.Uno) StartUno(n, opt, seed, av);
         else if (Games.TvTime(g))
         {
@@ -748,7 +766,7 @@ public partial class Game : MonoBehaviour
             var first = rt.events.ToList();
             StartCoroutine(Run(rview.Play(first, s => ui.Say(s)), null));
         }
-        Casino(g != GameId.Croque && g != GameId.Uno && g != GameId.Chevaux);   // Uno, petits chevaux : en plein air, sur la nappe
+        Casino(g != GameId.Croque && g != GameId.Uno && g != GameId.Chevaux && g != GameId.Serpents);   // Uno, petits chevaux : en plein air, sur la nappe
         // Plateau TV : tout est eclaire de face, uniformement (lumiere directionnelle propre au quiz).
         if (Games.TvTime(g)) RenderSettings.ambientLight = Board.Hex(g == GameId.Rhythm ? "3a3450" : "9a8f8a");
         if (!quizLight)
@@ -764,7 +782,7 @@ public partial class Game : MonoBehaviour
         quizLight.enabled = Games.TvTime(g) && g != GameId.Rhythm;
         snapCam = true;
         if (!Games.TvTime(g))   // TV Time : la musique demarre apres le generique et les regles
-            Sound.I.Music(g == GameId.Croque || g == GameId.Uno || g == GameId.Chevaux ? "music_game" : g == GameId.Quiz ? "music_quiz" : "music_blackjack");
+            Sound.I.Music(g == GameId.Croque || g == GameId.Uno || g == GameId.Chevaux || g == GameId.Serpents ? "music_game" : g == GameId.Quiz ? "music_quiz" : "music_blackjack");
         catchingUp = watch;
         if (watch) { Time.timeScale = 12; AudioListener.volume = 0; catchSince = Time.realtimeSinceStartup; }
         if (Spectating) ui.Say("Tu regardes la partie en cours", 4);
@@ -787,14 +805,14 @@ public partial class Game : MonoBehaviour
         Apply(action);
     }
 
-    public void Draw() { if (rules != null && rules.drawn == null) Act("draw"); ThrowDieAuto(); }
+    public void Draw() { if (rules != null && rules.drawn == null) Act("draw"); ThrowDieAuto(); ThrowSerpentsAuto(); }
     public void Move(int rabbit) { if (rules != null && rules.CanMove(rabbit)) Act("move|" + rabbit); if (ch != null && ch.CanPick(rabbit)) Act((ch.sacrifice ? "sacrifice|" : "move|") + rabbit); }
 
     public void Enqueue(string action) => pending.Enqueue(action);
 
     public void PlayerLeft(int seat)
     {
-        string n = rules?.players[seat].name ?? bj?.players[seat].name ?? rt?.players[seat].name ?? qz?.players[seat].name ?? rh?.players[seat].name ?? uno?.players[seat].name ?? bac?.players[seat].name ?? ch.players[seat].name;
+        string n = rules?.players[seat].name ?? bj?.players[seat].name ?? rt?.players[seat].name ?? qz?.players[seat].name ?? rh?.players[seat].name ?? uno?.players[seat].name ?? bac?.players[seat].name ?? sp?.players[seat].name ?? ch.players[seat].name;
         ui.Say($"{n} est parti : l'hôte joue pour lui.", 3.5f);
     }
 
@@ -1044,6 +1062,7 @@ public partial class Game : MonoBehaviour
         if (uno != null) { ApplyUno(p); return; }
         if (ch != null) { ApplyChevaux(p); return; }
         if (bac != null) { ApplyBac(p); return; }
+        if (sp != null) { ApplySerpents(p); return; }
         if (rules != null)
         {
             if (p[0] == "draw") DoDraw(); else DoMove(int.Parse(p[1]));
@@ -1175,6 +1194,8 @@ public partial class Game : MonoBehaviour
         cview.Hide();
         ch = null;
         bac = null;
+        sview.Hide();
+        sp = null;
         snapCam = true;
         pitch = 14;
         dist = 6.5f;
@@ -1190,6 +1211,7 @@ public partial class Game : MonoBehaviour
         UnoClick();
         ChevauxInput();
         BacUpdate();
+        SerpentsInput();
         if (inGame && qz != null)
         {
             // L'image se devoile en 18 s ; seul (hors ligne), c'est ce PC qui pilote les phases.
@@ -1265,6 +1287,12 @@ public partial class Game : MonoBehaviour
             cam.transform.SetPositionAndRotation(up.position, up.rotation);
             if (dof) dof.active = paused;
             ui.UpdateUno(cam);
+            return;
+        }
+        if (inGame && sp != null)
+        {
+            SerpentsCamera(focus);
+            if (dof) dof.active = paused;
             return;
         }
         if (inGame && ch != null)
