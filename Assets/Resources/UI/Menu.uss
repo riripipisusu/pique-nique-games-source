@@ -1086,3 +1086,13 @@ Button.gl.bp-step .gl-label { font-size: 40px; }
 .game-card .mode-desc { font-size: 14px; }
 .bp-rotate { position: absolute; right: 24px; bottom: 16px; }
 .bp-rotate > Button { margin-left: 10px; }
+
+/* Pouilleux : ma main (cartes classiques), le valet de pique legerement teinte */
+.pq-card { width: 150px; height: 213px; border-radius: 10px; }
+.pq-hand { bottom: -40px; }
+.pq-status { bottom: 230px; }
+.pq-target { border-color: rgb(255, 196, 40); border-width: 5px; scale: 1.12 1.12; background-color: rgb(255, 244, 205); }
+.pq-new { translate: 0 -46px; }
+.pq-new > .pq-card { border-color: rgb(255, 196, 40); border-width: 6px; }
+.pqx .banner-row { top: 455px; }
+.pqx .banner { font-size: 40px; padding: 4px 40px 6px 40px; border-bottom-width: 9px; }

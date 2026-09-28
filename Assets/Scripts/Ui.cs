@@ -260,6 +260,7 @@ public partial class Ui : MonoBehaviour
         [GameId.Chevaux] = ("chevaux", 0, "2 à 4 joueurs · Plateau", "Un 6 pour sortir, fais le tour du plateau et grimpe l'escalier jusqu'au centre !"),
         [GameId.BonnePaye] = ("bonnepaye", 0, "2 à 6 joueurs · Plateau", "Factures, affaires, loterie et Jour de paye : le plus riche à la fin du mois gagne !"),
         [GameId.Serpents] = ("serpents", 0, "2 à 4 joueurs · Plateau", "Grimpe aux échelles, évite les serpents : le premier sur la case 100 gagne !"),
+        [GameId.Pouilleux] = ("pouilleux", 0, "2 à 6 joueurs · Cartes", "Pioche chez ton voisin, jette tes paires... et ne finis pas avec le valet de pique !"),
         [GameId.Uno] = ("uno", 0, "2 à 10 joueurs · Cartes", "Même couleur ou même symbole, et n'oublie pas de crier UNO !"),
         [GameId.Blackjack] = ("blackjack", 1, "2 à 4 joueurs · Cartes", "Approche-toi de 21 sans dépasser et bats le croupier."),
         [GameId.Roulette] = ("roulette", 1, "1 à 4 joueurs · Casino", "Pleins, chevaux, carrés, rouge ou noir... Le plus riche gagne."),
@@ -465,7 +466,9 @@ public partial class Ui : MonoBehaviour
             Text(box, "Un mois = un tour de plateau (environ 20 min à 4). On pourra prolonger à la fin.", "mode-desc");
             return;
         }
-        var opts = game.gameId == GameId.Serpents
+        var opts = game.gameId == GameId.Pouilleux
+            ? new[] { (0, "Classique", "Le valet de pique est le pouilleux : ne le garde pas !") }
+            : game.gameId == GameId.Serpents
             ? new[] { (0, "Classique", "10 échelles, 10 serpents, il faut tomber pile sur 100.") }
             : game.gameId == GameId.Bac
             ? new[] { (1, "Partie courte", "3 manches."), (0, "Partie normale", "5 manches."), (2, "Longue partie", "8 manches.") }
@@ -795,6 +798,13 @@ public partial class Ui : MonoBehaviour
             S("Contester un +4", "On n'a le droit de poser un +4 que si on n'a aucune carte de la couleur demandée. Le joueur visé peut « Dénoncer » : si c'était du bluff, le poseur pioche 4 cartes à sa place ; si le +4 était réglo, celui qui a dénoncé en pioche 6 !");
             S("Règles maison (options)", "Cumul : un +2 se contre avec un +2 (ou un +4), un +4 avec un +4, et le suivant pioche le total. 7-0 : un 7 échange ta main avec le joueur de ton choix, un 0 fait tourner toutes les mains. Intervention : si tu as la carte exactement identique à celle du dessus, tu peux la poser même hors de ton tour. Piocher jusqu'à jouer : on pioche jusqu'à trouver une carte qui va. Jeu forcé : une carte piochée qui va doit être posée.");
         }
+        else if (game.gameId == GameId.Pouilleux)
+        {
+            S("Le but", "Ne pas finir avec le pouilleux ! On joue avec un jeu de 52 cartes dont on a retiré le valet de trèfle : le valet de pique n'a donc pas de paire, c'est lui le pouilleux.");
+            S("Les paires", "Toutes les cartes sont distribuées. Chacun jette aussitôt ses paires : deux cartes de même valeur et de même couleur (deux rouges ou deux noires).");
+            S("À ton tour", "Pioche une carte cachée dans la main de ton voisin (clique sur une de ses cartes de dos). Si elle forme une paire avec une des tiennes, la paire part au milieu. Ta main est ensuite mélangée : personne ne peut suivre le pouilleux des yeux !");
+            S("La fin", "Qui n'a plus de cartes est tranquille. Le dernier joueur qui garde le valet de pique est le pouilleux et perd la partie.");
+        }
         else if (game.gameId == GameId.BonnePaye)
         {
             S("Durée", "Avant la partie, choisissez le nombre de mois (de 1 à 24 ; un mois = un tour de plateau). Quand tout le monde a fini, l'hôte peut prolonger la partie d'autant de mois qu'il veut, ou la terminer.");
@@ -905,6 +915,7 @@ public partial class Ui : MonoBehaviour
         BuildUnoHud();
         BuildBacHud();
         BuildBonnePayeHud();
+        BuildPouilleuxHud();
 
         var bannerRow = Div(hud, "banner-row");
         bannerRow.pickingMode = PickingMode.Ignore;
@@ -924,7 +935,9 @@ public partial class Ui : MonoBehaviour
         card.style.display = DisplayStyle.None;
         bool bj = game.bj != null, rt = game.rt != null, qz = game.qz != null, rh = game.rh != null, un = game.uno != null, bc = game.bac != null;
         bacHud.style.display = bc ? DisplayStyle.Flex : DisplayStyle.None;
-        bool bpg = game.bp != null;
+        bool bpg = game.bp != null, pqg = game.pq != null;
+        pqHud.style.display = pqg ? DisplayStyle.Flex : DisplayStyle.None;
+        pqTags.Clear(); pqTagEls.Clear();
         bpHud.style.display = bpg ? DisplayStyle.Flex : DisplayStyle.None;
         if (bc) BacRound();
         unoHud.style.display = un ? DisplayStyle.Flex : DisplayStyle.None;
@@ -935,6 +948,7 @@ public partial class Ui : MonoBehaviour
         hud.EnableInClassList("chx", game.ch != null || game.sp != null);
         hud.EnableInClassList("bacx", game.bac != null);
         hud.EnableInClassList("bpx", game.bp != null);
+        hud.EnableInClassList("pqx", game.pq != null);
         bjHud.style.display = bj ? DisplayStyle.Flex : DisplayStyle.None;
         rtHud.style.display = rt ? DisplayStyle.Flex : DisplayStyle.None;
         qzHud.style.display = qz ? DisplayStyle.Flex : DisplayStyle.None;
@@ -947,8 +961,8 @@ public partial class Ui : MonoBehaviour
         }
         bubbles.Clear();
         seatTags.Clear();
-        playersBar.style.display = feed.style.display = bj || rt || qz || rh || un || bc || bpg ? DisplayStyle.None : DisplayStyle.Flex;
-        hint.text = bpg ? "" : bj || rt || qz || rh || un || bc ? "" : game.ch != null || game.sp != null ? "Maintiens le clic pour prendre le dé, lâche-le d'un geste pour le lancer  ·  Molette : zoom  ·  Échap : pause" : "Clic droit : tourner  ·  Molette : zoom  ·  Échap : pause";
+        playersBar.style.display = feed.style.display = bj || rt || qz || rh || un || bc || bpg || pqg ? DisplayStyle.None : DisplayStyle.Flex;
+        hint.text = bpg || pqg ? "" : bj || rt || qz || rh || un || bc ? "" : game.ch != null || game.sp != null ? "Maintiens le clic pour prendre le dé, lâche-le d'un geste pour le lancer  ·  Molette : zoom  ·  Échap : pause" : "Clic droit : tourner  ·  Molette : zoom  ·  Échap : pause";
         if (rt) ResetRouletteBets();
         if (bj) betAmount = Blackjack.MinBet * 5;
         Refresh();
@@ -993,6 +1007,7 @@ public partial class Ui : MonoBehaviour
         else if (game.bac != null) RefreshBac();
         else if (game.sp != null) RefreshSerpents();
         else if (game.bp != null) RefreshBonnePaye();
+        else if (game.pq != null) RefreshPouilleux();
     }
 
     void PlayerCard(int i, string name, string avatar, bool active)
@@ -1234,6 +1249,13 @@ public partial class Ui : MonoBehaviour
             winTitle.text = $"{w.name} gagne !";
             winTitle.style.color = Board.Colors[w.color];
             winSub.text = "Ses trois lapins festoient au potager.";
+        }
+        else if (game.pq != null)
+        {
+            var q = game.pq;
+            winTitle.text = $"{q.players[q.loser].name} est le pouilleux !";
+            winTitle.style.color = Board.Colors[q.loser % Board.Colors.Length];
+            winSub.text = string.Join("\n", q.players.Where(p => p.outRank >= 0).OrderBy(p => p.outRank).Select((p, i) => $"{i + 1}.  {p.name}")) + $"\nPouilleux : {q.players[q.loser].name}";
         }
         else if (game.bp != null)
         {
