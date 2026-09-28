@@ -17,6 +17,10 @@ public partial class Game
         uno = new Uno(n, opt, seed);
         unoAvatars = av;
         uview.Build(uno, av, mySeat);
+        uview.MyCardArrived = () => ui.Refresh();
+        uview.ReserveMine = ui.ReserveIncoming;
+        uview.MineScreen = ui.IncomingScreen;
+        uview.LandMine = ui.LandIncoming;
         uview.Dealing = true;
         ui.ShowHud();
         var first = uno.events.ToList();   // la premiere donne se joue en animation, comme les suivantes

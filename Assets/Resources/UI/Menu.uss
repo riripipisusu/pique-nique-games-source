@@ -732,9 +732,8 @@ Button.pick-game.selected { border-color: #FF9B2F; border-width: 6px; scale: 1.0
     -unity-background-image-tint-color: rgb(74, 215, 252); -unity-background-scale-mode: stretch-to-fill;
     transition-property: opacity; transition-duration: 0.28s;
 }
-.rh-lane.pressed .rh-flash { opacity: 0.35; transition-duration: 0s; }
+/* Halo seulement pendant une note tenue (sur les notes simples, les flashs qui s'enchainent genaient la lecture) */
 .rh-lane.held .rh-flash { opacity: 0.8; transition-duration: 0.05s; }
-.rh-lane.hit .rh-flash { opacity: 1; transition-duration: 0s; -unity-background-image-tint-color: rgb(190, 245, 255); }
 .rh-lane.missed .rh-receptor { border-color: rgb(255, 70, 70); background-color: rgba(255, 60, 60, 0.35); }
 .rh-lane.hit .rh-receptor { background-color: rgb(210, 250, 255); border-color: rgb(255, 255, 255); }
 .rh-spark { position: absolute; width: 8px; height: 8px; background-color: rgb(200, 248, 255); }
@@ -942,7 +941,7 @@ Button.pick-game.selected { border-color: #FF9B2F; border-width: 6px; scale: 1.0
 .lobby-options .rh-cover { display: none; }
 .lobby-options .rh-pick-head .mode-name { font-size: 22px; }
 .lobby-options .rh-pick-head .mode-desc { font-size: 15px; white-space: normal; }
-.lobby-options .rh-list { height: 150px; }
+.lobby-options .rh-list { height: 118px; }
 .lobby-options .rh-pick-head { margin-bottom: 2px; }
 .lobby-options .rh-song-name { font-size: 18px; }
 /* Vignette d'un jeu sans illustration (en attendant l'image) : son nom */
@@ -951,3 +950,12 @@ Button.pick-game.selected { border-color: #FF9B2F; border-width: 6px; scale: 1.0
 /* Aide en bas a droite : sur une pastille sombre, lisible sur la nappe comme sur l'herbe */
 .hint { background-color: rgba(46, 27, 16, 0.62); border-radius: 14px; padding: 4px 14px; -unity-text-outline-width: 0; }
 .lobby-options .rh-alt { display: none; }
+
+/* Salon de taille fixe : colonne de droite compacte (fiche du jeu plus petite, options serrees) */
+.lobby-cols { flex-grow: 1; }
+.lobby-right .code { height: 70px; font-size: 50px; }
+.lobby-game { margin: 8px 0 6px 0; padding: 6px 10px; }
+.lobby-art { width: 120px; height: 66px; }
+.lobby-game .mode-name { font-size: 24px; }
+.lobby-options .mode-card { padding: 6px 10px; }
+.lobby-themes .h2 { margin: 4px 0 2px 0; }

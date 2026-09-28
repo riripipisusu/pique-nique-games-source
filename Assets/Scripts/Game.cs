@@ -184,7 +184,7 @@ public partial class Game : MonoBehaviour
             System.IO.File.WriteAllText(codeFile, net.Code);
             ui.ShowLobby();
             while (net.Lobby.Count < 2) yield return null;
-            foreach (var lg in new[] { GameId.Rhythm, GameId.Uno, GameId.Chevaux })   // mise en page du salon selon le jeu
+            foreach (var lg in new[] { GameId.Croque, GameId.Rhythm, GameId.Uno, GameId.Trivia, GameId.Chevaux })   // mise en page du salon selon le jeu
             {
                 net.SetGame(lg); yield return new WaitForSeconds(1); yield return Shot("salon-" + lg);
             }
@@ -264,7 +264,7 @@ public partial class Game : MonoBehaviour
             quizBots = 3;
             botForget = 1;   // test : les bots oublient toujours UNO (bouton Contre-UNO)
             StartQuizWithBots();
-            yield return new WaitForSeconds(0.9f); yield return Shot("n1-donne");
+            for (int k = 0; k < 4; k++) { yield return new WaitForSeconds(0.35f); yield return Shot("n1-donne" + k); }
             yield return new WaitForSeconds(2.5f); yield return Shot("n1-debut");
             if (Array.IndexOf(Environment.GetCommandLineArgs(), "-unofx") >= 0) { yield return uview.TestUnoFx(Shot); Application.Quit(); yield break; }
             int shots = 0, turns = 0;
@@ -1112,7 +1112,7 @@ public partial class Game : MonoBehaviour
         StopAllCoroutines();
         Resume();
         catchingUp = false;
-        AudioListener.volume = 1;
+        Sound.I.Refresh();   // volume general des reglages (pas 100 %)
         if (net.Active && !lobby) net.Leave();
         pending.Clear();
         inGame = false;
@@ -1155,7 +1155,7 @@ public partial class Game : MonoBehaviour
         {
             catchingUp = false;
             Time.timeScale = 1;
-            AudioListener.volume = 1;
+            Sound.I.Refresh();   // volume general des reglages (pas 100 %)
         }
         if (inGame && !busy && pending.Count > 0 && Match != null && !Match.Finished)
         {

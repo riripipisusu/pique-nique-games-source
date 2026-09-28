@@ -19,6 +19,28 @@ public partial class Ui
     VisualElement unoCallGlow;
     bool wasMine, callShown, drawnShown, challengeShown, swapShown;   // pour jouer les sons d'apparition une seule fois
     readonly HashSet<int> handShown = new HashSet<int>();   // cartes deja affichees dans ma main
+    int handRound = -1;
+    readonly HashSet<int> incoming = new HashSet<int>();   // cartes en vol vers ma main : place reservee, invisible
+    readonly Dictionary<int, VisualElement> handButtons = new Dictionary<int, VisualElement>();
+
+    // La prochaine carte de ma main encore a recevoir (ordre de la main = ordre de reception) : sa place est reservee.
+    public int ReserveIncoming()
+    {
+        var u = game.uno;
+        if (u == null) return -1;
+        foreach (int c in u.players[UnoMe].hand)
+            if (!handShown.Contains(c) && incoming.Add(c)) { RefreshUno(); return c; }
+        return -1;
+    }
+    // Rectangle a l'ecran (pixels, origine en bas a gauche) de la carte dans ma main.
+    public Rect? IncomingScreen(int card)
+    {
+        if (!handButtons.TryGetValue(card, out var b) || float.IsNaN(b.worldBound.width) || root.worldBound.width <= 0) return null;
+        float k = UnityEngine.Screen.width / root.worldBound.width;
+        var w = b.worldBound;
+        return new Rect(w.x * k, UnityEngine.Screen.height - w.yMax * k, w.width * k, w.height * k);
+    }
+    public void LandIncoming(int card) { incoming.Remove(card); handShown.Add(card); RefreshUno(); }
 
     int UnoMe => Mathf.Max(0, game.mySeat);
     bool UnoPlaying => game.uno != null && !game.Spectating;
@@ -224,10 +246,14 @@ public partial class Ui
         var me = u.players[UnoMe];
         // Ma main, triee par couleur puis valeur ; jouables surelevees quand c'est mon tour.
         unoHand.Clear();
-        unoHand.style.display = UnoPlaying && !game.uview.Dealing ? DisplayStyle.Flex : DisplayStyle.None;
-        if (game.uview.Dealing) handShown.Clear();
+        unoHand.style.display = UnoPlaying ? DisplayStyle.Flex : DisplayStyle.None;
+        if (handRound != game.uview.DealRound) { handRound = game.uview.DealRound; handShown.Clear(); incoming.Clear(); }   // nouvelle donne
+        incoming.RemoveWhere(c => !me.hand.Contains(c));
+        handButtons.Clear();
         int fresh = 0;
         var cards = me.hand.OrderBy(c => Uno.CardColor(c)).ThenBy(Uno.Kind).ToList();
+        // Cartes pas encore arrivees (donne, pioche en cours) : absentes, sauf celles en vol dont la place est reservee.
+        if (game.uview.MyPending > 0) cards = cards.Where(c => handShown.Contains(c) || incoming.Contains(c)).ToList();
         float overlap = cards.Count <= 7 ? -18 : -Mathf.Min(110, 18 + (cards.Count - 7) * 10);
         float spread = Mathf.Min(4.5f, 40f / Mathf.Max(1, cards.Count));   // degres entre deux cartes
         for (int k = 0; k < cards.Count; k++)
@@ -241,8 +267,10 @@ public partial class Ui
             var b = new Button(() => { Sound.I.UI("click"); TryPlayUno(card); });
             b.AddToClassList("uno-card");
             b.style.backgroundImage = Resources.Load<Texture2D>("Uno/" + Uno.Code(card));
-            // Carte qui vient d'arriver (donne, pioche) : elle monte du bas de l'ecran, les unes apres les autres.
-            if (!game.uview.Dealing && handShown.Add(card))
+            handButtons[card] = b;
+            if (incoming.Contains(card)) { b.style.opacity = 0; b.pickingMode = PickingMode.Ignore; }   // en vol : place reservee
+            // Carte arrivee autrement (echange de mains...) : elle monte du bas de l'ecran, les unes apres les autres.
+            else if (handShown.Add(card))
             {
                 b.AddToClassList("enter"); b.AddToClassList("entering");
                 b.schedule.Execute(() => b.RemoveFromClassList("enter")).StartingIn(30 + 55 * fresh++);
@@ -264,7 +292,8 @@ public partial class Ui
         wasMine = mine;
         unoDraw.style.display = DisplayStyle.None;   // on pioche en cliquant sur le paquet, sur la nappe
         game.uview.DeckReady = mine && u.phase == UPhase.Play;
-        unoCall.style.display = UnoPlaying && !me.said && me.hand.Count <= 2 && me.hand.Count > 0 && u.phase != UPhase.RoundOver ? DisplayStyle.Flex : DisplayStyle.None;
+        // UNO : seulement a mon tour, avec exactement deux cartes dont une qui peut etre posee.
+        unoCall.style.display = UnoPlaying && game.MyTurn && u.Actor == UnoMe && !me.said && me.hand.Count == 2 && me.hand.Any(c => u.CanPlay(UnoMe, c)) ? DisplayStyle.Flex : DisplayStyle.None;
         unoCatch.EnableInClassList("uno-pulse", true);
         unoCall.EnableInClassList("uno-pulse", true);
         bool callOn = unoCall.style.display == DisplayStyle.Flex;

@@ -247,6 +247,7 @@ public partial class Ui
         return covers[s.id] = t;
     }
 
+    static float songScroll;
     void SongPicker(VisualElement parent, int current, System.Action<int> pick)
     {
         var songs = Rhythm.Songs;
@@ -265,9 +266,14 @@ public partial class Ui
         foreach (var ch in songs.Select(s => s.ch).Distinct())
         {
             var c = ch;
-            Btn(tabs, songs.First(s => s.ch == c).Chapter, () => { songTab = c; pick(current); }, "small", c == songTab ? "blue" : "ghost");
+            Btn(tabs, songs.First(s => s.ch == c).Chapter, () => { songTab = c; songScroll = 0; pick(current); }, "small", c == songTab ? "blue" : "ghost");
         }
         var list = Add(box, new ScrollView(), "rh-list");
+        // Choisir une chanson reconstruit la liste : on la garde ou elle etait (seul un changement d'onglet la remonte).
+        float keep = songScroll;   // la nouvelle liste repart de 0 : on retient la position avant qu'elle l'ecrase
+        EventCallback<GeometryChangedEvent> once = null;   // apres la mise en page (hauteur de la liste connue)
+        once = _ => { list.contentContainer.UnregisterCallback(once); list.scrollOffset = new Vector2(0, keep); list.verticalScroller.valueChanged += v => songScroll = v; };
+        list.contentContainer.RegisterCallback(once);
         for (int i = 0; i < songs.Count; i++)
         {
             if (songs[i].ch != songTab) continue;

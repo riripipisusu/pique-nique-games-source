@@ -1240,6 +1240,7 @@ public partial class Ui : MonoBehaviour
         lobbyScreen = Screen();
         var panel = Panel(lobbyScreen);
         panel.style.width = 1700;
+        panel.style.height = 910;   // meme taille quel que soit le jeu choisi
         Text(panel, "Salon", "panel-title");
         var cols = Div(panel, "row", "lobby-cols");
         var left = Div(cols, "lobby-left");
@@ -1258,7 +1259,6 @@ public partial class Ui : MonoBehaviour
         Ico(Btn(cr, "Copier", () => GUIUtility.systemCopyBuffer = game.net.Code, "blue"), "copy");
         var inv = Div(right, "row");
         inviteBtn = Ico(Btn(inv, "Copier l'invitation (Discord)", () => { GUIUtility.systemCopyBuffer = game.net.Invite; lobbyStatus.text = "Invitation copiée : colle-la dans Discord !"; }, "ghost", "small"), "copy");
-        Text(right, "Tes amis la collent dans « Rejoindre » : même code pour toutes les parties.", "muted");
         lobbyPick = Div(right, "row", "lobby-pick");
         var gc = lobbyGameCard = Div(right, "row", "lobby-game");
         lobbyArt = Div(gc, "lobby-art");
