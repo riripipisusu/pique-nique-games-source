@@ -108,8 +108,8 @@ public class UnoView : MonoBehaviour
         for (int i = 0; i < 34; i++) Model(trees[i % trees.Length], Around(13, 32), R(0.85f, 1.25f), R(0, 360));
         // Sens du jeu : deux grandes fleches en cercle autour des piles, qui tournent doucement.
         // uno_ring : fleches dans le sens horaire vu du dessus (sens +1 : le tour part vers la gauche) ; uno_ring_ccw : l'inverse.
-        arrows = Ring("UI/uno_ring");
-        arrowsBack = Ring("UI/uno_ring_ccw");
+        arrows = Ring("UnoFX/Board_Arrow");        // fleches officielles (sens horaire vu du dessus)
+        arrowsBack = Ring("UnoFX/Board_Arrow_02"); // ... et l'inverse
         pile = new GameObject("defausse").transform; pile.SetParent(transform, false); pile.localPosition = PileAt;
         deck = new GameObject("pioche").transform; deck.SetParent(transform, false); deck.localPosition = DeckAt; deck.localRotation = Quaternion.Euler(0, 24, 0);
         var hit = deck.gameObject.AddComponent<BoxCollider>();   // zone de clic de la pioche (genereuse)
@@ -181,14 +181,17 @@ public class UnoView : MonoBehaviour
         Sync();
     }
 
-    public void Hide() { StopAllCoroutines(); Dealing = false; shown = null; HideWheel(); if (cursor) Destroy(cursor.gameObject); cursor = null; cursorColor = -1; gameObject.SetActive(false); }
+    public void Hide() { StopAllCoroutines(); Dealing = false; shown = null; HideWheel(); foreach (var c in cursors) if (c) Destroy(c.gameObject); cursors.Clear(); cursorColor = -1; gameObject.SetActive(false); }
 
     // Point d'accroche de la vignette d'un joueur (au-dessus de son eventail).
     public Vector3 TagOf(int seat) => seats[seat].fan.position + Vector3.up * CardH * FanScale * 0.6f;
+    // Au-dessus de la vignette (l'interface passe devant la scene : un effet derriere elle serait cache).
+    Vector3 AboveTag(int seat) => TagOf(seat) + Vector3.up * 0.42f;
 
     // La pioche se souleve et respire quand c'est a moi de piocher ; un clic dessus = piocher (Game).
     public bool DeckReady;
-    float deckLift;
+    float deckLift, arrowBoost;
+    public void ArrowsChange() => arrowBoost = 1;   // changement de sens : les fleches s'emballent un instant
 
     void Update()
     {
@@ -196,9 +199,12 @@ public class UnoView : MonoBehaviour
         bool cw = uno.dir > 0;
         arrows.gameObject.SetActive(cw);
         arrowsBack.gameObject.SetActive(!cw);
-        (cw ? arrows : arrowsBack).Rotate(0, 0, (cw ? -1 : 1) * 10 * Time.deltaTime, Space.Self);
+        arrowBoost = Mathf.MoveTowards(arrowBoost, 0, Time.deltaTime * 1.2f);
+        (cw ? arrows : arrowsBack).Rotate(0, 0, (cw ? -1 : 1) * (10 + 260 * arrowBoost * arrowBoost) * Time.deltaTime, Space.Self);
         deckLift = Mathf.MoveTowards(deckLift, DeckReady ? 1 : 0, Time.deltaTime * 4);
         deck.localPosition = DeckAt + Vector3.up * deckLift * (0.05f + 0.025f * Mathf.Sin(Time.time * 5));
+        UpdateDeckGlow();
+        UpdateStack();
         UpdateCursor();
     }
 
@@ -218,7 +224,8 @@ public class UnoView : MonoBehaviour
             bool top = i == uno.discard.Count - 1;
             int h = card * 37 + i * 53;
             var at = new Vector3((h % 17 - 8) * 0.012f, 0.03f + (i - from) * 0.003f, (h % 13 - 6) * 0.012f);
-            Card(FaceCode(card, top ? uno.color : -1), pile, at, Flat((h % 70) - 35));
+            int chosen = top ? (jokerPending ? -1 : uno.color) : wildColor.TryGetValue(card, out int wc) ? wc : -1;
+            Card(FaceCode(card, chosen), pile, at, Flat((h % 70) - 35));
         }
         // Pioche : un vrai paquet, dont l'epaisseur suit le nombre de cartes.
         float th = 0.02f + uno.drawPile.Count * 0.0011f;
@@ -272,6 +279,8 @@ public class UnoView : MonoBehaviour
     // Distribution : 7 tours de table, carte par carte depuis la pioche ; ma main (interface) apparait a la fin.
     public bool Dealing;
     int[] shown;
+    bool jokerPending;   // joker qui vient d'arriver : encore noir
+    readonly Dictionary<int, int> wildColor = new Dictionary<int, int>();   // couleur choisie de chaque joker pose
 
     void SyncFans()
     {
@@ -294,6 +303,9 @@ public class UnoView : MonoBehaviour
     IEnumerator Deal()
     {
         Dealing = true;
+        Sound.I.Play("bj_shuffle", 0.9f, 0.02f);   // on melange avant de distribuer
+        wildColor.Clear();
+        if (Uno.IsWild(uno.Top)) wildColor[uno.Top] = uno.color;
         shown = new int[seats.Count];
         foreach (Transform c in pile) Destroy(c.gameObject);
         SyncFans();
@@ -302,14 +314,14 @@ public class UnoView : MonoBehaviour
             for (int j = 1; j <= n; j++)
             {
                 int seat = (uno.dealer + j) % n;
-                Sound.I.Play("card", 0.5f, 0.15f);
+                Sound.I.Play(Random.value < 0.5f ? "bj_slide1" : "bj_slide2", 0.55f, 0.12f);   // carte distribuee
                 StartCoroutine(Fly("back", DeckPos, HandPos(seat), transform.rotation * Flat(24), FacingCam(HandPos(seat)), 0.22f, 0, () => { shown[seat]++; SyncFans(); }));
                 yield return new WaitForSeconds(n > 6 ? 0.025f : 0.045f);
             }
         yield return new WaitForSeconds(0.3f);
         shown = null;
         // Premiere carte retournee sur la defausse.
-        Sound.I.Play("card", 1, 0.05f);
+        Sound.I.Play("bj_flip", 0.9f);
         yield return Fly(FaceCode(uno.Top, Uno.IsWild(uno.Top) ? uno.color : -1), DeckPos, PilePos, transform.rotation * Flat(24), transform.rotation * Flat(0), 0.3f, 180);
         Dealing = false;
         Sync();
@@ -325,20 +337,23 @@ public class UnoView : MonoBehaviour
             switch (e.type)
             {
                 case UEv.Played:
-                    Sound.I.Play("card", 1, 0.05f);
+                    Sound.I.Play(Random.value < 0.5f ? "bj_place1" : "bj_place2", 1, 0.06f);   // carte posee
                     var from = HandPos(e.seat);
-                    yield return Fly(FaceCode(e.card, Uno.IsWild(e.card) ? e.other : -1), from, PilePos,
+                    // Un joker vole en noir ; il prend sa couleur une fois pose (effet "carte joker").
+                    yield return Fly(FaceCode(e.card, -1), from, PilePos,
                         e.seat == me ? FacingCam(from) : FacingCam(from) * Quaternion.Euler(0, 180, 0), transform.rotation * Flat(0), 0.32f, e.seat == me ? 0 : 180);
-                    Sync();
+                    if (Uno.IsWild(e.card)) { wildColor[e.card] = e.other; jokerPending = true; Sync(); jokerPending = false; }   // noir d'abord
+                    else Sync();
                     StartCoroutine(Punch());
                     StartCoroutine(Fx(e.card, e.other));   // passe, inversion, +2, +4 : le symbole jaillit
                     if (Uno.IsWild(e.card) && e.seat != me) yield return RevealColor(e.other);
+                    if (Uno.IsWild(e.card)) yield return JokerColor(e.card, e.other);
                     else if (Uno.Kind(e.card) >= Uno.Skip) yield return new WaitForSeconds(0.55f);   // la couleur choisie par l'adversaire
                     break;
                 case UEv.Drew:
                     for (int k = 0; k < Mathf.Min(e.count, 4); k++)
                     {
-                        Sound.I.Play("card", 0.7f, 0.1f);
+                        Sound.I.Play(Random.value < 0.5f ? "bj_slide1" : "bj_slide2", 0.8f, 0.1f);   // carte piochee
                         StartCoroutine(Fly("back", DeckPos, HandPos(e.seat), transform.rotation * Flat(24), FacingCam(HandPos(e.seat)), 0.3f));
                         yield return new WaitForSeconds(0.1f);
                     }
@@ -354,10 +369,23 @@ public class UnoView : MonoBehaviour
                     break;
                 case UEv.Skipped:
                     Sync();
-                    StartCoroutine(SkipOn(e.seat));
+                    if (e.seat == me) StartCoroutine(SkipOn(e.seat));   // les autres : logo sur leur vignette (interface)
                     break;
                 case UEv.Uno:
+                    UnoAudio.Play(e.seat == me ? "Sfx_Card_UNO_Call" : "Sfx_Card_UNO_Call_NonPlayer");
                     StartCoroutine(CallUno(e.seat));
+                    break;
+                case UEv.Caught:
+                    StartCoroutine(Exclamation(e.seat));
+                    Sync();
+                    break;
+                case UEv.JumpIn:
+                    StartCoroutine(JumpInFx(e.seat));
+                    Sync();
+                    break;
+                case UEv.Reversed:
+                    ArrowsChange();
+                    Sync();
                     break;
                 case UEv.Swapped:
                 case UEv.Rotated:
@@ -438,7 +466,7 @@ public class UnoView : MonoBehaviour
         var top = PilePos + Vector3.up * 0.55f;
         if (kind == Uno.Wild4)
         {
-            Sound.I.Play("bj_chips", 0.8f);
+            UnoAudio.Play("Sfx_Card_Function_Draw4");
             var rays = FxQuad("Classic_Drawfour_Sunshine_01", top, 2.2f, new Color(1, 0.85f, 0.4f, 1), true);
             var glow = FxQuad("Classic_Drawfour_Glow", top, 1.3f, new Color(0.8f, 0.5f, 1, 1), true);
             var r = rays.rotation;
@@ -455,13 +483,16 @@ public class UnoView : MonoBehaviour
         }
         string name = kind == Uno.Skip ? "Skip" : kind == Uno.Reverse ? "Reverse" : kind == Uno.Draw2 ? "DrawTwo" : null;
         if (name == null) yield break;
-        Sound.I.Play(kind == Uno.Reverse ? "tick" : "bj_chips", 0.8f);
+        if (kind == Uno.Skip) UnoAudio.Play("Sfx_Card_Function_Skip");
+        else if (kind == Uno.Reverse) { UnoAudio.Play(uno.dir > 0 ? "Sfx_Card_Function_Reverse_Clockwise" : "Sfx_Card_Function_Reverse_Anticlockwise"); UnoAudio.Play("Sfx_Card_Function_Reverse_Bell", 0.7f); }
+        else UnoAudio.Play("Sfx_Card_Function_Draw2");
         PlayFx(name, name + "_" + ColorLetter(color), top, 0.14f);
     }
 
     // Passe son tour : le symbole "passe" (petit) sur l'eventail - ou devant moi - du joueur qui passe.
     IEnumerator SkipOn(int seat)
     {
+        UnoAudio.Play("Sfx_Card_Function_Skip_Sub", 0.8f);
         PlayFx("Skip", "Skip_" + ColorLetter(uno.color), seat == me ? MyFxPos : HandPos(seat) + Vector3.up * 0.1f, seat == me ? 0.1f : 0.07f);
         yield break;
     }
@@ -469,7 +500,7 @@ public class UnoView : MonoBehaviour
     // "UNO !" : le mot en relief et ses etoiles, au-dessus du joueur.
     IEnumerator CallUno(int seat)
     {
-        var at = seat == me ? MyFxPos : TagOf(seat) + Vector3.up * 0.15f;
+        var at = seat == me ? MyFxPos : AboveTag(seat);
         PlayFx("CallUno", "CallUNO", at, 0.12f);
         yield break;
     }
@@ -488,174 +519,327 @@ public class UnoView : MonoBehaviour
     // Contestation du +4 : coche (bluff demasque) ou croix (le +4 etait regulier) au-dessus de la defausse.
     public void ChallengeFx(bool caught) => PlayFx("Challenge", caught ? "Succeed" : "Failed", PilePos + Vector3.up * 0.6f, 0.09f);
 
-    // Joueur actif : le curseur triangulaire du jeu Uno, a la couleur du jeu, flotte au-dessus de son eventail.
-    Transform cursor;
+    // Curseurs triangulaires du jeu Uno, a la couleur du jeu : au-dessus du joueur actif ; quand je dois choisir avec
+    // qui echanger ma main (le 7), un au-dessus de chaque adversaire (curseurs de choix).
+    readonly List<Transform> cursors = new List<Transform>();
     Material cursorMat;
     int cursorColor = -1;
-    void UpdateCursor()
+    Transform NewCursor()
     {
-        int a = uno == null || Dealing ? -1 : uno.Actor;
-        bool show = a >= 0 && a != me && a < seats.Count;
-        if (!show) { if (cursor) cursor.gameObject.SetActive(false); return; }
-        if (!cursor)
+        var mesh = Resources.Load<Mesh>("UnoFX/Cursor");
+        if (!mesh) return null;
+        if (!cursorMat)
         {
-            var mesh = Resources.Load<Mesh>("UnoFX/Cursor");
-            if (!mesh) return;
-            cursor = new GameObject("curseur").transform;
-            cursor.SetParent(transform, false);
-            var pivot = new GameObject("modele").transform;
-            pivot.SetParent(cursor, false);
-            pivot.localPosition = -mesh.bounds.center;
-            pivot.gameObject.AddComponent<MeshFilter>().sharedMesh = mesh;
             cursorMat = new Material(Shader.Find("PiqueNique/UnoFx"));
             cursorMat.SetColor("_Tint", new Color(0.5f, 0.5f, 0.5f, 0.5f));
             cursorMat.SetFloat("_SrcBlend", (float)UnityEngine.Rendering.BlendMode.SrcAlpha);
             cursorMat.SetFloat("_DstBlend", (float)UnityEngine.Rendering.BlendMode.OneMinusSrcAlpha);
             cursorMat.renderQueue = 3000;
-            pivot.gameObject.AddComponent<MeshRenderer>().sharedMaterial = cursorMat;
-            float k = 0.22f / Mathf.Max(mesh.bounds.size.x, mesh.bounds.size.z);
-            cursor.localScale = Vector3.one * k;
         }
+        var c = new GameObject("curseur").transform;
+        c.SetParent(transform, false);
+        var pivot = new GameObject("modele").transform;
+        pivot.SetParent(c, false);
+        pivot.localPosition = -mesh.bounds.center;
+        pivot.gameObject.AddComponent<MeshFilter>().sharedMesh = mesh;
+        pivot.gameObject.AddComponent<MeshRenderer>().sharedMaterial = cursorMat;
+        c.localScale = Vector3.one * (0.22f / Mathf.Max(mesh.bounds.size.x, mesh.bounds.size.z));
+        return c;
+    }
+
+    void UpdateCursor()
+    {
+        var targets = new List<int>();
+        if (uno != null && !Dealing)
+        {
+            if (uno.phase == UPhase.SwapPick && uno.turn == me) targets.AddRange(Enumerable.Range(0, seats.Count).Where(i => i != me));
+            else if (uno.Actor >= 0 && uno.Actor != me && uno.Actor < seats.Count) targets.Add(uno.Actor);
+        }
+        while (cursors.Count < targets.Count) { var c = NewCursor(); if (!c) return; cursors.Add(c); }
+        for (int i = 0; i < cursors.Count; i++) cursors[i].gameObject.SetActive(i < targets.Count);
+        if (targets.Count == 0) return;
         if (cursorColor != uno.color)
         {
             cursorColor = uno.color;
-            cursorMat.SetTexture("_MainTex", Resources.Load<Texture2D>("UnoFX/Classic_Cursor_" + new[] { "Red", "Yellow", "Green", "Blue" }[Mathf.Clamp(uno.color, 0, 3)]));
+            cursorMat.SetTexture("_MainTex", Resources.Load<Texture2D>("UnoFX/Classic_Cursor_" + UnoAudio.ColorWord(uno.color)));
         }
-        cursor.gameObject.SetActive(true);
-        var at = TagOf(a) + Vector3.up * (0.14f + 0.04f * Mathf.Sin(Time.time * 4));
-        cursor.position = at;
-        // Le modele est a plat (face +y), pointe vers -x : face a la camera, pointe vers le bas, leger balancement.
         var cam = CamPose;
-        cursor.rotation = Quaternion.LookRotation(cam.rotation * Vector3.up, cam.position - at) * Quaternion.Euler(0, -90 + Mathf.Sin(Time.time * 2) * 12, 0);
-    }
-
-    // --- Roue des couleurs en 3D : quatre parts au-dessus de la defausse -----------------------------------------
-    Transform wheel;
-    readonly Transform[] wedges = new Transform[4];
-    static readonly string[] WedgeHex = { "e5322d", "f7c315", "3aa84a", "1f6fc5" };
-    public bool WheelPicking;
-    int hover = -1;
-
-    // Une part de camembert (secteur de cylindre) entre deux angles, dans le plan XZ, epaisseur h.
-    static Mesh Wedge(float a0, float a1, float r, float h)
-    {
-        var v = new List<Vector3>(); var tri = new List<int>();
-        const int seg = 14;
-        void Quad(Vector3 p0, Vector3 p1, Vector3 p2, Vector3 p3) { int i = v.Count; v.AddRange(new[] { p0, p1, p2, p3 }); tri.AddRange(new[] { i, i + 1, i + 2, i, i + 2, i + 3 }); }
-        Vector3 P(float a, float y) => new Vector3(Mathf.Cos(a) * r, y, Mathf.Sin(a) * r);
-        for (int k = 0; k < seg; k++)
+        for (int i = 0; i < targets.Count; i++)
         {
-            float u0 = Mathf.Lerp(a0, a1, k / (float)seg), u1 = Mathf.Lerp(a0, a1, (k + 1f) / seg);
-            int i = v.Count; v.AddRange(new[] { new Vector3(0, h, 0), P(u1, h), P(u0, h) }); tri.AddRange(new[] { i, i + 1, i + 2 });   // dessus
-            i = v.Count; v.AddRange(new[] { Vector3.zero, P(u0, 0), P(u1, 0) }); tri.AddRange(new[] { i, i + 1, i + 2 });              // dessous
-            Quad(P(u0, 0), P(u0, h), P(u1, h), P(u1, 0));                                                                            // bord
+            var at = TagOf(targets[i]) + Vector3.up * (0.14f + 0.04f * Mathf.Sin(Time.time * 4 + i));
+            cursors[i].position = at;
+            // Le modele est a plat (face +y), pointe vers -x : face a la camera, pointe vers le bas, leger balancement.
+            cursors[i].rotation = Quaternion.LookRotation(cam.rotation * Vector3.up, cam.position - at) * Quaternion.Euler(0, -90 + Mathf.Sin(Time.time * 2 + i) * 12, 0);
         }
-        Quad(Vector3.zero, new Vector3(0, h, 0), P(a0, h), P(a0, 0));
-        Quad(Vector3.zero, P(a1, 0), P(a1, h), new Vector3(0, h, 0));
-        var m = new Mesh(); m.SetVertices(v); m.SetTriangles(tri, 0); m.RecalculateNormals(); m.RecalculateBounds();
-        return m;
     }
+
+    // --- Petits effets : textures d'origine sur des quads face a la camera ------------------------------------
+    static readonly Dictionary<string, Texture2D> fxTex = new Dictionary<string, Texture2D>();
+    static Texture2D FxTex(string name) { if (!fxTex.TryGetValue(name, out var t)) fxTex[name] = t = Resources.Load<Texture2D>("UnoFX/" + name); return t; }
+
+    Renderer FxBillboard(string tex, Vector3 at, Vector2 size, Color c, bool additive, Transform parent = null)
+    {
+        var m = new Material(Shader.Find("PiqueNique/UnoFx"));
+        if (tex != null) m.SetTexture("_MainTex", FxTex(tex));
+        m.SetColor("_Tint", c * 0.5f);
+        m.SetFloat("_SrcBlend", (float)UnityEngine.Rendering.BlendMode.SrcAlpha);
+        m.SetFloat("_DstBlend", (float)(additive ? UnityEngine.Rendering.BlendMode.One : UnityEngine.Rendering.BlendMode.OneMinusSrcAlpha));
+        m.renderQueue = 3000 + (additive ? 20 : 10);
+        var q = Prim(PrimitiveType.Quad, Vector3.zero, new Vector3(size.x, size.y, 1), m, parent ? parent : transform);
+        q.transform.position = at;
+        q.transform.rotation = FacingCam(at);
+        var r = q.GetComponent<Renderer>();
+        r.shadowCastingMode = UnityEngine.Rendering.ShadowCastingMode.Off;
+        return r;
+    }
+    static void Tint(Renderer r, Color c, float a) { if (r) r.material.SetColor("_Tint", new Color(c.r * 0.5f, c.g * 0.5f, c.b * 0.5f, a * 0.5f)); }
+
+    // Compteur de cumul (+4, +6, +8, +12, +16) au-dessus de la defausse, sur un halo violet qui pulse.
+    Renderer stackNum, stackGlow;
+    int stackShown;
+    void UpdateStack()
+    {
+        int n = uno.pending;
+        bool show = n >= 4 && FxTex(n.ToString()) != null;
+        if (!show) { if (stackNum) { Destroy(stackNum.gameObject); Destroy(stackGlow.gameObject); } stackShown = 0; return; }
+        var at = PilePos + Vector3.up * 0.55f;
+        if (n != stackShown)
+        {
+            if (stackNum) { Destroy(stackNum.gameObject); Destroy(stackGlow.gameObject); }
+            stackGlow = FxBillboard("Steaking_Circle", at, Vector2.one * 0.75f, Color.white, true);
+            stackNum = FxBillboard(n.ToString(), at, Vector2.one * 0.7f, Color.white, false);
+            stackNum.transform.position += (CamPose.position - at).normalized * 0.02f;
+            stackShown = n;
+            stackPop = 0;
+        }
+        stackPop = Mathf.Min(1, stackPop + Time.deltaTime * 4);
+        float pop = stackPop < 1 ? 1 + 0.35f * Mathf.Sin(stackPop * Mathf.PI) : 1 + 0.04f * Mathf.Sin(Time.time * 6);
+        stackNum.transform.localScale = new Vector3(0.7f, 0.7f, 1) * pop;
+        stackGlow.transform.localScale = new Vector3(0.75f, 0.75f, 1) * (1.1f + 0.15f * Mathf.Sin(Time.time * 4));
+    }
+    float stackPop;
+
+    // Pioche qui brille quand c'est a moi de piocher : anneau lumineux sous le paquet et etincelle au-dessus.
+    Renderer deckRing, deckStar;
+    float deckIdle;
+    void UpdateDeckGlow()
+    {
+        bool on = DeckReady && !Dealing;
+        if (on && !deckRing)
+        {
+            deckRing = FxBillboard("DrawCard_RingGlow", deck.position, Vector2.one * 0.95f, new Color(1f, 0.92f, 0.55f), true);
+            deckRing.transform.rotation = transform.rotation * Quaternion.Euler(90, 0, 0);   // a plat sur la nappe
+            deckStar = FxBillboard("Classic_CardGlow_Star", deck.position, Vector2.one * 0.35f, Color.white, true);
+            deckIdle = 0;
+        }
+        if (!on) { if (deckRing) { Destroy(deckRing.gameObject); Destroy(deckStar.gameObject); } return; }
+        float k = 0.55f + 0.45f * Mathf.Sin(Time.time * 4);
+        deckRing.transform.position = deck.position + Vector3.up * 0.02f;
+        Tint(deckRing, new Color(1f, 0.92f, 0.55f), k);
+        var top = deck.position + Vector3.up * (0.12f + 0.03f * Mathf.Sin(Time.time * 3));
+        deckStar.transform.position = top;
+        deckStar.transform.rotation = FacingCam(top) * Quaternion.Euler(0, 0, Time.time * 60);
+        Tint(deckStar, Color.white, k);
+        deckIdle += Time.deltaTime;
+    }
+
+    // Intervention : un anneau blanc s'elargit et la fleche verte "jump in" jaillit au-dessus du joueur.
+    IEnumerator JumpInFx(int seat)
+    {
+        var at = seat == me ? MyFxPos : AboveTag(seat);
+        var ring = FxBillboard("right_false", at, Vector2.one * 0.3f, new Color(0.6f, 1f, 0.6f), true);
+        var arrow = FxBillboard("jump in", at, Vector2.one * 0.35f, Color.white, false);
+        for (float t = 0; t < 1; t += Time.deltaTime / 0.9f)
+        {
+            ring.transform.localScale = Vector3.one * Mathf.Lerp(0.3f, 1.1f, Mathf.Sqrt(t));
+            Tint(ring, new Color(0.6f, 1f, 0.6f), 1 - t);
+            float pop = t < 0.25f ? Mathf.Sin(t / 0.25f * Mathf.PI * 0.5f) * 1.2f : Mathf.Lerp(1.2f, 1, (t - 0.25f) * 3);
+            arrow.transform.localScale = Vector3.one * 0.35f * Mathf.Max(0.01f, pop);
+            arrow.transform.position = at + Vector3.up * 0.12f * t;
+            Tint(arrow, Color.white, t > 0.7f ? 1 - (t - 0.7f) / 0.3f : 1);
+            yield return null;
+        }
+        Destroy(ring.gameObject); Destroy(arrow.gameObject);
+    }
+
+    // "Tu n'as pas dit UNO !" : le gros "!" rouge du jeu Uno surgit et tremble au-dessus du joueur pris.
+    IEnumerator Exclamation(int seat)
+    {
+        var mesh = Resources.Load<Mesh>("UnoFX/Exclamation_Mesh");
+        if (!mesh) yield break;
+        var at = seat == me ? MyFxPos : AboveTag(seat);
+        var root = new GameObject("pas dit UNO").transform;
+        root.SetParent(transform, false);
+        root.position = at;
+        var cam = CamPose;
+        root.rotation = Quaternion.LookRotation(cam.rotation * Vector3.up, cam.position - at);   // modele a plat (+y)
+        var g = new GameObject("!").transform;
+        g.SetParent(root, false);
+        float k = 0.42f / Mathf.Max(0.0001f, Mathf.Max(mesh.bounds.size.x, mesh.bounds.size.z));
+        g.localScale = Vector3.one * k;
+        g.localPosition = -mesh.bounds.center * k;
+        g.gameObject.AddComponent<MeshFilter>().sharedMesh = mesh;
+        var m = new Material(Shader.Find("PiqueNique/UnoFx"));
+        m.SetTexture("_MainTex", FxTex("Exclamation"));
+        m.SetColor("_Tint", new Color(0.5f, 0.5f, 0.5f, 0.5f));
+        m.SetFloat("_SrcBlend", (float)UnityEngine.Rendering.BlendMode.SrcAlpha);
+        m.SetFloat("_DstBlend", (float)UnityEngine.Rendering.BlendMode.OneMinusSrcAlpha);
+        m.renderQueue = 3015;
+        var r = g.gameObject.AddComponent<MeshRenderer>();
+        r.sharedMaterial = m;
+        var r0 = root.rotation;
+        for (float t = 0; t < 1; t += Time.deltaTime / 1.3f)
+        {
+            float pop = t < 0.15f ? Mathf.Sin(t / 0.15f * Mathf.PI * 0.5f) * 1.3f : Mathf.Lerp(1.3f, 1, Mathf.Clamp01((t - 0.15f) * 5));
+            root.localScale = Vector3.one * Mathf.Max(0.01f, pop);
+            root.rotation = r0 * Quaternion.AngleAxis(Mathf.Sin(t * 40) * 14 * (1 - t), Vector3.up);
+            m.SetColor("_Tint", new Color(0.5f, 0.5f, 0.5f, 0.5f * (t > 0.75f ? 1 - (t - 0.75f) / 0.25f : 1)));
+            yield return null;
+        }
+        Destroy(root.gameObject);
+    }
+
+    // Carte joker : une fois posee, elle prend sa couleur dans un eclair (image d'origine du changement de couleur).
+    IEnumerator JokerColor(int card, int color)
+    {
+        if (color < 0 || pile.childCount == 0) { Sync(); yield break; }
+        var top = pile.GetChild(pile.childCount - 1);
+        var flash = FxBillboard(null, top.position + Vector3.up * 0.01f, new Vector2(CardW, CardH), Color.white, false);
+        flash.material.SetTexture("_MainTex", Resources.Load<Texture2D>("Uno/" + FaceCode(card, color)));   // la carte a sa couleur, fond transparent
+        flash.transform.rotation = top.rotation;
+        for (float t = 0; t < 1; t += Time.deltaTime / 0.45f)
+        {
+            float s = 1 + 0.25f * Mathf.Sin(t * Mathf.PI);
+            flash.transform.localScale = new Vector3(CardW, CardH, 1) * s;
+            Tint(flash, Color.white * (1 + (1 - t)), 1);
+            yield return null;
+        }
+        Sync();   // la defausse montre maintenant le joker a sa couleur
+        Destroy(flash.gameObject);
+    }
+
+    // --- Roue officielle du joker (modele a squelette et animation du jeu Uno : Resources/UnoFX/Wheel) ------------
+    // Animation de 5 s : ouverture (0 - 0,33 s), puis selection du rouge, du jaune, du vert et du bleu (~1 s chacune).
+    // Vue de face (verifie a l'ecran) : vert en haut, jaune a droite, rouge en bas, bleu a gauche.
+    const float WheelOpen = 0.33f, WheelStep = 0.99f, WheelSelFrom = 0.66f, WheelSelTo = 1.32f;
+    static readonly int[] WheelBoneColor = { 0, 1, 2, 3 };
+    static readonly string[] WheelBone = { "Bone_Red_02", "Bone_Yellow_02", "Bone_Green_02", "Bone_Blue_02" };
+    Transform wheel;
+    readonly Transform[] wedgeBones = new Transform[4];
+    Animator wheelAn;
+    float wheelLen = 5.03f;
+    public bool WheelPicking;
+    int hover = -1, lastHover = -1;
 
     void BuildWheel()
     {
+        var prefab = Resources.Load<GameObject>("UnoFX/Wheel");
+        if (!prefab) return;
         wheel = new GameObject("roue des couleurs").transform;
         wheel.SetParent(transform, false);
-        // Rouge en haut a gauche, jaune en haut a droite, vert en bas a droite, bleu en bas a gauche (comme la carte joker).
-        float[] start = { 90, 0, 270, 180 };
-        for (int c = 0; c < 4; c++)
-        {
-            float a0 = start[c] * Mathf.Deg2Rad, a1 = (start[c] + 90) * Mathf.Deg2Rad, mid = (a0 + a1) / 2;
-            var g = new GameObject(Uno.ColorNames[c]);
-            g.transform.SetParent(wheel, false);
-            g.transform.localPosition = new Vector3(Mathf.Cos(mid), 0, Mathf.Sin(mid)) * 0.04f;   // parts legerement ecartees
-            var mesh = Wedge(a0, a1, 0.72f, 0.2f);   // camembert epais, presque a plat au-dessus de la defausse
-            g.AddComponent<MeshFilter>().sharedMesh = mesh;
-            var col = Board.Hex(WedgeHex[c]);
-            var mat = Mat(WedgeHex[c], 0.55f);
-            mat.EnableKeyword("_EMISSION"); mat.SetColor("_EmissionColor", col * 0.35f);
-            g.AddComponent<MeshRenderer>().sharedMaterial = mat;
-            g.AddComponent<MeshCollider>().sharedMesh = mesh;
-            wedges[c] = g.transform;
-        }
+        var g = Instantiate(prefab, wheel).transform;
+        g.localPosition = Vector3.zero; g.localRotation = Quaternion.identity;
+        wheel.localScale = Vector3.one * 0.14f;
+        for (int c = 0; c < 4; c++) wedgeBones[c] = g.GetComponentsInChildren<Transform>(true).FirstOrDefault(t => t.name == WheelBone[c]);
+        wheelAn = g.GetComponent<Animator>();
+        if (wheelAn) { wheelAn.speed = 0; var clip = wheelAn.runtimeAnimatorController.animationClips.FirstOrDefault(); if (clip) wheelLen = clip.length; }
         wheel.gameObject.SetActive(false);
     }
 
     void PlaceWheel()
     {
-        // Presque a plat au-dessus de la defausse (comme pose sur la table), a peine penchee vers moi : on voit
-        // le dessus et l'epaisseur, et elle reste sous les vignettes des joueurs.
-        wheel.position = PilePos + Vector3.up * 0.2f;
-        var away = Vector3.ProjectOnPlane(wheel.position - CamPose.position, Vector3.up).normalized;
-        wheel.rotation = Quaternion.LookRotation(away) * Quaternion.Euler(-14, 0, 0);
+        // Au-dessus de la defausse, face a la camera (le modele est a plat : +y vers la camera, haut de l'image = +z).
+        var at = PilePos + Vector3.up * 0.45f;
+        wheel.position = at;
+        var cam = CamPose;
+        wheel.rotation = Quaternion.LookRotation(cam.rotation * Vector3.up, cam.position - at);
+    }
+
+    // Pose de la roue a l'instant t (s) de la prise d'origine : l'animateur est fige (vitesse 0) et positionne a la main.
+    void SampleWheel(float t)
+    {
+        if (!wheelAn) return;
+        wheelAn.Play("Roue", 0, Mathf.Clamp01(t / wheelLen));
+        wheelAn.Update(0);
+    }
+
+    IEnumerator OpenWheel()
+    {
+        Sound.I.Play("tick");
+        for (float t = 0; t < WheelOpen; t += Time.deltaTime) { SampleWheel(t); yield return null; }
+        SampleWheel(WheelOpen);
+    }
+
+    // La couleur choisie s'avance, les autres s'effacent (segment d'origine de cette couleur).
+    IEnumerator ChooseOnWheel(int c)
+    {
+        float a = WheelSelFrom + c * WheelStep, b = WheelSelTo + c * WheelStep;
+        for (float t = a; t < b; t += Time.deltaTime) { SampleWheel(t); yield return null; }
+        SampleWheel(b);
+        yield return new WaitForSeconds(0.25f);
     }
 
     public void ShowWheelPick()
     {
         if (!wheel) BuildWheel();
+        if (!wheel) return;
         PlaceWheel();
-        foreach (var w in wedges) { w.localScale = Vector3.one; w.gameObject.SetActive(true); }
         wheel.gameObject.SetActive(true);
         WheelPicking = true;
-        StartCoroutine(Pop(wheel, 0.25f));
+        hover = lastHover = -1;
+        StartCoroutine(OpenWheel());
     }
 
     public int WheelClosedFrame = -1;
-    public void HideWheel() { if (WheelPicking) WheelClosedFrame = Time.frameCount; WheelPicking = false; hover = -1; if (wheel) wheel.gameObject.SetActive(false); }
+    // chosen >= 0 : couleur choisie (la part s'avance avant de disparaitre) ; sinon annulation.
+    public void HideWheel(int chosen = -1)
+    {
+        if (WheelPicking) WheelClosedFrame = Time.frameCount;
+        bool picked = WheelPicking;
+        WheelPicking = false;
+        int c = chosen;
+        hover = -1;
+        if (!wheel) return;
+        if (picked && c >= 0) StartCoroutine(CloseAfter(c)); else wheel.gameObject.SetActive(false);
+    }
+    IEnumerator CloseAfter(int c) { yield return ChooseOnWheel(c); if (!WheelPicking) wheel.gameObject.SetActive(false); }
 
+    // Part visee : position du point vise dans le plan de la roue.
     public int WedgeUnder(Ray r)
     {
         if (!wheel || !wheel.gameObject.activeSelf) return -1;
-        for (int c = 0; c < 4; c++)
-            if (wedges[c].GetComponent<Collider>().Raycast(r, out _, 50)) return c;
-        return -1;
+        var plane = new Plane(wheel.up, wheel.position);
+        if (!plane.Raycast(r, out float d)) return -1;
+        var local = wheel.InverseTransformPoint(r.GetPoint(d));
+        var v = new Vector2(local.x, local.z);
+        if (v.magnitude < 0.3f || v.magnitude > 6.5f) return -1;   // (unites du modele d'origine, ~5 de rayon)
+        if (Mathf.Abs(v.y) >= Mathf.Abs(v.x)) return v.y > 0 ? 2 : 0;   // (verifie a l'ecran) vert en haut, rouge en bas
+        return v.x > 0 ? 1 : 3;                                          // jaune a droite, bleu a gauche
     }
 
-    IEnumerator Pop(Transform t, float dur)
-    {
-        for (float k = 0; k < 1; k += Time.deltaTime / dur)
-        {
-            float e = 1 + 2.7f * Mathf.Pow(k - 1, 3) + 1.7f * Mathf.Pow(k - 1, 2);   // ease-out-back
-            t.localScale = Vector3.one * e;
-            yield return null;
-        }
-        t.localScale = Vector3.one;
-    }
-
-    // Un adversaire a pose un joker : la roue surgit, la couleur choisie monte et grossit, les autres s'effacent.
+    // Un adversaire a pose un joker : la roue s'ouvre, puis sa couleur s'avance.
     IEnumerator RevealColor(int c)
     {
         if (c < 0) yield break;
         if (!wheel) BuildWheel();
+        if (!wheel) yield break;
         PlaceWheel();
         wheel.gameObject.SetActive(true);
-        foreach (var w in wedges) { w.localScale = Vector3.one; w.gameObject.SetActive(true); }
-        yield return Pop(wheel, 0.2f);
-        Sound.I.Play("tick");
-        for (float t = 0; t < 1; t += Time.deltaTime / 0.35f)
-        {
-            for (int k = 0; k < 4; k++)
-            {
-                wedges[k].localScale = Vector3.one * (k == c ? 1 + 0.3f * t : 1 - 0.7f * t);
-                var p = wedges[k].localPosition; p.y = k == c ? 0.2f * t : 0; wedges[k].localPosition = p;
-            }
-            yield return null;
-        }
-        yield return new WaitForSeconds(0.45f);
-        foreach (var w in wedges) { var p = w.localPosition; p.y = 0; w.localPosition = p; }
+        yield return OpenWheel();
+        yield return new WaitForSeconds(0.2f);
+        yield return ChooseOnWheel(c);
         wheel.gameObject.SetActive(false);
     }
 
-    // Survol pendant mon choix : la part sous la souris se souleve.
+    // Survol pendant mon choix : la part visee grossit (os de la part), petit son a chaque changement.
     void LateUpdate()
     {
         if (!WheelPicking || !wheel) return;
         var cam = Camera.main;
         hover = cam ? WedgeUnder(cam.ScreenPointToRay(Input.mousePosition)) : -1;
-        for (int k = 0; k < 4; k++)
-        {
-            var p = wedges[k].localPosition;
-            p.y = Mathf.MoveTowards(p.y, k == hover ? 0.16f : 0, Time.deltaTime * 1.2f);   // la part survolee monte
-            wedges[k].localPosition = p;
-        }
+        if (hover != lastHover && hover >= 0) Sound.I.UI("hover");
+        lastHover = hover;
+        SampleWheel(WheelOpen);
+        for (int k = 0; k < 4; k++) if (wedgeBones[k]) wedgeBones[k].localScale *= k == hover ? 1.18f : 1f;
     }
 }

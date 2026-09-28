@@ -16,6 +16,8 @@ public partial class Ui
     IVisualElementScheduledItem toastHide;
     readonly List<VisualElement> unoTagEls = new List<VisualElement>();
     int unoPicked = -1;   // joker en attente de sa couleur
+    VisualElement unoCallGlow;
+    bool wasMine, callShown, drawnShown, challengeShown, swapShown;   // pour jouer les sons d'apparition une seule fois
     readonly HashSet<int> handShown = new HashSet<int>();   // cartes deja affichees dans ma main
 
     int UnoMe => Mathf.Max(0, game.mySeat);
@@ -27,6 +29,8 @@ public partial class Ui
     void UnoPulse()
     {
         foreach (var b in new[] { unoCall, unoCatch }) if (b != null) b.EnableInClassList("big", !b.ClassListContains("big"));
+        if (unoHand != null) foreach (var g in unoHand.Query(className: "uno-glow").ToList()) g.EnableInClassList("low", !g.ClassListContains("low"));
+        if (unoCallGlow != null) unoCallGlow.EnableInClassList("low", !unoCallGlow.ClassListContains("low"));
     }
 
     void BuildUnoHud()
@@ -50,7 +54,10 @@ public partial class Ui
 
         unoDraw = Btn(unoHud, "Piocher", () => { if (game.uno?.phase == UPhase.Play) game.Act("draw"); }, "uno-draw");
         // Bouton UNO : le logo lui-meme (Resources/Uno/uno_logo), qui pulse quand il faut appuyer.
-        unoCall = new Button(() => { Sound.I.UI("click"); game.UnoCall("uno|" + UnoMe); });
+        unoCallGlow = Div(unoHud, "uno-call-glow");   // lueur d'origine "PrepareCallUNO" derriere le bouton
+        unoCallGlow.pickingMode = PickingMode.Ignore;
+        unoCallGlow.style.backgroundImage = Resources.Load<Texture2D>("UnoFX/PrepareCallUNO");
+        unoCall = new Button(() => { Sound.I.UI("click"); callShown = false; game.UnoCall("uno|" + UnoMe); });
         unoCall.AddToClassList("uno-call");
         unoCall.style.backgroundImage = Resources.Load<Texture2D>("Uno/uno_logo");
         unoCall.RegisterCallback<MouseEnterEvent>(_ => Sound.I.UI("hover"));
@@ -80,7 +87,7 @@ public partial class Ui
         unoWheel.RegisterCallback<PointerDownEvent>(e => { if (e.target == unoWheel) { unoPicked = -1; unoWheel.style.display = DisplayStyle.None; } });
 
         // Carte piochee jouable : la poser tout de suite ou la garder.
-        unoDrawnBox = Div(unoHud, "panel", "uno-drawn");
+        unoDrawnBox = Div(unoHud, "uno-popup", "uno-drawn");
         Text(unoDrawnBox, "Tu as pioché :", "h2").style.marginTop = 0;
         unoDrawnCard = Div(unoDrawnBox, "uno-drawn-card");
         var row = Div(unoDrawnBox, "row");
@@ -88,7 +95,7 @@ public partial class Ui
         unoKeep = Btn(row, "La garder", () => game.Act("keep"), "ghost", "small");
 
         // Contestation du +4 : Denoncer (le poseur avait la couleur demandee ?) ou Accepter.
-        unoChallenge = Div(unoHud, "uno-challenge");
+        unoChallenge = Div(unoHud, "uno-popup", "uno-challenge");
         unoChallengeText = Text(unoChallenge, "", "uno-challenge-text");
         var crow = Div(unoChallenge, "row", "uno-challenge-row");
         Btn(crow, "Dénoncer", () => game.Act("challenge"), "red");
@@ -97,7 +104,7 @@ public partial class Ui
         Text(unoChallenge, "Bluff démasqué : il pioche 4 cartes. Sinon, tu en pioches 6 !", "uno-challenge-hint");
 
         // Regle du 7 : avec qui echanger sa main ?
-        unoSwap = Div(unoHud, "panel", "uno-swap");
+        unoSwap = Div(unoHud, "uno-popup", "uno-swap");
         Text(unoSwap, "Échanger ta main avec…", "panel-title");
         unoSwapList = Div(unoSwap, "row", "uno-swap-list");
 
@@ -146,6 +153,19 @@ public partial class Ui
         b.schedule.Execute(() => b.AddToClassList("pop")).StartingIn(1300);
     }
 
+    // Passe son tour : le logo "interdit" (a la couleur du jeu) surgit par-dessus la vignette du joueur.
+    public void UnoSkipMark(int seat, int color)
+    {
+        if (seat < 0 || seat >= unoTagEls.Count) return;
+        var m = Div(unoTagEls[seat], "uno-skip-mark", "pop");
+        m.pickingMode = PickingMode.Ignore;
+        m.style.backgroundImage = Resources.Load<Texture2D>("UI/fx_skip");
+        m.style.unityBackgroundImageTintColor = UnoColors[Mathf.Clamp(color, 0, 3)];
+        m.schedule.Execute(() => m.RemoveFromClassList("pop")).StartingIn(20);      // surgit en grossissant
+        m.schedule.Execute(() => m.AddToClassList("gone")).StartingIn(1100);        // puis s'efface
+        m.schedule.Execute(() => m.RemoveFromHierarchy()).StartingIn(1600);
+    }
+
     public void UnoToast(string text)
     {
         unoToast.text = text;
@@ -177,7 +197,10 @@ public partial class Ui
     {
         var u = game.uno;
         if (u != null && UnoPlaying && u.CanJumpIn(UnoMe, card)) { game.UnoCall($"jump|{UnoMe}|{card}"); return; }   // intervention
-        if (u == null || !u.CanPlay(UnoMe, card) || !game.MyTurn) return;
+        if (u == null || !u.CanPlay(UnoMe, card) || !game.MyTurn)
+        {
+            return;
+        }
         if (Uno.IsWild(card)) { unoPicked = card; game.uview.ShowWheelPick(); return; }   // choix sur la roue 3D
         PlayUno(card, -1);
     }
@@ -226,22 +249,36 @@ public partial class Ui
                 b.schedule.Execute(() => b.RemoveFromClassList("entering")).StartingIn(500 + 55 * fresh);
             }
             bool ok = mine && u.CanPlay(UnoMe, card) || UnoPlaying && u.CanJumpIn(UnoMe, card);
+            if (ok)   // lueur doree d'origine (Classic_Highlight) derriere la carte jouable
+            {
+                var glow = Div(slot, "uno-glow");
+                glow.pickingMode = PickingMode.Ignore;
+                glow.style.backgroundImage = Resources.Load<Texture2D>("UnoFX/Classic_Highlight");
+                glow.SendToBack();
+            }
             b.EnableInClassList("playable", ok);
             b.EnableInClassList("dim", mine && !ok);
             b.RegisterCallback<MouseEnterEvent>(_ => Sound.I.UI("hover"));
             slot.Add(b);
         }
+        wasMine = mine;
         unoDraw.style.display = DisplayStyle.None;   // on pioche en cliquant sur le paquet, sur la nappe
         game.uview.DeckReady = mine && u.phase == UPhase.Play;
         unoCall.style.display = UnoPlaying && !me.said && me.hand.Count <= 2 && me.hand.Count > 0 && u.phase != UPhase.RoundOver ? DisplayStyle.Flex : DisplayStyle.None;
         unoCatch.EnableInClassList("uno-pulse", true);
         unoCall.EnableInClassList("uno-pulse", true);
+        bool callOn = unoCall.style.display == DisplayStyle.Flex;
+        unoCallGlow.style.display = callOn ? DisplayStyle.Flex : DisplayStyle.None;
+        callShown = callOn;
         unoCatch.style.display = UnoPlaying && u.vulnerable >= 0 && u.vulnerable != UnoMe ? DisplayStyle.Flex : DisplayStyle.None;
         if (u.vulnerable >= 0) unoCatchWho.text = $"{u.players[u.vulnerable].name} a oublié !";
         unoDrawnBox.style.display = mine && u.phase == UPhase.Drawn ? DisplayStyle.Flex : DisplayStyle.None;
         unoKeep.style.display = u.forcePlay ? DisplayStyle.None : DisplayStyle.Flex;   // jeu force : on doit la poser
+        bool drawnOn = unoDrawnBox.style.display == DisplayStyle.Flex;
+        drawnShown = drawnOn;
         bool challenge = UnoPlaying && u.phase == UPhase.Challenge && u.turn == UnoMe;
         unoChallenge.style.display = challenge ? DisplayStyle.Flex : DisplayStyle.None;
+        challengeShown = challenge;
         if (challenge)
         {
             unoChallengeText.text = $"{u.players[u.w4Seat].name} t'a mis un +4 !";
@@ -249,6 +286,7 @@ public partial class Ui
         }
         bool swap = UnoPlaying && u.phase == UPhase.SwapPick && u.turn == UnoMe;
         unoSwap.style.display = swap ? DisplayStyle.Flex : DisplayStyle.None;
+        swapShown = swap;
         if (swap)
         {
             unoSwapList.Clear();

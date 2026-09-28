@@ -179,8 +179,22 @@ public static class UnoFxSetup
         foreach (var t in new[] { "gfx/drawfour/texture/Classic_Drawfour_Sunshine_01.png", "gfx/drawfour/texture/Classic_Drawfour_Glow.tga", "gfx/avater/texture/Classic_Avater_01.tga",
                                   "gfx/particle_cardglow/texture/Classic_Highlight.tga", "gfx/single_card/texture/UNO.tga", "gfx/skip/texture/Classic_Glow_Yellow.tga",
                                   "gfx/cursor/texture/Classic_Cursor_Red.png", "gfx/cursor/texture/Classic_Cursor_Yellow.png", "gfx/cursor/texture/Classic_Cursor_Green.png",
-                                  "gfx/cursor/texture/Classic_Cursor_Blue.png", "gfx/cursor/mesh/Cursor.asset" })
+                                  "gfx/cursor/texture/Classic_Cursor_Blue.png", "gfx/cursor/mesh/Cursor.asset",
+                                  "animation/arrows/texture/Board_Arrow.tga", "animation/arrows/texture/Board_Arrow_02.tga",
+                                  "animation/stacking/texture/4.tga", "animation/stacking/texture/6.tga", "animation/stacking/texture/8.tga", "animation/stacking/texture/12.tga", "animation/stacking/texture/16.tga",
+                                  "animation/stacking/texture/Steaking_Circle.tga", "animation/stacking/texture/Steaking_Glow.tga",
+                                  "animation/jump_in/texture/Jump_in_Circle.tga", "animation/jump_in/texture/right_false.tga", "animation/jump_in/jump in.png",
+                                  "animation/didnt_calluno/texture/Exclamation.tga", "gfx/call_uno/texture/PrepareCallUNO.tga",
+                                  "animation/drawcard/texture/DrawCard_RingGlow.tga", "animation/button_glow/DrawCard_Glow.tga", "animation/button_glow/Button_Glow.tga",
+                                  "gfx/particle_cardglow/texture/Classic_CardGlow_Star.tga", "animation/wild/Classic_Wild.png",
+                                  "cardcoveringeffect/colorchangeeffect/CCE_Card_R_Wild.tga", "cardcoveringeffect/colorchangeeffect/CCE_Card_Y_Wild.tga",
+                                  "cardcoveringeffect/colorchangeeffect/CCE_Card_G_Wild.tga", "cardcoveringeffect/colorchangeeffect/CCE_Card_B_Wild.tga",
+                                  "cardcoveringeffect/colorchangeeffect/CCE_Card_R_Joker.tga", "cardcoveringeffect/colorchangeeffect/CCE_Card_Y_Joker.tga",
+                                  "cardcoveringeffect/colorchangeeffect/CCE_Card_G_Joker.tga", "cardcoveringeffect/colorchangeeffect/CCE_Card_B_Joker.tga",
+                                  "animation/wild/Wild_Red.asset", "animation/wild/Wild_Yellow.asset", "animation/wild/Wild_Green.asset", "animation/wild/Wild_Blue.asset", "animation/wild/Wild_glow.asset" })
             AssetDatabase.CopyAsset(Src + t, Out + Path.GetFileName(t));
+        AssetDatabase.CopyAsset(Src + "animation/didnt_calluno/mesh/Shape1.asset", Out + "Exclamation_Mesh.asset");
+        BuildWheel();
         AssetDatabase.SaveAssets();
         Debug.Log("UNOFX OK");
     }
@@ -222,5 +236,103 @@ public static class UnoFxSetup
         }
         var args = Environment.GetCommandLineArgs();
         File.WriteAllBytes(args[Array.IndexOf(args, "-out") + 1], sheet.EncodeToPNG());
+    }
+
+    // Verification de la roue officielle (modele a squelette) et du "!" : rendus de dessus a plusieurs instants.
+    public static void WheelShot()
+    {
+        ShaderUtil.allowAsyncCompilation = false;
+        UnityEditor.SceneManagement.EditorSceneManager.NewScene(UnityEditor.SceneManagement.NewSceneSetup.DefaultGameObjects);
+        var sb = new System.Text.StringBuilder();
+        var cam = Camera.main; cam.clearFlags = CameraClearFlags.SolidColor; cam.backgroundColor = new Color(0.15f, 0.15f, 0.2f);
+        const int W = 200, cols = 16;
+        var sheet = new Texture2D(W * cols, W * 2, TextureFormat.RGB24, false);
+        var rt = new RenderTexture(W, W, 24); cam.targetTexture = rt;
+        var mat = new Material(Shader.Find("PiqueNique/UnoFx"));
+        mat.SetTexture("_MainTex", AssetDatabase.LoadAssetAtPath<Texture2D>(Src + "animation/wild/Classic_Wild.png"));
+        mat.SetColor("_Tint", new Color(0.5f, 0.5f, 0.5f, 0.5f));
+        mat.SetFloat("_SrcBlend", (float)BlendMode.SrcAlpha); mat.SetFloat("_DstBlend", (float)BlendMode.OneMinusSrcAlpha);
+        var clip = AssetDatabase.LoadAssetAtPath<AnimationClip>(Src + "animation/wild/Take 001.anim");
+        sb.AppendLine("clip " + (clip ? clip.length + "s" : "absent"));
+        if (clip) foreach (var b in AnimationUtility.GetCurveBindings(clip).Take(30)) sb.AppendLine("  " + b.path + " " + b.type.Name + "." + b.propertyName);
+        for (int i = 0; i < cols; i++)
+        {
+            var g = (GameObject)Object.Instantiate(AssetDatabase.LoadAssetAtPath<GameObject>(Src + "animation/wild/Classic_Wild.prefab"));
+            foreach (var t in g.GetComponentsInChildren<Transform>(true)) GameObjectUtility.RemoveMonoBehavioursWithMissingScript(t.gameObject);
+            foreach (var r in g.GetComponentsInChildren<SkinnedMeshRenderer>(true))
+            {
+                r.sharedMaterials = Enumerable.Repeat(mat, Mathf.Max(1, r.sharedMesh ? r.sharedMesh.subMeshCount : 1)).ToArray();
+                if (i == 0) sb.AppendLine($"SMR {r.name} mesh={(r.sharedMesh ? r.sharedMesh.name : "-")} os={r.bones.Length} racine={(r.rootBone ? r.rootBone.name : "-")}");
+                r.updateWhenOffscreen = true;
+            }
+            if (clip)
+            {
+                AnimationMode.StartAnimationMode(); AnimationMode.BeginSampling();
+                AnimationMode.SampleAnimationClip(g, clip, i * 0.33f);
+                AnimationMode.EndSampling();
+            }
+            var rs = g.GetComponentsInChildren<Renderer>().Where(r => r.enabled).ToList();
+            var bb = rs.Count > 0 ? rs[0].bounds : new Bounds(Vector3.zero, Vector3.one);
+            foreach (var r in rs) bb.Encapsulate(r.bounds);
+            float sz = 12f; var cc = g.transform.position;
+            cam.transform.position = cc + Vector3.up * sz * 2.5f; cam.transform.LookAt(cc, Vector3.forward);
+            cam.farClipPlane = sz * 20; cam.Render(); RenderTexture.active = rt;
+            sheet.ReadPixels(new Rect(0, 0, W, W), i * W, W);
+            cam.nearClipPlane = 0.3f;
+            sb.AppendLine($"t={i} bornes={bb.size}");
+            AnimationMode.StopAnimationMode();
+            Object.DestroyImmediate(g);
+        }
+        // Le "!" (maillage Shape1 + Exclamation.tga)
+        var em = AssetDatabase.LoadAssetAtPath<Mesh>(Src + "animation/didnt_calluno/mesh/Shape1.asset");
+        var eg = new GameObject("ex"); eg.AddComponent<MeshFilter>().sharedMesh = em;
+        var emat = new Material(mat); emat.SetTexture("_MainTex", AssetDatabase.LoadAssetAtPath<Texture2D>(Src + "animation/didnt_calluno/texture/Exclamation.tga"));
+        eg.AddComponent<MeshRenderer>().sharedMaterial = emat;
+        var eb = eg.GetComponent<Renderer>().bounds; float es = Mathf.Max(eb.size.x, eb.size.y, eb.size.z);
+        sb.AppendLine("exclamation bornes " + eb.size);
+        foreach (var (axis, k) in new[] { (Vector3.up, 0), (Vector3.back, 1), (Vector3.right, 2) })
+        {
+            cam.nearClipPlane = 0.001f; cam.transform.position = eb.center + axis * es * 2.5f; cam.transform.LookAt(eb.center, axis == Vector3.up ? Vector3.forward : Vector3.up);
+            cam.farClipPlane = es * 20; cam.Render(); RenderTexture.active = rt;
+            sheet.ReadPixels(new Rect(0, 0, W, W), k * W, 0);
+        }
+        var args = Environment.GetCommandLineArgs();
+        File.WriteAllBytes(args[Array.IndexOf(args, "-out") + 1], sheet.EncodeToPNG());
+        File.WriteAllText("Logs/unofx_wheel.txt", sb.ToString());
+    }
+
+    // Roue officielle du joker : modele a squelette (4 parts + halo), texture Classic_Wild, animation "Take 001" copiee
+    // telle quelle (5 s : ouverture, puis selection du rouge, du jaune, du vert, du bleu). UnoView l'echantillonne.
+    static void BuildWheel()
+    {
+        var src = AssetDatabase.LoadAssetAtPath<GameObject>(Src + "animation/wild/Classic_Wild.prefab");
+        if (!src) { Debug.LogWarning("UNOFX roue absente"); return; }
+        var go = Object.Instantiate(src);
+        go.name = "Wheel";
+        foreach (var t in go.GetComponentsInChildren<Transform>(true).ToList())
+            if (t && (t.name.StartsWith("TwitchVote") || t.name == "Colliders")) Object.DestroyImmediate(t.gameObject);
+        foreach (var t in go.GetComponentsInChildren<Transform>(true)) GameObjectUtility.RemoveMonoBehavioursWithMissingScript(t.gameObject);
+        var an = go.GetComponent<Animator>(); if (an) Object.DestroyImmediate(an);
+        var m = Mat(S(null, "animation/wild/Classic_Wild.png"));
+        foreach (var r in go.GetComponentsInChildren<SkinnedMeshRenderer>(true))
+        {
+            r.sharedMaterials = Enumerable.Repeat(m, Mathf.Max(1, r.sharedMesh ? r.sharedMesh.subMeshCount : 1)).ToArray();
+            r.updateWhenOffscreen = true;
+            r.shadowCastingMode = ShadowCastingMode.Off;
+        }
+        var clip = Object.Instantiate(AssetDatabase.LoadAssetAtPath<AnimationClip>(Src + "animation/wild/Take 001.anim"));
+        var cs = AnimationUtility.GetAnimationClipSettings(clip); cs.loopTime = false; AnimationUtility.SetAnimationClipSettings(clip, cs);
+        AssetDatabase.CreateAsset(clip, Out + "Clips/Wheel.anim");
+        // Animateur a un seul etat "Roue" : UnoView le positionne a l'instant voulu de la prise (Play(etat, 0, t / duree)).
+        var ctrl = AnimatorController.CreateAnimatorControllerAtPath(Out + "Wheel.controller");
+        var st = ctrl.layers[0].stateMachine.AddState("Roue");
+        st.motion = clip;
+        ctrl.layers[0].stateMachine.defaultState = st;
+        var wa = go.AddComponent<Animator>();
+        wa.runtimeAnimatorController = ctrl;
+        wa.cullingMode = AnimatorCullingMode.AlwaysAnimate;
+        PrefabUtility.SaveAsPrefabAsset(go, Out + "Wheel.prefab");
+        Object.DestroyImmediate(go);
+        Debug.Log("UNOFX roue " + clip.length + " s");
     }
 }

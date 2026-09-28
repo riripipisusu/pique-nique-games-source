@@ -54,6 +54,22 @@ public class Sound : MonoBehaviour
         music.volume = Mathf.MoveTowards(music.volume, s.music * fade, Time.unscaledDeltaTime * 0.6f);
     }
 
+    // Clip charge a part (sons du Uno) : joue tel quel, sans variation de hauteur.
+    public void PlayClip(AudioClip c, float vol = 1)
+    {
+        if (!c) return;
+        sfx.pitch = 1;
+        sfx.PlayOneShot(c, vol);
+    }
+
+    // Musique chargee a part (Uno) : meme fondu enchaine que Music().
+    public void MusicClip(AudioClip clip)
+    {
+        if (!clip || music.clip == clip) return;
+        next = clip;
+        fade = 0;
+    }
+
     public void Play(string n, float vol = 1, float pitchVar = 0.08f)
     {
         if (!clips.TryGetValue(n, out var c)) return;

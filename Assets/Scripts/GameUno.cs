@@ -43,9 +43,9 @@ public partial class Game
         {
             switch (e.type)
             {
-                case UEv.Uno: ui.UnoBubble(e.seat, "UNO !"); Sound.I.Play("win", 0.6f); break;
+                case UEv.Uno: ui.UnoBubble(e.seat, "UNO !"); break;
                 case UEv.Caught: ui.UnoBubble(e.seat, "Oublié ! +2"); ui.UnoToast($"{uno.players[e.other].name} a vu que {uno.players[e.seat].name} n'a pas dit UNO !"); break;
-                case UEv.Skipped: ui.UnoBubble(e.seat, "Passe !"); break;
+                case UEv.Skipped: if (e.seat != MySeatOr0) ui.UnoSkipMark(e.seat, uno.color); break;
                 case UEv.Reversed: ui.UnoToast("Changement de sens !"); break;
                 case UEv.RoundOver:
                     unoRoundAt = Time.time;
@@ -86,7 +86,7 @@ public partial class Game
             if (Input.GetMouseButtonDown(1) || Input.GetKeyDown(KeyCode.Escape)) { uview.HideWheel(); return; }
             if (!Input.GetMouseButtonDown(0)) return;
             int c = uview.WedgeUnder(cam.ScreenPointToRay(Input.mousePosition));
-            uview.HideWheel();
+            uview.HideWheel(c);
             if (c >= 0) ui.UnoPlayColor(c);
             return;
         }
