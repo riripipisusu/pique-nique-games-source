@@ -23,7 +23,7 @@ public partial class Game : MonoBehaviour
     public Blackjack bj;
     public Roulette rt;
     public Quiz qz;
-    public IMatch Match => (IMatch)rules ?? (IMatch)bj ?? (IMatch)rt ?? (IMatch)qz ?? (IMatch)rh ?? (IMatch)uno ?? ch;
+    public IMatch Match => (IMatch)rules ?? (IMatch)bj ?? (IMatch)rt ?? (IMatch)qz ?? (IMatch)rh ?? (IMatch)uno ?? (IMatch)ch ?? bac;
     public bool busy;
 
     Board board;
@@ -327,6 +327,38 @@ public partial class Game : MonoBehaviour
             cview.Speed = 5;   // test : animations accelerees (sans toucher aux reglages enregistres)
             yield return new WaitForSeconds(1.5f); yield return Shot("c1-debut");
             yield return ChevauxTest(dir, Shot);
+            Application.Quit();
+            yield break;
+        }
+        if (Array.IndexOf(Environment.GetCommandLineArgs(), "-bac") >= 0)   // petit bac : moi (auto) contre 3 bots, 2 manches
+        {
+            SelectGame(GameId.Bac);
+            option = 1 | 1 << 2 | 1 << 3 | 1 << 4 | 1 << 6;   // 3 manches ; Prenom, Pays, Ville, Fruit ou legume
+            bacText = "Super-héros ; Dessert";
+            ui.OpenForTest("setup"); yield return new WaitForSeconds(1); yield return Shot("b0-setup");
+            tvIntroSeen = true; tvRulesSeen.Add(GameId.Bac);
+            quizBots = 3;
+            StartQuizWithBots();
+            while (bac == null || bac.phase != BPhase.Write) yield return null;
+            yield return new WaitForSeconds(1); yield return Shot("b1-lettre");
+            // J'ecris un mot par categorie (la bonne lettre), puis STOP apres 20 s.
+            for (int c = 0; c < bac.CatCount; c++) BacAct($"ans|{c}|{bac.letter}test{c}");
+            ui.BacRound();
+            yield return new WaitForSeconds(20); yield return Shot("b2-ecriture");
+            BacAct("stop");
+            yield return new WaitForSeconds(1.5f); yield return Shot("b3-vote");
+            BacAct("vote|1|0|1");   // je refuse le premier mot du bot 1
+            yield return new WaitForSeconds(0.5f); yield return Shot("b4-vote-refus");
+            BacAct("ready");
+            while (bac.phase != BPhase.Scores && !bac.Finished) yield return null;
+            yield return new WaitForSeconds(1); yield return Shot("b5-points");
+            while (!bac.Finished)
+            {
+                if (bac.phase == BPhase.Vote && !bac.ready.Contains(0)) BacAct("ready");
+                yield return null;
+            }
+            yield return new WaitForSeconds(5); yield return Shot("b6-fin");
+            System.IO.File.WriteAllText(System.IO.Path.Combine(dir, "bac.txt"), string.Join(Environment.NewLine, bac.categories) + Environment.NewLine + string.Join(Environment.NewLine, bac.log));
             Application.Quit();
             yield break;
         }
@@ -641,14 +673,14 @@ public partial class Game : MonoBehaviour
     public void StartGame()
     {
         var n = names.Select((s, i) => string.IsNullOrWhiteSpace(s) ? "Joueur " + (i + 1) : s.Trim()).ToList();
-        StartGame(gameId, option, n, UnityEngine.Random.Range(0, int.MaxValue), avatars.ToList());
+        StartGame(gameId, option, n, UnityEngine.Random.Range(0, int.MaxValue), avatars.ToList(), false, bacText);
     }
 
     // Spectateur qui arrive en cours de partie : les actions deja jouees defilent en accelere, sans le son.
     bool catchingUp;
     float catchSince;
 
-    public void StartGame(GameId g, int opt, List<string> n, int seed, List<string> av, bool watch = false)
+    public void StartGame(GameId g, int opt, List<string> n, int seed, List<string> av, bool watch = false, string text = "")
     {
         if (watch) { tvIntroSeen = true; tvRulesSeen.Add(g); }
         StopAllCoroutines();
@@ -667,11 +699,13 @@ public partial class Game : MonoBehaviour
         rh = null;
         uno = null;
         ch = null;
+        bac = null;
         live.Hide();
         uview.Hide();
         cview.Hide();
         if (g == GameId.Rhythm) StartRhythm(n, opt, av);
         else if (g == GameId.Chevaux) StartChevaux(n, opt, seed);
+        else if (g == GameId.Bac) StartBac(n, opt, seed, av, text);
         else if (g == GameId.Uno) StartUno(n, opt, seed, av);
         else if (Games.TvTime(g))
         {
@@ -749,7 +783,7 @@ public partial class Game : MonoBehaviour
     public void Act(string action)
     {
         if (!CanAct) return;
-        if (Online) { if (qz == null && rh == null) waitUntil = Time.time + 2; net.Act(action); return; }   // quiz : on peut enchainer les propositions
+        if (Online) { if (qz == null && rh == null && bac == null) waitUntil = Time.time + 2; net.Act(action); return; }   // quiz : on peut enchainer les propositions
         Apply(action);
     }
 
@@ -760,7 +794,7 @@ public partial class Game : MonoBehaviour
 
     public void PlayerLeft(int seat)
     {
-        string n = rules?.players[seat].name ?? bj?.players[seat].name ?? rt?.players[seat].name ?? qz?.players[seat].name ?? rh?.players[seat].name ?? uno?.players[seat].name ?? ch.players[seat].name;
+        string n = rules?.players[seat].name ?? bj?.players[seat].name ?? rt?.players[seat].name ?? qz?.players[seat].name ?? rh?.players[seat].name ?? uno?.players[seat].name ?? bac?.players[seat].name ?? ch.players[seat].name;
         ui.Say($"{n} est parti : l'hôte joue pour lui.", 3.5f);
     }
 
@@ -777,7 +811,7 @@ public partial class Game : MonoBehaviour
         var n = new List<string> { PlayerPrefs.GetString("cc-name", "Joueur") };
         var av = new List<string> { myAvatar };
         for (int i = 0; i < quizBots; i++) { n.Add(BotNames[i]); av.Add(BotAvatars[i]); }
-        StartGame(gameId, option, n, UnityEngine.Random.Range(0, int.MaxValue), av);
+        StartGame(gameId, option, n, UnityEngine.Random.Range(0, int.MaxValue), av, false, bacText);
     }
 
     void PlanBots()
@@ -839,6 +873,14 @@ public partial class Game : MonoBehaviour
             ("HmmmSketchfab", "Quand une note touche la ligne, frappe ! Piste de gauche : flèche gauche ou F. Piste de droite : flèche droite ou J. Les longues notes, on les TIENT jusqu'au bout !"),
             ("SmileSketchfab", "Plus tu es pile dans le temps, plus tu marques. Enchaîne les notes sans rater pour faire monter ton combo... et regarde ton personnage se déchaîner !"),
             ("Pog", "Tout le monde joue la même chanson, en même temps. Le meilleur score gagne ! UN, DEUX, UN, DEUX, TROIS, QUATRE !"),
+        },
+        [GameId.Bac] = new[]
+        {
+            ("Pog", "MESDAMES ET MESSIEURS, SORTEZ VOS STYLOS ! C'EST L'HEURE DU PETIT BAC DE TENNA !"),
+            ("SmileSketchfab", "Je tire une lettre, et vous devez trouver un mot qui commence par cette lettre dans chaque catégorie !"),
+            ("HmmmSketchfab", "Le premier qui a tout rempli peut crier STOP... et la manche s'arrête pour TOUT LE MONDE ! Sinon, le chrono s'en charge."),
+            ("SmileSketchfab", "Ensuite, on vote ! Un mot douteux ? Refusez-le. Même mot qu'un autre : 5 points. Mot unique : 10 points. Seul à avoir trouvé : 20 POINTS !"),
+            ("Pog", "Le meilleur score à la fin des manches remporte la partie ! À VOS STYLOS, PRÊTS, ÉCRIVEZ !"),
         },
         [GameId.Trivia] = new[]
         {
@@ -1001,6 +1043,7 @@ public partial class Game : MonoBehaviour
         if (rh != null) { ApplyRhythm(p); return; }
         if (uno != null) { ApplyUno(p); return; }
         if (ch != null) { ApplyChevaux(p); return; }
+        if (bac != null) { ApplyBac(p); return; }
         if (rules != null)
         {
             if (p[0] == "draw") DoDraw(); else DoMove(int.Parse(p[1]));
@@ -1131,6 +1174,7 @@ public partial class Game : MonoBehaviour
         uno = null;
         cview.Hide();
         ch = null;
+        bac = null;
         snapCam = true;
         pitch = 14;
         dist = 6.5f;
@@ -1145,6 +1189,7 @@ public partial class Game : MonoBehaviour
         UnoBots();
         UnoClick();
         ChevauxInput();
+        BacUpdate();
         if (inGame && qz != null)
         {
             // L'image se devoile en 18 s ; seul (hors ligne), c'est ce PC qui pilote les phases.
@@ -1206,12 +1251,12 @@ public partial class Game : MonoBehaviour
         bool focus = Focused;
         if (tour.HasValue) { cam.transform.SetPositionAndRotation(tour.Value.position, tour.Value.rotation); return; }
         cam.fieldOfView = 50;
-        if (inGame && qz != null)
+        if (inGame && (qz != null || bac != null))
         {
             var qp = tvCloseUp ? qview.TennaPose : qview.CamPose;
             cam.transform.SetPositionAndRotation(qp.position, qp.rotation);
             if (dof) dof.active = paused;
-            ui.UpdateQuiz(cam);
+            if (qz != null) ui.UpdateQuiz(cam); else ui.UpdateBac();
             return;
         }
         if (inGame && uno != null)

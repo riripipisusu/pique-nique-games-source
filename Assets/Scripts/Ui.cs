@@ -263,6 +263,7 @@ public partial class Ui : MonoBehaviour
         [GameId.Roulette] = ("roulette", 1, "1 à 4 joueurs · Casino", "Pleins, chevaux, carrés, rouge ou noir... Le plus riche gagne."),
         [GameId.Quiz] = ("quiz", 2, "1 à 10 joueurs · Images", "Une image floutée se dévoile : films, jeux, drapeaux, pochettes..."),
         [GameId.Trivia] = ("trivia", 2, "1 à 10 joueurs · Culture G", "Tenna pose les questions, en QCM ou en réponse libre."),
+        [GameId.Bac] = ("bac", 2, "1 à 10 joueurs · Mots", "Une lettre, des catégories : trouve un mot pour chacune avant que quelqu'un crie STOP !"),
         [GameId.Rhythm] = ("rhythm", 2, "1 à 10 joueurs · Musique", "121 chansons de Deltarune et Undertale : tout le monde joue en rythme, en même temps !"),
     };
 
@@ -315,7 +316,10 @@ public partial class Ui : MonoBehaviour
         var b = new Button(() => { Sound.I.UI("click"); game.SelectGame(g); RefreshSetup(); Go(setup); }) { userData = g };
         b.AddToClassList("game-card");
         b.RegisterCallback<MouseEnterEvent>(_ => Sound.I.UI("hover"));
-        Div(b, "game-art").style.backgroundImage = Resources.Load<Texture2D>("UI/Games/" + info.art);
+        var art = Div(b, "game-art");
+        var tex = Resources.Load<Texture2D>("UI/Games/" + info.art);
+        art.style.backgroundImage = tex;
+        if (!tex) Text(art, Games.Name(g), "pick-name").pickingMode = PickingMode.Ignore;   // en attendant l'illustration
         var txt = Div(b, "game-txt");
         Text(txt, Games.Name(g), "mode-name");
         Text(txt, info.meta, "game-meta");
@@ -365,10 +369,32 @@ public partial class Ui : MonoBehaviour
     VisualElement setupThemes, lobbyThemes;
 
     // Grand quiz : familles de themes a cocher (au moins une reste cochee).
-    void ThemeChips(VisualElement parent, GameId g, int option, Action<int> pick)
+    void ThemeChips(VisualElement parent, GameId g, int option, Action<int> pick, string text = null, Action<string> setText = null)
     {
         parent.Clear();
-        parent.style.display = g == GameId.Trivia || g == GameId.Uno ? DisplayStyle.Flex : DisplayStyle.None;
+        parent.style.display = g == GameId.Trivia || g == GameId.Uno || g == GameId.Bac ? DisplayStyle.Flex : DisplayStyle.None;
+        if (g == GameId.Bac)
+        {
+            // Categories : a cocher dans la liste, et en saisie libre (separees par des virgules).
+            Text(parent, "Catégories", "h2");
+            var brow = Div(parent, "row", "theme-row");
+            for (int i = 0; i < PetitBac.AllCategories.Length; i++)
+            {
+                int bit = 1 << (i + 2);
+                var chip = new Button(() => { Sound.I.UI("tick"); pick(option ^ bit); }) { text = PetitBac.AllCategories[i] };
+                chip.AddToClassList("theme-chip");
+                chip.EnableInClassList("selected", (option & bit) != 0);
+                brow.Add(chip);
+            }
+            var field = Add(parent, new TextField { value = string.Join(", ", PetitBac.Customs(text)), maxLength = 160 }, "bac-custom");
+            field.textEdition.placeholder = "Tes catégories à toi, séparées par des virgules (ex. : Super-héros, Dessert)";
+            void Save() { var t = string.Join(";", PetitBac.Customs(field.value)); if (t != (text ?? "")) setText?.Invoke(t); }
+            field.RegisterCallback<FocusOutEvent>(_ => Save());
+            field.RegisterCallback<KeyDownEvent>(e => { if (e.keyCode == KeyCode.Return || e.keyCode == KeyCode.KeypadEnter) Save(); }, TrickleDown.TrickleDown);
+            int n = Enumerable.Range(0, PetitBac.AllCategories.Length).Count(i => PetitBac.HasCat(option, i)) + PetitBac.Customs(text).Count;
+            Text(parent, n < 3 ? "Moins de 3 catégories : on complète au hasard jusqu'à 6." : $"{Math.Min(n, PetitBac.MaxCats)} catégories" + (n > PetitBac.MaxCats ? $" (10 au plus)" : "") + ".", "muted");
+            return;
+        }
         if (g == GameId.Uno)
         {
             // Regles maison du UNO (comme dans le jeu d'Ubisoft) ; la contestation du +4 est toujours la.
@@ -422,10 +448,12 @@ public partial class Ui : MonoBehaviour
     {
         // Grand quiz : les cartes ne changent que le mode (bit 0), les themes sont gardes.
         if (game.gameId == GameId.Trivia) { int keep = current & ~1; var raw = pick; pick = v => raw(v | keep); current &= 1; }
-        if (game.gameId == GameId.Uno) { int keep = current & ~3; var raw = pick; pick = v => raw(v | keep); current &= 3; }   // les regles maison sont gardees
+        if (game.gameId == GameId.Uno || game.gameId == GameId.Bac) { int keep = current & ~3; var raw = pick; pick = v => raw(v | keep); current &= 3; }   // les regles maison sont gardees
         parent.Clear();
         if (game.gameId == GameId.Rhythm) { SongPicker(parent, current, pick); return; }
-        var opts = game.gameId == GameId.Chevaux
+        var opts = game.gameId == GameId.Bac
+            ? new[] { (1, "Partie courte", "3 manches."), (0, "Partie normale", "5 manches."), (2, "Longue partie", "8 manches.") }
+            : game.gameId == GameId.Chevaux
             ? new[] { (0, "4 chevaux", "La partie complète."), (1, "3 chevaux", "Un peu plus courte."), (2, "2 chevaux", "Partie moyenne."), (3, "1 cheval", "Partie express !") }
             : game.gameId == GameId.Uno
             ? new[] { (0, "Une manche", "Le premier qui n'a plus de cartes gagne."), (1, "Partie courte", "Premier à 200 points."), (2, "Partie officielle", "Premier à 500 points, comme la règle.") }
@@ -453,7 +481,7 @@ public partial class Ui : MonoBehaviour
     {
         setupTitle.text = Games.Name(game.gameId);
         OptionCards(setupOptions, game.option, v => { game.option = v; RefreshSetup(); });
-        ThemeChips(setupThemes, game.gameId, game.option, v => { game.option = v; RefreshSetup(); });
+        ThemeChips(setupThemes, game.gameId, game.option, v => { game.option = v; RefreshSetup(); }, game.bacText, t => { game.bacText = t; RefreshSetup(); });
         while (game.avatars.Count < game.names.Count) game.avatars.Add(Chars.Default);
         playerList.Clear();
         for (int i = 0; i < game.names.Count; i++)
@@ -751,6 +779,14 @@ public partial class Ui : MonoBehaviour
             S("Contester un +4", "On n'a le droit de poser un +4 que si on n'a aucune carte de la couleur demandée. Le joueur visé peut « Dénoncer » : si c'était du bluff, le poseur pioche 4 cartes à sa place ; si le +4 était réglo, celui qui a dénoncé en pioche 6 !");
             S("Règles maison (options)", "Cumul : un +2 se contre avec un +2 (ou un +4), un +4 avec un +4, et le suivant pioche le total. 7-0 : un 7 échange ta main avec le joueur de ton choix, un 0 fait tourner toutes les mains. Intervention : si tu as la carte exactement identique à celle du dessus, tu peux la poser même hors de ton tour. Piocher jusqu'à jouer : on pioche jusqu'à trouver une carte qui va. Jeu forcé : une carte piochée qui va doit être posée.");
         }
+        else if (game.gameId == GameId.Bac)
+        {
+            S("Le but", "Trouver et écrire des mots correspondant aux catégories choisies. À chaque manche, une lettre est tirée au hasard : tous tes mots doivent commencer par cette lettre. Le joueur qui a le plus de points à la fin des manches gagne.");
+            S("Écrire", "Tape un mot dans chaque catégorie (Entrée passe à la suivante). Dès que tu as rempli toutes les catégories, tu peux appuyer sur STOP : la manche s'arrête pour tout le monde ! Sinon, elle s'arrête au bout de 90 secondes.");
+            S("Voter", "Ensuite, tout le monde vérifie les mots des autres : clique sur un mot pour le refuser s'il ne va pas. Un mot refusé par plus de la moitié des autres joueurs ne compte pas. Les mots qui ne commencent pas par la bonne lettre sont refusés d'office.");
+            S("Les points", "Champ vide : 0 point. Même mot qu'un autre joueur : 5 points. Réponse unique : 10 points. Tu es le seul à avoir trouvé un mot dans la catégorie : 20 points !");
+            S("Les catégories", "L'hôte les choisit dans la liste, et peut en écrire lui-même (Super-héros, Dessert, Pokémon...). Moins de 3 catégories : on complète au hasard.");
+        }
         else if (game.gameId == GameId.Rhythm)
         {
             S("Le but", "Tenna présente le Pique-Nique Live : tout le monde joue la même chanson en même temps, chacun sur son PC. À la fin, le meilleur score gagne.");
@@ -831,6 +867,7 @@ public partial class Ui : MonoBehaviour
         BuildQuizHud();
         BuildRhythmHud();
         BuildUnoHud();
+        BuildBacHud();
 
         var bannerRow = Div(hud, "banner-row");
         bannerRow.pickingMode = PickingMode.Ignore;
@@ -848,13 +885,16 @@ public partial class Ui : MonoBehaviour
         Show(hud);
         card.AddToClassList("flip");
         card.style.display = DisplayStyle.None;
-        bool bj = game.bj != null, rt = game.rt != null, qz = game.qz != null, rh = game.rh != null, un = game.uno != null;
+        bool bj = game.bj != null, rt = game.rt != null, qz = game.qz != null, rh = game.rh != null, un = game.uno != null, bc = game.bac != null;
+        bacHud.style.display = bc ? DisplayStyle.Flex : DisplayStyle.None;
+        if (bc) BacRound();
         unoHud.style.display = un ? DisplayStyle.Flex : DisplayStyle.None;
         if (un) ShowUnoHud();
         rhHud.style.display = rh ? DisplayStyle.Flex : DisplayStyle.None;
         if (rh) ShowRhythmHud();
         ccHud.style.display = game.rules != null || game.ch != null ? DisplayStyle.Flex : DisplayStyle.None;
         hud.EnableInClassList("chx", game.ch != null);
+        hud.EnableInClassList("bacx", game.bac != null);
         bjHud.style.display = bj ? DisplayStyle.Flex : DisplayStyle.None;
         rtHud.style.display = rt ? DisplayStyle.Flex : DisplayStyle.None;
         qzHud.style.display = qz ? DisplayStyle.Flex : DisplayStyle.None;
@@ -867,8 +907,8 @@ public partial class Ui : MonoBehaviour
         }
         bubbles.Clear();
         seatTags.Clear();
-        playersBar.style.display = feed.style.display = bj || rt || qz || rh || un ? DisplayStyle.None : DisplayStyle.Flex;
-        hint.text = bj || rt || qz || rh || un ? "" : game.ch != null ? "Maintiens le clic pour prendre le dé, lâche-le d'un geste pour le lancer  ·  Molette : zoom  ·  Échap : pause" : "Clic droit : tourner  ·  Molette : zoom  ·  Échap : pause";
+        playersBar.style.display = feed.style.display = bj || rt || qz || rh || un || bc ? DisplayStyle.None : DisplayStyle.Flex;
+        hint.text = bj || rt || qz || rh || un || bc ? "" : game.ch != null ? "Maintiens le clic pour prendre le dé, lâche-le d'un geste pour le lancer  ·  Molette : zoom  ·  Échap : pause" : "Clic droit : tourner  ·  Molette : zoom  ·  Échap : pause";
         if (rt) ResetRouletteBets();
         if (bj) betAmount = Blackjack.MinBet * 5;
         Refresh();
@@ -910,6 +950,7 @@ public partial class Ui : MonoBehaviour
         else if (game.rh != null) RefreshRhythm();
         else if (game.uno != null) RefreshUno();
         else if (game.ch != null) RefreshChevaux();
+        else if (game.bac != null) RefreshBac();
     }
 
     void PlayerCard(int i, string name, string avatar, bool active)
@@ -1165,13 +1206,13 @@ public partial class Ui : MonoBehaviour
         {
             var ranking = (game.bj != null ? game.bj.players.Select(p => (p.name, p.seat, p.chips))
                          : game.rt != null ? game.rt.players.Select(p => (p.name, p.seat, p.chips))
-                         : game.qz != null ? game.qz.players.Select(p => (p.name, p.seat, chips: p.score))
+                         : game.qz != null || game.bac != null ? (game.qz?.players ?? game.bac.players).Select(p => (p.name, p.seat, chips: p.score))
                          : game.rh != null ? game.rh.players.Select(p => (p.name, p.seat, chips: p.score))
                          : game.uno.players.Select(p => (p.name, p.seat, chips: p.score)))
                 .OrderByDescending(p => p.chips).ToList();
             winTitle.text = $"{ranking[0].name} gagne !";
             winTitle.style.color = Board.Colors[ranking[0].seat];
-            winSub.text = string.Join("\n", ranking.Select((p, i) => $"{i + 1}.  {p.name}  —  {p.chips} {(game.qz != null || game.rh != null || game.uno != null ? "points" : "jetons")}"));
+            winSub.text = string.Join("\n", ranking.Select((p, i) => $"{i + 1}.  {p.name}  —  {p.chips} {(game.qz != null || game.rh != null || game.uno != null || game.bac != null ? "points" : "jetons")}"));
         }
         replayBtn.style.display = !game.Online || game.net.IsHost ? DisplayStyle.Flex : DisplayStyle.None;
         ((Label)winMenu.Q(className: "gl-label")).text = game.Online ? "Retour au salon" : "Menu principal";
@@ -1322,7 +1363,7 @@ public partial class Ui : MonoBehaviour
         var g0 = game.gameId;
         game.gameId = n.LobbyGame;
         OptionCards(lobbyOptions, n.LobbyOption, v => n.SetOption(v));
-        ThemeChips(lobbyThemes, n.LobbyGame, n.LobbyOption, v => n.SetOption(v));
+        ThemeChips(lobbyThemes, n.LobbyGame, n.LobbyOption, v => n.SetOption(v), n.LobbyText, n.SetText);
         lobbyThemes.SetEnabled(n.IsHost);
         game.gameId = g0;
         lobbyOptions.SetEnabled(n.IsHost);

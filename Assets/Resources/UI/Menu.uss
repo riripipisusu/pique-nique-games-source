@@ -959,3 +959,57 @@ Button.pick-game.selected { border-color: #FF9B2F; border-width: 6px; scale: 1.0
 .lobby-game .mode-name { font-size: 24px; }
 .lobby-options .mode-card { padding: 6px 10px; }
 .lobby-themes .h2 { margin: 4px 0 2px 0; }
+
+/* Petit bac : lettre et chrono en haut, panneau central (ecriture, vote, points) */
+.bac-top { position: absolute; top: 24px; left: 0; right: 0; flex-direction: row; justify-content: center; align-items: center; }
+.bac-letter {
+    -unity-font: url("../Fonts/LilitaOne.ttf"); -unity-font-definition: initial; font-size: 84px; color: #FFFFFF; width: 130px; height: 130px;
+    -unity-text-align: middle-center; background-color: #FF9B2F; border-radius: 65px; border-width: 6px; border-bottom-width: 12px; border-color: #2E1B10;
+    -unity-text-outline-width: 4px; -unity-text-outline-color: #7A3300;
+}
+.bac-timer { font-size: 48px; -unity-font-style: bold; color: #FFFFFF; margin-left: 24px; -unity-text-outline-width: 3px; -unity-text-outline-color: #2E1B10; width: 90px; }
+.bac-timer.hurry { color: #FF5A4A; }
+.bac-panel { position: absolute; top: 175px; left: 50%; translate: -50% 0; width: 1080px; max-height: 820px; padding: 18px 30px 20px 30px; }
+.bac-fields { flex-direction: row; flex-wrap: wrap; justify-content: space-between; }
+.bac-row { width: 49%; margin: 6px 0; }
+.bac-cat { font-size: 22px; -unity-font-style: bold; color: #3B2416; margin: 0 0 2px 6px; }
+.bac-field { height: 58px; margin: 0; }
+.bac-field > .unity-base-text-field__input { font-size: 28px; border-radius: 14px; border-width: 3px; border-color: #2E1B10; background-color: #FFFDF6; padding: 0 14px; }
+.bac-stop { align-self: center; margin-top: 12px; width: 360px; }
+.bac-custom { margin: 8px 0 2px 0; }
+.bac-custom > .unity-base-text-field__input { font-size: 20px; border-radius: 12px; border-width: 3px; border-color: #2E1B10; background-color: #FFFDF6; padding: 4px 12px; }
+.bac-vote-list { height: 600px; }
+.bac-vote-cat { font-size: 24px; -unity-font-style: bold; color: #3B2416; margin: 10px 0 4px 4px; }
+.bac-vote-row { flex-wrap: wrap; }
+Button.bac-word, Button.bac-word:hover, Button.bac-word:active {
+    flex-direction: column; align-items: flex-start; margin: 3px 8px 3px 0; padding: 6px 14px; min-width: 150px;
+    border-radius: 14px; border-width: 3px; border-color: #5CC23A; background-color: #EFFBE6;
+}
+Button.bac-word:hover { background-color: #FFF3D9; }
+.bac-word.self { border-color: #9A8F8A; background-color: #F4EFE6; }
+.bac-word.empty { border-color: #C9C0B2; background-color: #F4EFE6; opacity: 0.7; }
+.bac-word.wrong, .bac-word.refused { border-color: #E5322D; background-color: #FDE3E0; }
+.bac-word.mine-no { border-width: 5px; }
+.bac-word-who { font-size: 15px; -unity-font-style: bold; }
+.bac-word-text { font-size: 22px; color: #2E1B10; }
+.bac-word-no { font-size: 15px; color: #E5322D; -unity-font-style: bold; }
+.bac-score-row { flex-direction: row; align-items: center; margin-top: 10px; }
+.bac-score-name { font-size: 28px; -unity-font-style: bold; width: 300px; }
+.bac-score-gain { font-size: 30px; -unity-font-style: bold; color: #1C8A45; width: 120px; }
+.bac-score-total { font-size: 24px; color: #3B2416; }
+.bac-score-words { font-size: 17px; color: #6B5A4A; white-space: normal; margin-left: 4px; }
+
+/* Petit bac : le bandeau passe en haut a droite de la lettre (le panneau occupe le centre) */
+.bacx .banner-row { top: 50px; left: 1060px; right: auto; align-items: flex-start; }
+.bacx .banner { font-size: 34px; padding: 4px 30px 6px 30px; border-bottom-width: 8px; }
+
+/* Choix du jeu : grille de 3 colonnes, cartes horizontales (image a gauche, texte a droite) : plus de coupures */
+.game-row { flex-wrap: wrap; justify-content: flex-start; align-items: flex-start; margin: 20px 0 16px 0; }
+.game-card { flex-direction: row; width: 528px; height: 200px; flex-shrink: 0; margin: 0 8px 16px 8px; }
+.game-art { width: 200px; height: auto; border-bottom-width: 0; border-right-width: 5px; justify-content: center; }
+.game-art .pick-name { font-size: 26px; }
+.game-txt { flex-grow: 1; flex-shrink: 1; padding: 12px 16px; justify-content: center; }
+.game-card .mode-name, .game-card .mode-desc, .game-card .game-meta { -unity-text-align: upper-left; white-space: normal; }
+.game-card .mode-name { font-size: 26px; }
+.game-meta { font-size: 17px; margin: 2px 0 4px 0; }
+.game-card .mode-desc { font-size: 16px; }

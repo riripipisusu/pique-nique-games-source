@@ -19,7 +19,7 @@ public class QuizView : MonoBehaviour
     readonly Dictionary<string, Texture2D> images = new Dictionary<string, Texture2D>();
     readonly HashSet<string> loading = new HashSet<string>();
     readonly List<Podium> seats = new List<Podium>();
-    Quiz quiz;
+    IList<QPlayer> quizPlayers;   // joueurs du quiz ou du petit bac (scores affiches sur les pupitres)
     Vector2 screenSize = new Vector2(ScreenW, ScreenH);
     float screenAspect = 16 / 9f;
     bool fillsFace;   // (garde pour essai : image peinte sur la dalle trapezoidale, abandonne car deformee)
@@ -410,12 +410,13 @@ public class QuizView : MonoBehaviour
     }
 
     // Un pupitre par joueur, en arc face a la camera ; l'avatar se tient derriere.
-    public void Build(Quiz q, IList<string> avatars)
+    public void Build(Quiz q, IList<string> avatars) => Build(q.players, avatars);
+    public void Build(IList<QPlayer> players, IList<string> avatars)
     {
-        quiz = q;
+        quizPlayers = players;
         foreach (Transform c in podiums) Destroy(c.gameObject);
         seats.Clear();
-        int n = q.players.Count;
+        int n = players.Count;
         float spacing = Mathf.Min(1.9f, 12f / Mathf.Max(1, n));   // jusqu'a 10 joueurs en arc
         float size = n > 6 ? 1.55f : 1.75f;
         for (int i = 0; i < n; i++)
@@ -429,7 +430,7 @@ public class QuizView : MonoBehaviour
             var p = new Podium { root = root, color = col, glow = Glow(col, 1.2f) };
             if (standTemplate)
             {
-                StagePodium(p, i, n, q.players[i].name, col, avatars.Count > i ? avatars[i] : Chars.Default);
+                StagePodium(p, i, n, players[i].name, col, avatars.Count > i ? avatars[i] : Chars.Default);
                 seats.Add(p);
                 continue;
             }
@@ -445,7 +446,7 @@ public class QuizView : MonoBehaviour
             var face = new Material(Resources.Load<Material>("QuizScreen"));
             face.SetTexture("_BaseMap", rt);
             Box(PrimitiveType.Quad, new Vector3(0, 0.5f, -0.305f), new Vector3(w * 0.86f, 0.688f, 1), face, root);
-            BuildPodiumUi(p, rt, q.players[i].name, col);
+            BuildPodiumUi(p, rt, players[i].name, col);
             Chars.Spawn(avatars.Count > i ? avatars[i] : Chars.Default, root, new Vector3(0, 0.4f, 0.62f), 180, out p.an, size);
             p.head = new GameObject("tete").transform;
             p.head.SetParent(root, false);
@@ -547,11 +548,11 @@ public class QuizView : MonoBehaviour
     void LateUpdate()
     {
         // Le score defile jusqu'a sa nouvelle valeur.
-        if (quiz == null) return;
-        for (int i = 0; i < seats.Count && i < quiz.players.Count; i++)
+        if (quizPlayers == null) return;
+        for (int i = 0; i < seats.Count && i < quizPlayers.Count; i++)
         {
             var p = seats[i];
-            int target = quiz.players[i].score;
+            int target = quizPlayers[i].score;
             if (p.shown == target) continue;
             p.shown = Mathf.Min(target, p.shown + Mathf.Max(1, (target - p.shown) / 6));
             if (p.shown > target) p.shown = target;
