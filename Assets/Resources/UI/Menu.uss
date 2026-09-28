@@ -1013,3 +1013,76 @@ Button.bac-word:hover { background-color: #FFF3D9; }
 .game-card .mode-name { font-size: 26px; }
 .game-meta { font-size: 17px; margin: 2px 0 4px 0; }
 .game-card .mode-desc { font-size: 16px; }
+
+/* La Bonne Paye, facon jeu officiel : turquoise, jaune dore, bordures bleu marine */
+.bp-top { position: absolute; top: 18px; left: 0; right: 0; flex-direction: row; justify-content: center; align-items: center; }
+.bp-day { flex-direction: row; align-items: center; background-color: #FFFFFF; border-radius: 14px; border-width: 4px; border-bottom-width: 9px; border-color: #0D2B5C; padding: 4px 16px 4px 6px; margin-right: 26px; }
+.bp-day-num { -unity-font: url("../Fonts/LilitaOne.ttf"); -unity-font-definition: initial; font-size: 46px; color: #FFFFFF; background-color: #E23A30; border-radius: 10px; width: 76px; height: 64px; -unity-text-align: middle-center; }
+.bp-day-col { margin-left: 12px; }
+.bp-day-name { -unity-font: url("../Fonts/LilitaOne.ttf"); -unity-font-definition: initial; font-size: 30px; color: #0D2B5C; }
+.bp-day-month { font-size: 17px; -unity-font-style: bold; color: #3A6FB0; }
+.bp-pot { align-items: center; justify-content: center; width: 190px; height: 118px; border-radius: 60px; background-color: #F7C315; border-width: 5px; border-bottom-width: 11px; border-color: #7A4A00; }
+.bp-pot-title { -unity-font: url("../Fonts/LilitaOne.ttf"); -unity-font-definition: initial; font-size: 22px; color: #7A4A00; }
+.bp-pot-value { -unity-font: url("../Fonts/LilitaOne.ttf"); -unity-font-definition: initial; font-size: 44px; color: #FFFFFF; -unity-text-outline-width: 3px; -unity-text-outline-color: #7A4A00; }
+.bp-log { position: absolute; top: 22px; left: 24px; width: 520px; }
+.bp-log-line { font-size: 16px; color: #FFFFFF; background-color: rgba(13, 43, 92, 0.78); border-radius: 10px; padding: 4px 12px; margin-bottom: 4px; white-space: normal; align-self: flex-start; }
+.bp-players { position: absolute; bottom: 14px; left: 0; right: 0; flex-direction: row; justify-content: center; align-items: flex-end; }
+.bp-player { width: 290px; margin: 0 6px; padding: 8px 12px 10px 12px; border-radius: 20px; border-width: 4px; border-bottom-width: 9px; border-color: #0D2B5C; background-color: #1AA3D4; transition-property: translate, scale; transition-duration: 0.2s; }
+.bp-player.active { background-color: #F7C315; border-color: #7A4A00; translate: 0 -14px; }
+.bp-player.done { opacity: 0.55; }
+.bp-player-head { flex-direction: row; align-items: center; }
+.bp-player-head .portrait { margin: 0; }
+.bp-player-col { margin-left: 10px; flex-shrink: 1; }
+.bp-name { -unity-font: url("../Fonts/LilitaOne.ttf"); -unity-font-definition: initial; font-size: 26px; color: #FFFFFF; -unity-text-outline-width: 2px; -unity-text-outline-color: #0D2B5C; }
+.bp-player.active .bp-name { -unity-text-outline-color: #7A4A00; }
+.bp-where { font-size: 15px; -unity-font-style: bold; color: #E8F7FF; }
+.bp-player.active .bp-where { color: #7A4A00; }
+.bp-money { -unity-font: url("../Fonts/LilitaOne.ttf"); -unity-font-definition: initial; font-size: 36px; color: #1C8A45; background-color: #FFFFFF; border-radius: 14px; margin-top: 6px; padding: 0 10px; -unity-text-align: middle-center; }
+.bp-badges { flex-direction: row; flex-wrap: wrap; margin-top: 4px; }
+.bp-badge { font-size: 13px; -unity-font-style: bold; color: #FFFFFF; border-radius: 8px; padding: 1px 7px; margin: 3px 4px 0 0; }
+.bp-badge.save { background-color: #1C8A45; } .bp-badge.loan { background-color: #E23A30; } .bp-badge.bill { background-color: #B23A8A; }
+.bp-badge.acq { background-color: #2E7D32; } .bp-badge.mail { background-color: #C0392B; } .bp-badge.ins { background-color: #0D2B5C; } .bp-badge.need { background-color: #D9660C; }
+.bp-center { position: absolute; top: 215px; left: 0; right: 0; align-items: center; opacity: 0; scale: 0.85 0.85; transition-property: opacity, scale; transition-duration: 0.22s; }
+.bp-center.show { opacity: 1; scale: 1 1; }
+.bp-card-img { width: 620px; height: 394px; -unity-background-scale-mode: scale-to-fit; }
+.bp-prompt { font-size: 24px; -unity-font-style: bold; color: #FFFFFF; background-color: rgba(13, 43, 92, 0.92); border-radius: 16px; padding: 10px 22px; margin-top: 10px; max-width: 900px; white-space: normal; -unity-text-align: middle-center; }
+.bp-actions { justify-content: center; flex-wrap: wrap; margin-top: 10px; max-width: 1000px; }
+.bp-actions > Button { margin: 4px 8px; }
+.bp-turn { position: absolute; bottom: 230px; left: 0; right: 0; flex-direction: row; justify-content: center; align-items: center; }
+.bp-turn > Button { margin: 0 10px; }
+.bp-bank { position: absolute; bottom: 330px; left: 50%; translate: -50% 0; background-color: #FFFFFF; border-radius: 22px; border-width: 4px; border-bottom-width: 9px; border-color: #0D2B5C; padding: 12px 18px; align-items: center; }
+.bp-bank-title { font-size: 17px; -unity-font-style: bold; color: #0D2B5C; margin: 2px 0 4px 0; }
+.bp-bank-row { justify-content: center; flex-wrap: wrap; }
+.bp-bank-row > Button { margin: 3px 6px; }
+.bpx .banner-row { top: 145px; }
+.bpx .banner { font-size: 38px; padding: 4px 36px 6px 36px; border-bottom-width: 9px; }
+.bp-turn-label { font-size: 26px; -unity-font-style: bold; color: #FFFFFF; background-color: rgba(13, 43, 92, 0.9); border-radius: 16px; padding: 8px 20px; margin-right: 10px; }
+
+/* Bonne Paye, vue de dessus : etiquettes des joueurs a cote de leur coin de table, decisions en bas */
+.bp .bp-players { position: absolute; left: 0; top: 0; right: 0; bottom: 0; bottom: auto; }
+.bp .bp-player { position: absolute; width: 250px; margin: 0; padding: 6px 10px 8px 10px; border-radius: 16px; border-bottom-width: 7px; }
+.bp .bp-player.active { translate: 0 -8px; }
+.bp .bp-name { font-size: 22px; }
+.bp .bp-where { font-size: 13px; }
+.bp .bp-money { font-size: 28px; margin-top: 3px; border-radius: 10px; }
+.bp .bp-center { top: auto; bottom: 16px; }
+.bp .bp-turn { bottom: 16px; }
+.bp .bp-bank { bottom: 96px; }
+/* Fil de la partie : en bas a gauche, sous les coins de table (plus rien en haut sous le bandeau) */
+.bp .bp-log { top: auto; bottom: 16px; left: 16px; right: auto; width: 460px; align-items: flex-start; }
+.bp .bp-log-line { align-self: flex-start; font-size: 15px; padding: 3px 12px; }
+.bp-months-row { justify-content: center; align-items: center; margin: 8px 0; }
+.bp-months-value { font-size: 40px; -unity-font: url("../Fonts/LilitaOne.ttf"); -unity-font-definition: initial; color: #2E1B10; margin: 0 22px; min-width: 150px; -unity-text-align: middle-center; }
+
+Button.gl.bp-step { width: 80px; }
+Button.gl.bp-step .gl-label { font-size: 40px; }
+/* Choix du jeu : 4 colonnes (11 jeux et plus tiennent sans deborder sur le bouton Retour) */
+.game-card { width: 392px; height: 176px; margin: 0 5px 12px 5px; }
+.game-art { width: 150px; }
+.game-art .pick-name { font-size: 22px; }
+.game-txt { padding: 8px 12px; }
+.game-card .mode-name { font-size: 22px; }
+.game-meta { font-size: 15px; }
+.game-card .mode-desc { font-size: 14px; }
+.bp-rotate { position: absolute; right: 24px; bottom: 16px; }
+.bp-rotate > Button { margin-left: 10px; }

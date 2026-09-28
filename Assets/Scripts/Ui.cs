@@ -258,6 +258,7 @@ public partial class Ui : MonoBehaviour
     {
         [GameId.Croque] = ("croque", 0, "2 à 4 joueurs · Plateau", "Grimpe la montagne jusqu'au potager... mais gare aux trous quand la carotte tourne !"),
         [GameId.Chevaux] = ("chevaux", 0, "2 à 4 joueurs · Plateau", "Un 6 pour sortir, fais le tour du plateau et grimpe l'escalier jusqu'au centre !"),
+        [GameId.BonnePaye] = ("bonnepaye", 0, "2 à 6 joueurs · Plateau", "Factures, affaires, loterie et Jour de paye : le plus riche à la fin du mois gagne !"),
         [GameId.Serpents] = ("serpents", 0, "2 à 4 joueurs · Plateau", "Grimpe aux échelles, évite les serpents : le premier sur la case 100 gagne !"),
         [GameId.Uno] = ("uno", 0, "2 à 10 joueurs · Cartes", "Même couleur ou même symbole, et n'oublie pas de crier UNO !"),
         [GameId.Blackjack] = ("blackjack", 1, "2 à 4 joueurs · Cartes", "Approche-toi de 21 sans dépasser et bats le croupier."),
@@ -452,6 +453,18 @@ public partial class Ui : MonoBehaviour
         if (game.gameId == GameId.Uno || game.gameId == GameId.Bac) { int keep = current & ~3; var raw = pick; pick = v => raw(v | keep); current &= 3; }   // les regles maison sont gardees
         parent.Clear();
         if (game.gameId == GameId.Rhythm) { SongPicker(parent, current, pick); return; }
+        if (game.gameId == GameId.BonnePaye)   // nombre de mois : 1 a 24
+        {
+            int months = BonnePaye.Months(current);
+            var box = Div(parent, "mode-card", "selected", "bp-months");
+            Text(box, "Durée de la partie", "mode-name");
+            var row = Div(box, "row", "bp-months-row");
+            Btn(row, "−", () => pick(Mathf.Max(0, current - 1)), "ghost", "small", "bp-step").SetEnabled(months > 1);
+            Text(row, months > 1 ? $"{months} mois" : "1 mois", "bp-months-value");
+            Btn(row, "+", () => pick(Mathf.Min(BonnePaye.MaxMonths - 1, current + 1)), "ghost", "small", "bp-step").SetEnabled(months < BonnePaye.MaxMonths);
+            Text(box, "Un mois = un tour de plateau (environ 20 min à 4). On pourra prolonger à la fin.", "mode-desc");
+            return;
+        }
         var opts = game.gameId == GameId.Serpents
             ? new[] { (0, "Classique", "10 échelles, 10 serpents, il faut tomber pile sur 100.") }
             : game.gameId == GameId.Bac
@@ -782,6 +795,18 @@ public partial class Ui : MonoBehaviour
             S("Contester un +4", "On n'a le droit de poser un +4 que si on n'a aucune carte de la couleur demandée. Le joueur visé peut « Dénoncer » : si c'était du bluff, le poseur pioche 4 cartes à sa place ; si le +4 était réglo, celui qui a dénoncé en pioche 6 !");
             S("Règles maison (options)", "Cumul : un +2 se contre avec un +2 (ou un +4), un +4 avec un +4, et le suivant pioche le total. 7-0 : un 7 échange ta main avec le joueur de ton choix, un 0 fait tourner toutes les mains. Intervention : si tu as la carte exactement identique à celle du dessus, tu peux la poser même hors de ton tour. Piocher jusqu'à jouer : on pioche jusqu'à trouver une carte qui va. Jeu forcé : une carte piochée qui va doit être posée.");
         }
+        else if (game.gameId == GameId.BonnePaye)
+        {
+            S("Durée", "Avant la partie, choisissez le nombre de mois (de 1 à 24 ; un mois = un tour de plateau). Quand tout le monde a fini, l'hôte peut prolonger la partie d'autant de mois qu'il veut, ou la terminer.");
+            S("Le but", "Être le plus riche à la fin du dernier mois. On commence avec 1500 €. Le capital final = votre argent + votre livret d'épargne − vos prêts restants. Les acquisitions non vendues ne valent rien à la fin !");
+            S("À ton tour", "Lance le dé (maintiens le clic et lâche-le d'un geste, ou Espace) et suis la case où tu t'arrêtes : courrier, acquisition, Vendez !, Quoi de neuf ?, loterie... Un 6 au dé rafle la cagnotte du centre ! Le jeu fait tous les paiements lui-même.");
+            S("Courrier", "Les factures (médecin, garage, vacances, cours...) se paient au Jour de paye ; les sommes « à régler comptant » tout de suite ; les « Coup de chance » rapportent aussitôt. Médic'Assur et Assur'Auto sont facultatives : payées une fois, elles annulent toutes vos factures de médecin ou de garage. « Besoin d'argent ? » se garde et se joue quand vous voulez à votre tour : misez moins de 300 €, un 5 ou un 6 rapporte 10 fois la mise, sinon elle va à la cagnotte.");
+            S("Acquisitions et Vendez !", "Sur une case Acquisition, achetez l'affaire au prix d'achat si elle vous plaît. Sur Vendez !, revendez-en une à la banque à sa valeur réelle ; puis tout le monde lance le dé et le plus haut touche la commission.");
+            S("Loterie", "La banque met 1000 € en jeu ; chacun peut miser 100 € sur un chiffre différent. On lance le dé jusqu'à ce qu'il tombe sur un chiffre joué : son joueur rafle tout.");
+            S("Jour de paye", "On s'arrête toujours au 31 : salaire de 1500 €, intérêts du livret, intérêts des prêts (150 € par prêt), remboursement des prêts si vous voulez, puis vos factures. Ensuite on repart pour un nouveau mois.");
+            S("Épargne et prêts", "À votre tour, avant de lancer, placez de l'argent sur votre livret (jusqu'au 22 du mois) : il rapporte 50 € par tranche de 500 € au Jour de paye. Retirer coûte 150 € de frais. Il vous manque de l'argent ? La banque vous prête automatiquement par tranches de 1500 € : jamais de solde négatif.");
+            S("Changement d'heure", "Sur le 26, tout le monde recule d'une case et suit la case où il arrive. Revenir au départ envoie directement au Jour de paye !");
+        }
         else if (game.gameId == GameId.Serpents)
         {
             S("Le but", "Être le premier à amener son pion sur la case 100, en haut du plateau. On part hors du plateau, à côté de la case 1.");
@@ -879,6 +904,7 @@ public partial class Ui : MonoBehaviour
         BuildRhythmHud();
         BuildUnoHud();
         BuildBacHud();
+        BuildBonnePayeHud();
 
         var bannerRow = Div(hud, "banner-row");
         bannerRow.pickingMode = PickingMode.Ignore;
@@ -898,6 +924,8 @@ public partial class Ui : MonoBehaviour
         card.style.display = DisplayStyle.None;
         bool bj = game.bj != null, rt = game.rt != null, qz = game.qz != null, rh = game.rh != null, un = game.uno != null, bc = game.bac != null;
         bacHud.style.display = bc ? DisplayStyle.Flex : DisplayStyle.None;
+        bool bpg = game.bp != null;
+        bpHud.style.display = bpg ? DisplayStyle.Flex : DisplayStyle.None;
         if (bc) BacRound();
         unoHud.style.display = un ? DisplayStyle.Flex : DisplayStyle.None;
         if (un) ShowUnoHud();
@@ -906,6 +934,7 @@ public partial class Ui : MonoBehaviour
         ccHud.style.display = game.rules != null || game.ch != null || game.sp != null ? DisplayStyle.Flex : DisplayStyle.None;
         hud.EnableInClassList("chx", game.ch != null || game.sp != null);
         hud.EnableInClassList("bacx", game.bac != null);
+        hud.EnableInClassList("bpx", game.bp != null);
         bjHud.style.display = bj ? DisplayStyle.Flex : DisplayStyle.None;
         rtHud.style.display = rt ? DisplayStyle.Flex : DisplayStyle.None;
         qzHud.style.display = qz ? DisplayStyle.Flex : DisplayStyle.None;
@@ -918,8 +947,8 @@ public partial class Ui : MonoBehaviour
         }
         bubbles.Clear();
         seatTags.Clear();
-        playersBar.style.display = feed.style.display = bj || rt || qz || rh || un || bc ? DisplayStyle.None : DisplayStyle.Flex;
-        hint.text = bj || rt || qz || rh || un || bc ? "" : game.ch != null || game.sp != null ? "Maintiens le clic pour prendre le dé, lâche-le d'un geste pour le lancer  ·  Molette : zoom  ·  Échap : pause" : "Clic droit : tourner  ·  Molette : zoom  ·  Échap : pause";
+        playersBar.style.display = feed.style.display = bj || rt || qz || rh || un || bc || bpg ? DisplayStyle.None : DisplayStyle.Flex;
+        hint.text = bpg ? "" : bj || rt || qz || rh || un || bc ? "" : game.ch != null || game.sp != null ? "Maintiens le clic pour prendre le dé, lâche-le d'un geste pour le lancer  ·  Molette : zoom  ·  Échap : pause" : "Clic droit : tourner  ·  Molette : zoom  ·  Échap : pause";
         if (rt) ResetRouletteBets();
         if (bj) betAmount = Blackjack.MinBet * 5;
         Refresh();
@@ -963,6 +992,7 @@ public partial class Ui : MonoBehaviour
         else if (game.ch != null) RefreshChevaux();
         else if (game.bac != null) RefreshBac();
         else if (game.sp != null) RefreshSerpents();
+        else if (game.bp != null) RefreshBonnePaye();
     }
 
     void PlayerCard(int i, string name, string avatar, bool active)
@@ -1204,6 +1234,14 @@ public partial class Ui : MonoBehaviour
             winTitle.text = $"{w.name} gagne !";
             winTitle.style.color = Board.Colors[w.color];
             winSub.text = "Ses trois lapins festoient au potager.";
+        }
+        else if (game.bp != null)
+        {
+            var b = game.bp;
+            var w = b.players[b.winner];
+            winTitle.text = $"{w.name} gagne !";
+            winTitle.style.color = BonnePayeView.ColorOf(b.winner);
+            winSub.text = string.Join("\n", b.players.OrderByDescending(p => p.Capital).Select((p, i) => $"{i + 1}.  {p.name}  —  {p.Capital} €"));
         }
         else if (game.sp != null)
         {

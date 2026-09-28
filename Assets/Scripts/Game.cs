@@ -23,7 +23,7 @@ public partial class Game : MonoBehaviour
     public Blackjack bj;
     public Roulette rt;
     public Quiz qz;
-    public IMatch Match => (IMatch)rules ?? (IMatch)bj ?? (IMatch)rt ?? (IMatch)qz ?? (IMatch)rh ?? (IMatch)uno ?? (IMatch)ch ?? (IMatch)bac ?? sp;
+    public IMatch Match => (IMatch)rules ?? (IMatch)bj ?? (IMatch)rt ?? (IMatch)qz ?? (IMatch)rh ?? (IMatch)uno ?? (IMatch)ch ?? (IMatch)bac ?? (IMatch)sp ?? bp;
     public bool busy;
 
     Board board;
@@ -94,6 +94,7 @@ public partial class Game : MonoBehaviour
         uview = new GameObject("NappeUno").AddComponent<UnoView>();
         cview = new GameObject("PlateauChevaux").AddComponent<ChevauxView>();
         sview = new GameObject("PlateauSerpents").AddComponent<SerpentsView>();
+        bpview = new GameObject("PlateauBonnePaye").AddComponent<BonnePayeView>();
         rview.Init(table);
         MenuBackdrop();
 
@@ -205,7 +206,7 @@ public partial class Game : MonoBehaviour
         while (!inGame) yield return null;
         yield return new WaitForSeconds(2);
         yield return Shot("jeu");
-        while (applied < 30 && !Match.Finished)
+        while (applied < (bp != null ? 60 : 30) && !Match.Finished)
         {
             if (qz != null && qz.phase == QPhase.Guess && MyTurn && CanAct)
                 Act("guess|" + (UnityEngine.Random.value < 0.5f ? "mauvaise idee" : qz.Current.a[0]));   // quiz : propositions au hasard
@@ -214,7 +215,7 @@ public partial class Game : MonoBehaviour
         }
         while (busy || (pending.Count > 0 && applied < 30)) yield return null;
         yield return Shot("fin");
-        var log = rules?.log ?? bj?.log ?? rt?.log ?? qz?.log ?? uno?.log ?? ch?.log ?? new List<string>();
+        var log = rules?.log ?? bj?.log ?? rt?.log ?? qz?.log ?? uno?.log ?? ch?.log ?? bp?.log ?? bac?.log ?? sp?.log ?? new List<string>();
         System.IO.File.WriteAllText(System.IO.Path.Combine(dir, role + ".txt"),
             $"status={net.Status}\nseat={mySeat}\nspectateur={Spectating}\napplied={applied}\noption={net.LobbyOption}\navatars={string.Join(" ; ", net.LobbyAvatars)}\n" + string.Join("\n", log));
         // Retour au salon : l'hote attend que le spectateur ait fini son rattrapage, puis ramene tout le monde.
@@ -328,6 +329,20 @@ public partial class Game : MonoBehaviour
             cview.Speed = 5;   // test : animations accelerees (sans toucher aux reglages enregistres)
             yield return new WaitForSeconds(1.5f); yield return Shot("c1-debut");
             yield return ChevauxTest(dir, Shot);
+            Application.Quit();
+            yield break;
+        }
+        if (Array.IndexOf(Environment.GetCommandLineArgs(), "-bonnepaye") >= 0)   // bonne paye : 4 joueurs, 1 mois, tout automatique
+        {
+            SelectGame(GameId.BonnePaye);
+            option = 0;
+            names.Clear(); names.AddRange(new[] { "Anastasia", "Léo", "Camille", "Maya" });
+            avatars.Clear(); avatars.AddRange(new[] { Chars.All[0], Chars.All[5], Chars.All[12], Chars.All[20] });
+            ui.OpenForTest("setup"); yield return new WaitForSeconds(1); yield return Shot("p0-setup");
+            StartGame();
+            bpview.Speed = 3;
+            yield return new WaitForSeconds(1.5f); yield return Shot("p1-debut");
+            yield return BonnePayeTest(dir, Shot);
             Application.Quit();
             yield break;
         }
@@ -661,6 +676,7 @@ public partial class Game : MonoBehaviour
         if (rview) rview.speed = settings.animSpeed;
         if (cview) cview.Speed = settings.animSpeed;
         if (sview) sview.Speed = settings.animSpeed;
+        if (bpview) bpview.Speed = settings.animSpeed;
         table.back = settings.cardBack;
         board.showNumbers = settings.tileNumbers;
         settings.Save();
@@ -716,14 +732,17 @@ public partial class Game : MonoBehaviour
         ch = null;
         bac = null;
         sp = null;
+        bp = null;
         live.Hide();
         uview.Hide();
         cview.Hide();
         sview.Hide();
+        bpview.Hide();
         if (g == GameId.Rhythm) StartRhythm(n, opt, av);
         else if (g == GameId.Chevaux) StartChevaux(n, opt, seed);
         else if (g == GameId.Bac) StartBac(n, opt, seed, av, text);
         else if (g == GameId.Serpents) StartSerpents(n, opt, seed);
+        else if (g == GameId.BonnePaye) StartBonnePaye(n, opt, seed);
         else if (g == GameId.Uno) StartUno(n, opt, seed, av);
         else if (Games.TvTime(g))
         {
@@ -766,7 +785,7 @@ public partial class Game : MonoBehaviour
             var first = rt.events.ToList();
             StartCoroutine(Run(rview.Play(first, s => ui.Say(s)), null));
         }
-        Casino(g != GameId.Croque && g != GameId.Uno && g != GameId.Chevaux && g != GameId.Serpents);   // Uno, petits chevaux : en plein air, sur la nappe
+        Casino(g != GameId.Croque && g != GameId.Uno && g != GameId.Chevaux && g != GameId.Serpents && g != GameId.BonnePaye);   // Uno, petits chevaux : en plein air, sur la nappe
         // Plateau TV : tout est eclaire de face, uniformement (lumiere directionnelle propre au quiz).
         if (Games.TvTime(g)) RenderSettings.ambientLight = Board.Hex(g == GameId.Rhythm ? "3a3450" : "9a8f8a");
         if (!quizLight)
@@ -782,7 +801,7 @@ public partial class Game : MonoBehaviour
         quizLight.enabled = Games.TvTime(g) && g != GameId.Rhythm;
         snapCam = true;
         if (!Games.TvTime(g))   // TV Time : la musique demarre apres le generique et les regles
-            Sound.I.Music(g == GameId.Croque || g == GameId.Uno || g == GameId.Chevaux || g == GameId.Serpents ? "music_game" : g == GameId.Quiz ? "music_quiz" : "music_blackjack");
+            Sound.I.Music(g == GameId.Croque || g == GameId.Uno || g == GameId.Chevaux || g == GameId.Serpents || g == GameId.BonnePaye ? "music_game" : g == GameId.Quiz ? "music_quiz" : "music_blackjack");
         catchingUp = watch;
         if (watch) { Time.timeScale = 12; AudioListener.volume = 0; catchSince = Time.realtimeSinceStartup; }
         if (Spectating) ui.Say("Tu regardes la partie en cours", 4);
@@ -805,14 +824,14 @@ public partial class Game : MonoBehaviour
         Apply(action);
     }
 
-    public void Draw() { if (rules != null && rules.drawn == null) Act("draw"); ThrowDieAuto(); ThrowSerpentsAuto(); }
+    public void Draw() { if (rules != null && rules.drawn == null) Act("draw"); ThrowDieAuto(); ThrowSerpentsAuto(); ThrowBonnePayeAuto(); }
     public void Move(int rabbit) { if (rules != null && rules.CanMove(rabbit)) Act("move|" + rabbit); if (ch != null && ch.CanPick(rabbit)) Act((ch.sacrifice ? "sacrifice|" : "move|") + rabbit); }
 
     public void Enqueue(string action) => pending.Enqueue(action);
 
     public void PlayerLeft(int seat)
     {
-        string n = rules?.players[seat].name ?? bj?.players[seat].name ?? rt?.players[seat].name ?? qz?.players[seat].name ?? rh?.players[seat].name ?? uno?.players[seat].name ?? bac?.players[seat].name ?? sp?.players[seat].name ?? ch.players[seat].name;
+        string n = rules?.players[seat].name ?? bj?.players[seat].name ?? rt?.players[seat].name ?? qz?.players[seat].name ?? rh?.players[seat].name ?? uno?.players[seat].name ?? bac?.players[seat].name ?? sp?.players[seat].name ?? bp?.players[seat].name ?? ch.players[seat].name;
         ui.Say($"{n} est parti : l'hôte joue pour lui.", 3.5f);
     }
 
@@ -1063,6 +1082,7 @@ public partial class Game : MonoBehaviour
         if (ch != null) { ApplyChevaux(p); return; }
         if (bac != null) { ApplyBac(p); return; }
         if (sp != null) { ApplySerpents(p); return; }
+        if (bp != null) { ApplyBonnePaye(p); return; }
         if (rules != null)
         {
             if (p[0] == "draw") DoDraw(); else DoMove(int.Parse(p[1]));
@@ -1196,6 +1216,8 @@ public partial class Game : MonoBehaviour
         bac = null;
         sview.Hide();
         sp = null;
+        bpview.Hide();
+        bp = null;
         snapCam = true;
         pitch = 14;
         dist = 6.5f;
@@ -1212,6 +1234,7 @@ public partial class Game : MonoBehaviour
         ChevauxInput();
         BacUpdate();
         SerpentsInput();
+        BonnePayeInput();
         if (inGame && qz != null)
         {
             // L'image se devoile en 18 s ; seul (hors ligne), c'est ce PC qui pilote les phases.
@@ -1287,6 +1310,13 @@ public partial class Game : MonoBehaviour
             cam.transform.SetPositionAndRotation(up.position, up.rotation);
             if (dof) dof.active = paused;
             ui.UpdateUno(cam);
+            return;
+        }
+        if (inGame && bp != null)
+        {
+            BonnePayeCamera(focus);
+            ui.UpdateBonnePaye(cam);
+            if (dof) dof.active = paused;
             return;
         }
         if (inGame && sp != null)

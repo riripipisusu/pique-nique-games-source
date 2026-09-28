@@ -76,3 +76,8 @@
 # Pions de Serpents et echelles (pack Board Game Items) : dans les builds, pas dans le depot
 /Assets/Resources/Serpents/Pions/
 /Assets/Resources/Serpents/Pions.meta
+
+# Bonne Paye : scans fournis (module Tabletop Simulator) et images decoupees : dans les builds, pas dans le depot
+/BONNE PAYE ASSETS/
+/Assets/Resources/BonnePaye/Images/
+/Assets/Resources/BonnePaye/Images.meta
