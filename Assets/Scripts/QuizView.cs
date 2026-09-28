@@ -24,7 +24,7 @@ public class QuizView : MonoBehaviour
     float screenAspect = 16 / 9f;
     bool fillsFace;   // (garde pour essai : image peinte sur la dalle trapezoidale, abandonne car deformee)
     public float reveal = 1;          // 0 = image cachee au maximum, 1 = nette
-    public bool pixelated;
+    public bool pixelated, raw;   // raw : image nette des le debut
     public string imageUrl;
 
     class Podium
@@ -44,32 +44,133 @@ public class QuizView : MonoBehaviour
     readonly List<Label> qProps = new List<Label>();
     bool showingQuestion;
 
+    // Image qui se devoile sur tout l'ecran (tetes floutees, logos) plutot que le panneau de question.
+    public static bool FullImage(QuizQuestion q) => q != null && (q.k == "blur" || q.k == "pix");
+
     public void ShowQuestion(QuizQuestion q, bool mcq = false)
     {
-        showingQuestion = q != null;
+        StopAudio();
+        showingQuestion = q != null && !FullImage(q);
+        if (FullImage(q))
+        {
+            if (qRoot != null) qRoot.style.display = DisplayStyle.None;
+            imageUrl = q.u; pixelated = q.k == "pix"; raw = false; reveal = 0;
+            return;
+        }
         if (q == null) { if (qRoot != null) qRoot.style.display = DisplayStyle.None; return; }
         if (qRoot == null) BuildQuestionPanel();
         qRoot.style.display = DisplayStyle.Flex;
         qTopic.text = Topic(q);
         qText.text = q.q;
+        qText.EnableInClassList("tq-clues", q.q.Contains('\n'));   // qui est-ce : liste d'indices
         qAnswer.text = qFact.text = "";
         qAnswer.style.display = DisplayStyle.Flex;
+        bool props = mcq || q.k == "rank";
         for (int k = 0; k < 4; k++)
         {
-            qProps[k].style.display = mcq ? DisplayStyle.Flex : DisplayStyle.None;
-            qProps[k].text = mcq ? $"{k + 1}.  {q.p[k]}" : "";
+            qProps[k].style.display = props ? DisplayStyle.Flex : DisplayStyle.None;
+            qProps[k].text = !props ? "" : q.k == "rank" ? q.p[k] : $"{k + 1}.  {q.p[k]}";
             qProps[k].RemoveFromClassList("good");
         }
+        // Medias : image, 4 images, rebus (emoji et lettres), son.
+        qMedia.Clear(); pendingMedia.Clear();
+        var urls = q.k == "img" || q.k == "geo" ? new[] { q.u } : q.k == "4img" || q.k == "rebus" ? q.i : null;
+        if (urls != null)
+            for (int n = 0; n < urls.Length; n++)
+            {
+                if (q.k == "rebus" && n > 0) { var plus = new Label("+"); plus.AddToClassList("tq-plus"); qMedia.Add(plus); }
+                if (urls[n] != null && urls[n].StartsWith("txt:")) { var t = new Label(urls[n].Substring(4)); t.AddToClassList("tq-rebus-txt"); qMedia.Add(t); continue; }
+                var e = new VisualElement(); e.AddToClassList("tq-img"); e.AddToClassList("tq-img-" + q.k);
+                qMedia.Add(e); pendingMedia.Add((e, urls[n]));
+            }
+        if (q.k == "audio") { var l = new Label("♪  Écoute bien...  ♪"); l.AddToClassList("tq-audio"); qMedia.Add(l); PlayAudio(q.s); }
+        qMedia.style.display = qMedia.childCount > 0 ? DisplayStyle.Flex : DisplayStyle.None;
+        qRoot.EnableInClassList("tq-has-media", qMedia.childCount > 0);
     }
 
     public void RevealAnswer(QuizQuestion q)
     {
+        if (FullImage(q)) { reveal = 1; return; }
         if (qRoot == null) return;
-        bool mcq = qProps[0].style.display != DisplayStyle.None;
-        qAnswer.text = mcq ? "" : "C'était : " + q.d;          // en QCM, la bonne proposition s'allume deja
+        bool mcq = qProps[0].style.display != DisplayStyle.None && q.k != "rank";
+        qAnswer.text = mcq ? "" : q.k == "rank" ? string.Join("\n", (q.h ?? q.d).Split(new[] { " · ", " → " }, StringSplitOptions.None).Select((x, n) => $"{n + 1}. {x}")) : "C'était : " + q.d;
         qAnswer.style.display = mcq ? DisplayStyle.None : DisplayStyle.Flex;
-        qFact.text = q.h ?? "";
-        for (int k = 0; k < 4; k++) qProps[k].EnableInClassList("good", q.p[k] == q.d);
+        qFact.text = q.k == "rank" ? "" : q.h ?? "";
+        qAnswer.EnableInClassList("tq-rank-answer", q.k == "rank");
+        for (int k = 0; k < 4; k++) qProps[k].EnableInClassList("good", mcq && q.p[k] == q.d);
+        if (q.k == "rank") for (int k = 0; k < 4; k++) qProps[k].style.display = DisplayStyle.None;
+        // Son : la photo de l'animal apparait.
+        if (q.k == "audio" && !string.IsNullOrEmpty(q.u))
+        {
+            qMedia.Clear(); pendingMedia.Clear();
+            var e = new VisualElement(); e.AddToClassList("tq-img"); e.AddToClassList("tq-img-img");
+            qMedia.Add(e); pendingMedia.Add((e, q.u));
+        }
+    }
+
+    // --- Medias du grand quiz -------------------------------------------------------------
+    VisualElement qMedia;
+    readonly List<(VisualElement el, string url)> pendingMedia = new List<(VisualElement, string)>();
+    readonly Dictionary<string, AudioClip> clips = new Dictionary<string, AudioClip>();
+    AudioSource audioSrc;
+    string audioWanted;
+
+    public static IEnumerable<string> MediaOf(QuizQuestion q)
+    {
+        if (q == null) yield break;
+        if (!string.IsNullOrEmpty(q.u)) yield return q.u;
+        if (q.i != null) foreach (var u in q.i) if (u != null && !u.StartsWith("txt:")) yield return u;
+    }
+
+    // Tous les medias de la question sont arrives (ou abandonnes) : on peut la lancer.
+    public bool ReadyQ(QuizQuestion q)
+    {
+        bool ok = true;
+        foreach (var u in MediaOf(q)) ok &= Ready(u);
+        if (!string.IsNullOrEmpty(q?.s)) { PreloadAudio(q.s); ok &= clips.ContainsKey(q.s) || failed.Contains(q.s); }
+        return ok;
+    }
+
+    void PreloadAudio(string url) { if (!clips.ContainsKey(url) && !loading.Contains(url) && !failed.Contains(url)) StartCoroutine(LoadAudio(url)); }
+
+    IEnumerator LoadAudio(string url)
+    {
+        loading.Add(url);
+        var type = url.EndsWith(".mp3", StringComparison.OrdinalIgnoreCase) ? AudioType.MPEG : url.EndsWith(".wav", StringComparison.OrdinalIgnoreCase) ? AudioType.WAV : AudioType.OGGVORBIS;
+        using (var r = UnityWebRequestMultimedia.GetAudioClip(url, type))
+        {
+            r.timeout = 20;
+            yield return r.SendWebRequest();
+            if (r.result == UnityWebRequest.Result.Success) clips[url] = DownloadHandlerAudioClip.GetContent(r);
+            else { failed.Add(url); Debug.LogWarning($"Quiz : son introuvable {url} ({r.error})"); }
+        }
+        loading.Remove(url);
+    }
+
+    public void PlayAudio(string url)
+    {
+        if (string.IsNullOrEmpty(url)) return;
+        audioWanted = url;
+        PreloadAudio(url);
+    }
+    public void ReplayAudio() { if (audioWanted != null && clips.TryGetValue(audioWanted, out var c)) { audioSrc.Stop(); audioSrc.clip = c; audioSrc.Play(); } }
+    public void StopAudio() { audioWanted = null; if (audioSrc) audioSrc.Stop(); }
+    public bool AudioPlaying => audioSrc && audioSrc.isPlaying;
+
+    void UpdateMedia()
+    {
+        for (int n = pendingMedia.Count - 1; n >= 0; n--)
+        {
+            var (el, url) = pendingMedia[n];
+            if (url == null || failed.Contains(url)) { pendingMedia.RemoveAt(n); continue; }
+            if (!images.TryGetValue(url, out var tex)) { Preload(url); continue; }
+            el.style.backgroundImage = tex;
+            pendingMedia.RemoveAt(n);
+        }
+        // Le son part des qu'il est charge (une fois).
+        if (audioWanted != null && !audioSrc.isPlaying && audioSrc.clip == null && clips.TryGetValue(audioWanted, out var clip))
+        { audioSrc.clip = clip; audioSrc.Play(); }
+        if (audioWanted == null && audioSrc.clip != null && !audioSrc.isPlaying) audioSrc.clip = null;
     }
 
     void BuildQuestionPanel()
@@ -94,6 +195,7 @@ public class QuizView : MonoBehaviour
         qRoot.AddToClassList("tq");
         qTopic = new Label(); qTopic.AddToClassList("tq-topic"); qRoot.Add(qTopic);
         qText = new Label(); qText.AddToClassList("tq-text"); qRoot.Add(qText);
+        qMedia = new VisualElement(); qMedia.AddToClassList("tq-media"); qRoot.Add(qMedia);
         var grid = new VisualElement(); grid.AddToClassList("tq-grid"); qRoot.Add(grid);
         for (int k = 0; k < 4; k++) { var l = new Label(); l.AddToClassList("tq-prop"); l.AddToClassList("choice-" + k); grid.Add(l); qProps.Add(l); }
         qAnswer = new Label(); qAnswer.AddToClassList("tq-answer"); qRoot.Add(qAnswer);
@@ -107,11 +209,14 @@ public class QuizView : MonoBehaviour
     public static string Topic(QuizQuestion q)
     {
         var m = System.Text.RegularExpressions.Regex.Match(q.cr ?? "", @"«\s*(.+?)\s*»");
-        return m.Success ? m.Groups[1].Value : q.c;
+        return m.Success ? m.Groups[1].Value : Quiz.FamilyName(q.c);
     }
 
     // Image telechargee (ou abandonnee apres echec : on n'attend pas indefiniment).
-    public bool Ready(string url) { Preload(url); return images.ContainsKey(url) || failed.Contains(url); }
+    public bool Ready(string url) { Touch(url); Preload(url); return images.ContainsKey(url) || failed.Contains(url); }
+    // Images par ordre d'utilisation : on libere les plus anciennes, jamais celles qu'on vient de demander.
+    readonly List<string> used = new List<string>();
+    void Touch(string url) { if (url == null) return; used.Remove(url); used.Add(url); }
     readonly HashSet<string> failed = new HashSet<string>();
 
     void Awake()
@@ -123,6 +228,8 @@ public class QuizView : MonoBehaviour
         screenMat = new Material(Resources.Load<Material>("QuizScreen"));
         display = new RenderTexture(1024, 1024, 0) { name = "EcranQuiz" };
         screenMat.SetTexture("_BaseMap", display);
+        audioSrc = gameObject.AddComponent<AudioSource>();
+        audioSrc.playOnAwake = false; audioSrc.spatialBlend = 0;
         if (Synty.I && Synty.I.stage) BuildStage(); else BuildSet();
     }
 
@@ -580,7 +687,8 @@ public class QuizView : MonoBehaviour
         }
         loading.Remove(url);
         // Pas plus d'une vingtaine d'images en memoire.
-        if (images.Count > 20) foreach (var k in images.Keys.Where(k => k != imageUrl).Take(images.Count - 20).ToList()) { Destroy(images[k]); images.Remove(k); }
+        Touch(url);
+        foreach (var k in used.Where(k => images.ContainsKey(k) && k != imageUrl).Take(Math.Max(0, images.Count - 20)).ToList()) { Destroy(images[k]); images.Remove(k); used.Remove(k); }
     }
 
     // Etat du pupitre : allume a sa couleur, vert quand il a trouve.
@@ -604,7 +712,7 @@ public class QuizView : MonoBehaviour
     {
         UpdateTennaFace();
         if (!screen) return;
-        if (showingQuestion) { Graphics.Blit(questionRt, display); return; }
+        if (showingQuestion) { UpdateMedia(); Graphics.Blit(questionRt, display); return; }
         if (imageUrl == null || !images.TryGetValue(imageUrl, out var tex))
         {
             // Pas d'image (intro, chargement) : ecran violet.
@@ -636,7 +744,7 @@ public class QuizView : MonoBehaviour
     void Obscure(Texture src, float k, bool pixels)
     {
         // 128 -> 1, en restant brouille plus longtemps au debut (courbe en k^1.5).
-        float amount = Mathf.Pow(2, 7f * (1 - Mathf.Pow(Mathf.Clamp01(k), 1.5f)));
+        float amount = raw ? 1 : Mathf.Pow(2, 7f * (1 - Mathf.Pow(Mathf.Clamp01(k), 1.5f)));
         if (amount <= 1.05f) { Crop(src, display); return; }
         if (pixels)
         {

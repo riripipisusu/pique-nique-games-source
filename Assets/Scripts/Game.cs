@@ -486,6 +486,43 @@ public partial class Game : MonoBehaviour
             Application.Quit();
             yield break;
         }
+        if (Array.IndexOf(Environment.GetCommandLineArgs(), "-tennacats") >= 0)   // grand quiz : une question de chaque categorie
+        {
+            var report = new System.Text.StringBuilder();
+            var only = Environment.GetCommandLineArgs().SkipWhile(x => x != "-tennacats").Skip(1).FirstOrDefault(x => !x.StartsWith("-"));
+            for (int i = 0; i < Quiz.Families.Length; i++)
+            {
+                var key = Quiz.Families[i].key;
+                if (only != null && key != only) continue;
+                SelectGame(GameId.Trivia);
+                quizBots = 3; option = 1 << (i + 1);
+                StartQuizWithBots();
+                float t0 = Time.time;
+                while (qz.phase != QPhase.Guess && Time.time - t0 < 60)
+                {
+                    introSkip = true;
+                    if (ui.DialogueShown) { ui.DialogueKey(true); ui.DialogueKey(false); }
+                    if (Time.frameCount % 300 == 0) Debug.Log($"TENNACATS attente {key} phase={qz.phase} round={qz.round} idle={Idle} busy={busy} paused={paused} pret={qview.ReadyQ(qz.Next)} u={qz.Next.u} k={qz.Next.k}");
+                    yield return null;
+                }
+                yield return new WaitForSeconds(5); yield return Shot($"c{i:00}-{key}-q");
+                var q = qz.Current;
+                if (q == null) { report.AppendLine(key + " : BLOQUE avant la premiere question"); ToMenu(); yield return new WaitForSeconds(1); continue; }
+                report.AppendLine($"{key} : k={q.k} q={q.q.Replace('\n', '/')} d={q.d} son={qview.AudioPlaying}");
+                if (qz.Rank) foreach (var x in qz.RankOrder) ui.ChoiceClick(Array.IndexOf(q.p, x));
+                else if (qz.Geo) Act("guess|" + GeoText(q.la + 3, q.lo - 4, q.y + 25));
+                else if (qz.Mcq) ui.ChoiceClick(Array.IndexOf(q.p, q.d));
+                yield return new WaitForSeconds(0.5f);
+                report.AppendLine($"   points={qz.players[0].score}");
+                while (qz.phase != QPhase.Reveal && Time.time - t0 < 90) yield return null;
+                yield return new WaitForSeconds(1.2f); yield return Shot($"c{i:00}-{key}-r");
+                ToMenu();
+                yield return new WaitForSeconds(1);
+            }
+            System.IO.File.WriteAllText(System.IO.Path.Combine(dir, "tennacats.txt"), report.ToString());
+            Application.Quit();
+            yield break;
+        }
         if (Array.IndexOf(Environment.GetCommandLineArgs(), "-quizbots") >= 0)
         {
             SelectGame(GameId.Quiz);
@@ -872,6 +909,7 @@ public partial class Game : MonoBehaviour
         botPlan.Clear();
         if (Online || qz == null) return;
         var rng = new System.Random(qz.round * 977 + 13);
+        if (qz.Rank || qz.Geo) { PlanSpecialBots(); return; }
         var wrongPool = qz.trivia ? qz.Current.p.Where(x => x != qz.Current.d).ToList()
                                   : Quiz.Pool.Where(q => q.c == qz.Current.c && q != qz.Current).Select(q => q.d).ToList();
         for (int seat = 1; seat < qz.players.Count; seat++)
@@ -883,6 +921,33 @@ public partial class Game : MonoBehaviour
             if (wrongs == 0 || !qz.Mcq) if (rng.NextDouble() < skill || qz.Mcq) botPlan.Add((seat, 4 + (float)rng.NextDouble() * 14, qz.Current.d));
         }
     }
+
+    // Bots du classement (un ordre, juste ou non) et de geo + date (un point et une annee plus ou moins proches).
+    void PlanSpecialBots()
+    {
+        var rng = new System.Random(qz.round * 977 + 13);
+        var q = qz.Current;
+        for (int seat = 1; seat < qz.players.Count; seat++)
+        {
+            float skill = 0.35f + 0.1f * (seat % 4), at = 5 + (float)rng.NextDouble() * 12;
+            if (qz.Rank)
+            {
+                var order = qz.RankOrder;
+                string good = string.Concat(order.Select(x => (char)('0' + Array.IndexOf(q.p, x))));
+                string any = string.Concat(new[] { 0, 1, 2, 3 }.OrderBy(_ => rng.Next()).Select(i => (char)('0' + i)));
+                botPlan.Add((seat, at, rng.NextDouble() < skill ? good : any));
+            }
+            else
+            {
+                double err = (1 - skill) * 40;
+                float la = Mathf.Clamp(q.la + (float)((rng.NextDouble() * 2 - 1) * err), -89, 89), lo = Mathf.Clamp(q.lo + (float)((rng.NextDouble() * 2 - 1) * err * 1.5), -179, 179);
+                int y = q.y + (int)((rng.NextDouble() * 2 - 1) * (30 + (2025 - q.y) * 0.3));
+                botPlan.Add((seat, at, GeoText(la, lo, y)));
+            }
+        }
+    }
+    public static string GeoText(float la, float lo, int y) =>
+        string.Format(System.Globalization.CultureInfo.InvariantCulture, "{0:0.00};{1:0.00};{2}", la, lo, y);
 
     void RunBots()
     {
@@ -1024,7 +1089,7 @@ public partial class Game : MonoBehaviour
     public string QuizTick(Quiz q)
     {
         float t = Time.time - quizPhaseStart;
-        if (q.phase == QPhase.Reveal) return t > (q.round == 0 ? 4 : q.trivia ? 7 : 5.5f) && (q.trivia || qview.Ready(q.Next.u)) ? "next" : null;
+        if (q.phase == QPhase.Reveal) return t > (q.round == 0 ? 4 : q.trivia ? 7 : 5.5f) && (q.trivia ? qview.ReadyQ(q.Next) : qview.Ready(q.Next.u)) ? "next" : null;
         if (q.phase != QPhase.Guess) return null;
         if (t * 1000 > Quiz.RoundMs) return "end";
         if (q.AllFound && t > q.players.Max(pl => pl.foundMs) / 1000f + 1.5f) return "end";
@@ -1041,11 +1106,12 @@ public partial class Game : MonoBehaviour
                 case QEv.Question:
                     PlanBots();
                     quizPhaseStart = Time.time;
-                    if (qz.trivia) qview.ShowQuestion(qz.Current, qz.Mcq);
+                    if (qz.trivia) { qview.ShowQuestion(qz.Current, qz.Mcq); qview.ReadyQ(qz.Next); }
                     else
                     {
                         qview.imageUrl = qz.Current.u;
                         qview.pixelated = qz.Pixelated(qz.round);
+                        qview.raw = !qz.trivia && qz.mode == 3;
                         qview.reveal = 0;
                         qview.Preload(qz.Next.u);
                     }
@@ -1258,7 +1324,7 @@ public partial class Game : MonoBehaviour
         if (inGame && qz != null)
         {
             // L'image se devoile en 18 s ; seul (hors ligne), c'est ce PC qui pilote les phases.
-            if (qz.phase == QPhase.Guess && !qz.trivia) qview.reveal = Mathf.Clamp01((Time.time - quizPhaseStart) / 18f);
+            if (qz.phase == QPhase.Guess && (!qz.trivia || QuizView.FullImage(qz.Current))) qview.reveal = Mathf.Clamp01((Time.time - quizPhaseStart) / 18f);
             if (!Online && Idle && !paused && !qz.Finished) { RunBots(); var tick = QuizTick(qz); if (tick != null) Apply(tick); }
         }
         if (catchingUp && pending.Count == 0 && !busy && Time.realtimeSinceStartup - catchSince > 1.5f)
@@ -1284,9 +1350,9 @@ public partial class Game : MonoBehaviour
             else if (inGame && !paused) Pause();
         }
         if (!CanAct) return;
-        if (qz != null && qz.Mcq && qz.phase == QPhase.Guess)
+        if (qz != null && (qz.Mcq || qz.Rank) && qz.phase == QPhase.Guess)
             for (int k = 0; k < 4; k++)
-                if (Input.GetKeyDown(KeyCode.Alpha1 + k) || Input.GetKeyDown(KeyCode.Keypad1 + k)) Act("guess|" + qz.Current.p[k]);
+                if (Input.GetKeyDown(KeyCode.Alpha1 + k) || Input.GetKeyDown(KeyCode.Keypad1 + k)) ui.ChoiceClick(k);
         if (rules != null)
         {
             if (Input.GetKeyDown(KeyCode.Space)) Draw();

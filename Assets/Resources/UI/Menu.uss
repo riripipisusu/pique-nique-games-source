@@ -1096,3 +1096,35 @@ Button.gl.bp-step .gl-label { font-size: 40px; }
 .pq-new > .pq-card { border-color: rgb(255, 196, 40); border-width: 6px; }
 .pqx .banner-row { top: 455px; }
 .pqx .banner { font-size: 40px; padding: 4px 40px 6px 40px; border-bottom-width: 9px; }
+
+/* Grand quiz : medias sur l'ecran geant (1600x900) */
+.tq-media { flex-direction: row; justify-content: center; align-items: center; height: 430px; width: 100%; flex-shrink: 0; margin-bottom: 16px; }
+.tq-img { -unity-background-scale-mode: scale-to-fit; height: 100%; width: 900px; }
+.tq-img-4img { width: 330px; height: 330px; margin: 0 10px; border-radius: 18px; background-color: rgb(255, 255, 255); -unity-background-scale-mode: scale-and-crop; border-width: 6px; border-color: rgb(255, 255, 255); }
+.tq-img-rebus { width: 300px; height: 300px; }
+.tq-plus { font-size: 110px; color: rgb(255, 140, 198); -unity-font-style: bold; margin: 0 16px; }
+.tq-rebus-txt { font-size: 150px; color: rgb(255, 255, 255); -unity-font-style: bold; margin: 0 10px; }
+.tq-audio { font-size: 90px; color: rgb(255, 214, 90); -unity-font-style: bold; }
+.tq-has-media .tq-text { font-size: 54px; margin-bottom: 12px; }
+.tq-has-media .tq-topic { font-size: 36px; margin-bottom: 6px; }
+.tq-has-media .tq-prop { font-size: 40px; padding: 8px 20px; margin: 5px; }
+.tq-has-media .tq-answer { font-size: 56px; margin-top: 10px; }
+.tq-has-media .tq-fact { font-size: 28px; margin-top: 6px; }
+
+/* Classement : les boutons choisis montrent leur rang */
+.qz-rank Button.qz-choice.picked { border-color: rgb(255, 240, 120); border-width: 6px; }
+Button.qz-replay { margin-bottom: 10px; }
+
+/* Geo + date : carte du monde, annee, valider */
+.qz-geo { position: absolute; bottom: 12px; left: 50%; translate: -50% 0; width: 1120px; padding: 10px 16px; align-items: center; }
+.qz-map { width: 680px; height: 340px; background-color: rgb(18, 40, 80); -unity-background-scale-mode: stretch-to-fill; border-radius: 10px; overflow: hidden; }
+.qz-pin, .qz-mark { position: absolute; width: 22px; height: 22px; margin-left: -11px; margin-top: -11px; border-radius: 11px; border-width: 3px; border-color: rgb(255, 255, 255); background-color: rgb(240, 60, 146); }
+.qz-true { width: 30px; height: 30px; margin-left: -15px; margin-top: -15px; border-radius: 15px; background-color: rgb(255, 214, 40); border-color: rgb(46, 27, 16); border-width: 4px; }
+.qz-geo-row { align-items: center; margin-top: 10px; width: 100%; }
+.qz-year { font-size: 28px; -unity-font-style: bold; width: 170px; -unity-text-align: middle-center; color: #2E1B10; }
+.qz-year-slider { flex-grow: 1; min-width: 260px; margin: 0 8px; }
+Button.qz-step { min-width: 56px; padding: 0 8px; margin: 0 2px; }
+Button.qz-geo-ok { margin-left: 12px; }
+.qz-geo-info { font-size: 24px; -unity-font-style: bold; color: #2E1B10; margin-top: 6px; }
+.tq-text.tq-clues { font-size: 50px; -unity-text-align: middle-left; }
+.tq-answer.tq-rank-answer { font-size: 50px; white-space: normal; -unity-text-align: middle-center; }

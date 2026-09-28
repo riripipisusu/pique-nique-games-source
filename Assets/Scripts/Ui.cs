@@ -265,7 +265,7 @@ public partial class Ui : MonoBehaviour
         [GameId.Blackjack] = ("blackjack", 1, "2 à 4 joueurs · Cartes", "Approche-toi de 21 sans dépasser et bats le croupier."),
         [GameId.Roulette] = ("roulette", 1, "1 à 4 joueurs · Casino", "Pleins, chevaux, carrés, rouge ou noir... Le plus riche gagne."),
         [GameId.Quiz] = ("quiz", 2, "1 à 10 joueurs · Images", "Une image floutée se dévoile : films, jeux, drapeaux, pochettes..."),
-        [GameId.Trivia] = ("trivia", 2, "1 à 10 joueurs · Culture G", "Tenna pose les questions, en QCM ou en réponse libre."),
+        [GameId.Trivia] = ("trivia", 2, "1 à 10 joueurs · 14 catégories", "Maths, logos, rébus, têtes floutées, cris d'animaux, géo... Tenna pose les questions !"),
         [GameId.Bac] = ("bac", 2, "1 à 10 joueurs · Mots", "Une lettre, des catégories : trouve un mot pour chacune avant que quelqu'un crie STOP !"),
         [GameId.Rhythm] = ("rhythm", 2, "1 à 10 joueurs · Musique", "121 chansons de Deltarune et Undertale : tout le monde joue en rythme, en même temps !"),
     };
@@ -481,7 +481,7 @@ public partial class Ui : MonoBehaviour
             : game.gameId == GameId.Trivia
             ? new[] { (0, "QCM", "4 propositions, une seule réponse : la bonne et vite !"), (1, "Réponse libre", "Tape la réponse toi-même, autant d'essais que tu veux.") }
             : game.gameId == GameId.Quiz
-            ? new[] { (0, "Flou", "L'image est floue puis se précise."), (1, "Pixelisé", "De gros pixels qui s'affinent."), (2, "Mélangé", "Flou ou pixels, au hasard à chaque image.") }
+            ? new[] { (0, "Flou", "L'image est floue puis se précise."), (1, "Pixelisé", "De gros pixels qui s'affinent."), (2, "Mélangé", "Flou ou pixels, au hasard à chaque image."), (3, "Image nette", "Ni flou ni pixels : l'image brute, le plus rapide gagne !") }
             : game.gameId == GameId.Blackjack
             ? new[] { (5, "Partie rapide", "5 manches"), (10, "Partie normale", "10 manches"), (20, "Longue soirée", "20 manches") }
             : new[] { (10, "Partie rapide", "10 coups"), (20, "Partie normale", "20 coups"), (40, "Longue soirée", "40 coups") };
@@ -767,11 +767,13 @@ public partial class Ui : MonoBehaviour
         }
         else if (game.gameId == GameId.Trivia)
         {
-            S("Le but", "Tenna pose des questions de culture générale : cinéma, histoire, sciences, sport, musique, géographie... Le premier à 100 points gagne.");
+            S("Le but", "Tenna pose des questions dans 14 catégories : maths, culture G, français, qui est-ce, logos, code de la route, 4 images 1 mot, rébus, psychotechnique, classement, géo + date, cris d'animaux, têtes floutées et jeux vidéo. Choisis celles que tu veux ! Le premier à 100 points gagne.");
+            S("Classement", "Clique les 4 réponses dans l'ordre demandé, de la première à la dernière (ou touches 1 à 4). Reclique une réponse pour reprendre à partir d'elle. Un seul essai !");
+            S("Géo + Date", "Une photo d'un lieu célèbre : clique sur la carte là où il se trouve, règle l'année de sa construction, puis Valider. Jusqu'à 6 points pour le lieu et 6 pour l'année : plus tu es proche, plus tu marques.");
             S("QCM", "Quatre propositions : clique sur la tienne ou appuie sur 1, 2, 3 ou 4. Une seule réponse par question : si tu te trompes, tu attends la suivante.");
             S("Réponse libre", "Tape ta réponse puis Entrée, autant de fois que tu veux pendant les 20 secondes. Les petites fautes de frappe sont acceptées, et tout le monde voit tes mauvaises réponses !");
             S("Les points", "Plus tu réponds vite, plus tu gagnes : 10 points tout de suite, 3 à la dernière seconde, et 2 de bonus pour le premier. Après chaque question, Tenna donne la réponse et une petite anecdote.");
-            S("Les questions", "Questions issues d'OpenQuizzDB (openquizzdb.org), sous licence libre CC BY-SA.");
+            S("Les questions", "Culture G et français : OpenQuizzDB (openquizzdb.org, CC BY-SA). Personnalités, lieux, logos, animaux, classements et jeux vidéo : Wikidata ; images et sons : Wikimedia Commons (licences libres) ; rébus : emoji Noto (Apache 2.0).");
         }
         else if (game.gameId == GameId.Quiz)
         {

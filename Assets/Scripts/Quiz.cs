@@ -14,8 +14,15 @@ public class QuizQuestion
 {
     public string c, u, d, id, cr, h;
     public string[] a;
-    public string q;          // Grand quiz de Tenna : texte de la question (pas d'image)
+    public string q;          // Grand quiz de Tenna : texte de la question
     public string[] p;        // ... et ses 4 propositions (QCM)
+    // Grand quiz, questions speciales : k = "" (texte), "img" (image nette), "blur" / "pix" (image qui se devoile),
+    // "4img" (4 images), "rebus" (emoji ou "txt:LETTRES"), "audio" (son s, photo u a la revelation),
+    // "rank" (remettre p dans l'ordre de d, "A → B → C → D"), "geo" (lieu la/lo et annee y).
+    public string k, s;
+    public string[] i;
+    public float la, lo;
+    public int y;
 }
 
 [Serializable] class QuizPoolFile { public QuizQuestion[] items; }
@@ -26,6 +33,7 @@ public class QPlayer
     public int seat, score, gained;   // gained : points du tour en cours
     public bool found, locked;   // locked : QCM, mauvaise reponse donnee, plus d'essai pour cette question
     public int foundMs = -1;
+    public bool geoSet; public float geoLa, geoLo; public int geoY;   // geo + date : le point pose et l'annee
 }
 
 public enum QEv { Question, Wrong, Found, Reveal, GameOver }
@@ -55,7 +63,9 @@ public class Quiz : IMatch
     public int round;            // numero de la question affichee (0 = intro)
     public int mode;             // images : 0 flou, 1 pixelise, 2 melange ; questions : 0 QCM, 1 reponse libre
     public readonly bool trivia; // Grand quiz de Tenna (questions de culture generale)
-    public bool Mcq => trivia && mode == 0;
+    public bool Rank => trivia && Current?.k == "rank";
+    public bool Geo => trivia && Current?.k == "geo";
+    public bool Mcq => trivia && mode == 0 && !Rank && !Geo;
     public QuizQuestion Current => round > 0 ? order[(round - 1) % order.Count] : null;
     public QuizQuestion Next => order[round % order.Count];
     public bool Pixelated(int r) => mode == 1 || (mode == 2 && (r * 7919 + seed) % 2 == 0);
@@ -63,18 +73,16 @@ public class Quiz : IMatch
     readonly List<QuizQuestion> order;
     readonly int seed;
 
-    // Grand quiz : les 22 themes d'OpenQuizzDB regroupes en familles. L'option de partie vaut mode (bit 0)
-    // + familles choisies (bits 1 et suivants, 0 = toutes) : elle passe telle quelle en ligne.
-    public static readonly (string label, string[] themes)[] Families =
+    // Grand quiz : categories (Tools/tenna_pool.py). L'option de partie vaut mode (bit 0) + categories choisies
+    // (bits 1 et suivants, 0 = toutes) : elle passe telle quelle en ligne.
+    public static readonly (string key, string label)[] Families =
     {
-        ("Cinéma et télé", new[] { "Cinéma", "Télévision", "Célébrités" }),
-        ("Musique", new[] { "Musique" }),
-        ("Sport et loisirs", new[] { "Sports", "Loisirs" }),
-        ("Histoire et géo", new[] { "Histoire", "Géographie", "Pays du monde", "Tourisme", "Archéologie" }),
-        ("Sciences et nature", new[] { "Sciences", "Nature", "Animaux", "Informatique", "Web" }),
-        ("Arts et lettres", new[] { "Littérature", "Arts", "Bande dessinée" }),
-        ("Vie quotidienne", new[] { "Vie quotidienne", "Gastronomie", "Culture générale" }),
+        ("maths", "Mathématiques"), ("culture", "Culture G"), ("francais", "Français"), ("quiestce", "Qui est-ce ?"),
+        ("logos", "Logos"), ("route", "Code de la route"), ("4images", "4 images 1 mot"), ("rebus", "Rébus"),
+        ("psycho", "Psychotechnique"), ("classement", "Classement"), ("geodate", "Géo + Date"), ("animal", "Quel est cet animal ?"),
+        ("tetes", "Têtes floutées"), ("jeuxvideo", "Jeux vidéo"),
     };
+    public static string FamilyName(string key) => Families.FirstOrDefault(f => f.key == key).label ?? key;
     public static int ThemeMask(int option) => option >> 1;
     public static bool HasFamily(int option, int f) => ThemeMask(option) == 0 || (ThemeMask(option) & (1 << f)) != 0;
 
@@ -84,9 +92,9 @@ public class Quiz : IMatch
         {
             int option = mode;
             mode &= 1;
-            var keep = new HashSet<string>(Families.Where((f, i) => HasFamily(option, i)).SelectMany(f => f.themes));
+            var keep = new HashSet<string>(Families.Where((f, i) => HasFamily(option, i)).Select(f => f.key));
             var chosen = pool.Where(q => keep.Contains(q.c)).ToList();
-            if (chosen.Count >= 20) pool = chosen;
+            if (chosen.Count >= 5) pool = chosen;
         }
         this.mode = mode;
         this.trivia = trivia;
@@ -107,9 +115,9 @@ public class Quiz : IMatch
         "{\"items\":" + UnityEngine.Resources.Load<UnityEngine.TextAsset>("Quiz/pool").text + "}").items.ToList();
 
     static List<QuizQuestion> triviaPool;
-    // Questions OpenQuizzDB (Tools/trivia_pool.py) : c = theme, q = question, p = propositions, h = anecdote.
+    // Banque du grand quiz (Tools/tenna_pool.py) : c = categorie, q = question, p = propositions, h = anecdote.
     public static List<QuizQuestion> TriviaPool => triviaPool ??= UnityEngine.JsonUtility.FromJson<QuizPoolFile>(
-        "{\"items\":" + UnityEngine.Resources.Load<UnityEngine.TextAsset>("Quiz/trivia").text + "}").items.ToList();
+        "{\"items\":" + UnityEngine.Resources.Load<UnityEngine.TextAsset>("Quiz/tenna").text + "}").items.ToList();
 
     public int Actor => phase == QPhase.Guess ? Everyone : -1;
     public bool Finished => phase == QPhase.GameOver;
@@ -133,7 +141,7 @@ public class Quiz : IMatch
                 round++;
                 phase = QPhase.Guess;
                 wrong.Clear();
-                foreach (var p in players) { p.found = false; p.locked = false; p.foundMs = -1; p.gained = 0; }
+                foreach (var p in players) { p.found = false; p.locked = false; p.foundMs = -1; p.gained = 0; p.geoSet = false; }
                 Emit(QEv.Question, text: Current.c);
                 return true;
 
@@ -143,6 +151,8 @@ public class Quiz : IMatch
                 var pl = players[seat];
                 string text = a[3].Trim();
                 if (pl.found || pl.locked || text.Length == 0 || text.Length > 60) return false;
+                if (Geo) return GeoGuess(pl, ms, text);
+                if (Rank) return RankGuess(pl, ms, text);
                 // QCM : une seule reponse, forcement l'une des 4 propositions ; comparaison exacte.
                 if (Mcq && Array.IndexOf(Current.p, text) < 0) return false;
                 if (Mcq ? text == Current.d : Matches(text, Current.a))
@@ -180,6 +190,63 @@ public class Quiz : IMatch
                 return true;
         }
         return false;
+    }
+
+    // Classement : "2031" = indices des propositions, du premier au dernier. Un seul essai.
+    public string[] RankOrder => Current.d.Split(new[] { " → " }, StringSplitOptions.None);
+    bool RankGuess(QPlayer pl, int ms, string text)
+    {
+        var order = RankOrder;
+        if (text.Length != 4 || text.Distinct().Count() != 4 || text.Any(ch => ch < '0' || ch > '3')) return false;
+        bool ok = text.Select((ch, i) => Current.p[ch - '0'] == order[i]).All(x => x);
+        if (ok) Win(pl, ms);
+        else
+        {
+            pl.locked = true; wrong.Add((pl.seat, text));
+            Emit(QEv.Wrong, pl.seat, text: "");
+        }
+        return true;
+    }
+
+    void Win(QPlayer pl, int ms, int points = -1)
+    {
+        bool first = players.All(p => !p.found);
+        pl.found = true;
+        pl.foundMs = ms;
+        pl.gained = points >= 0 ? points : PointsFor(ms, first);
+        pl.score += pl.gained;
+        Emit(QEv.Found, pl.seat, pl.gained, ms);
+        Log($"{pl.name} a trouvé en {ms / 1000.0:0.0} s (+{pl.gained}).");
+    }
+
+    // Geo + date : "lat;lon;annee". Jusqu'a 6 points pour le lieu (selon la distance) + 6 pour l'annee.
+    bool GeoGuess(QPlayer pl, int ms, string text)
+    {
+        var parts = text.Split(';');
+        var inv = CultureInfo.InvariantCulture;
+        if (parts.Length != 3 || !float.TryParse(parts[0], NumberStyles.Float, inv, out float la) || !float.TryParse(parts[1], NumberStyles.Float, inv, out float lo)
+            || !int.TryParse(parts[2], NumberStyles.Integer, inv, out int y) || Math.Abs(la) > 90 || Math.Abs(lo) > 180) return false;
+        pl.geoSet = true; pl.geoLa = la; pl.geoLo = lo; pl.geoY = y;
+        var (dist, pts) = GeoPoints(Current, la, lo, y);
+        pl.locked = true;
+        Win(pl, ms, pts);
+        return true;
+    }
+
+    public static double DistanceKm(double la1, double lo1, double la2, double lo2)
+    {
+        double r = Math.PI / 180, dla = (la2 - la1) * r, dlo = (lo2 - lo1) * r;
+        double a = Math.Sin(dla / 2) * Math.Sin(dla / 2) + Math.Cos(la1 * r) * Math.Cos(la2 * r) * Math.Sin(dlo / 2) * Math.Sin(dlo / 2);
+        return 6371 * 2 * Math.Atan2(Math.Sqrt(a), Math.Sqrt(1 - a));
+    }
+
+    public static (double km, int points) GeoPoints(QuizQuestion q, float la, float lo, int y)
+    {
+        double km = DistanceKm(q.la, q.lo, la, lo);
+        double age = Math.Max(20, 2025 - q.y), tol = 10 + age * 0.08;   // plus c'est ancien, plus on tolere d'ecart
+        int place = (int)Math.Round(6 * Math.Exp(-km / 1200));
+        int when = (int)Math.Round(6 * Math.Exp(-Math.Abs(y - q.y) / tol));
+        return (km, place + when);
     }
 
     // --- Comparaison tolerante des reponses -----------------------------------------------

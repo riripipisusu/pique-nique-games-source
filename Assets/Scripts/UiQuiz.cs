@@ -1,3 +1,4 @@
+using System;
 using System.Collections;
 using System.Collections.Generic;
 using System.Linq;
@@ -50,15 +51,142 @@ public partial class Ui
         for (int k = 0; k < 4; k++)
         {
             int idx = k;
-            var b = Btn(qzChoices, "", () => { if (game.qz != null && game.MyTurn) game.Act("guess|" + game.qz.Current.p[idx]); }, "qz-choice", "choice-" + k);
+            var b = Btn(qzChoices, "", () => ChoiceClick(idx), "qz-choice", "choice-" + k);
             qzChoiceBtns.Add(b);
         }
+
+        qzReplay = Btn(bottom, "↻  Réécouter", () => game.qview.ReplayAudio(), "ghost", "small", "qz-replay");
+        BuildGeo();
 
         qzReveal = Div(qzHud, "panel", "qz-reveal");
         qzReveal.pickingMode = PickingMode.Ignore;
         Text(qzReveal, "C'était :", "qz-reveal-title");
         qzAnswer = Text(qzReveal, "", "qz-answer");
         qzCredit = Text(qzReveal, "", "qz-credit");
+    }
+
+    Button qzReplay;
+
+    // QCM : la reponse ; classement : on clique les elements du premier au dernier (reclic = on reprend a partir de la).
+    readonly List<int> rankPick = new List<int>();
+    public void ChoiceClick(int idx)
+    {
+        var q = game.qz;
+        if (q == null || !game.MyTurn) return;
+        if (!q.Rank) { if (q.Mcq) game.Act("guess|" + q.Current.p[idx]); return; }
+        int at = rankPick.IndexOf(idx);
+        if (at >= 0) rankPick.RemoveRange(at, rankPick.Count - at); else rankPick.Add(idx);
+        Sound.I.UI("tick");
+        ShowRank();
+        if (rankPick.Count == 4) { game.Act("guess|" + string.Concat(rankPick.Select(i => (char)('0' + i)))); LockChoices(true); }
+    }
+    void ShowRank()
+    {
+        var q = game.qz.Current;
+        for (int k = 0; k < 4; k++)
+        {
+            int pos = rankPick.IndexOf(k);
+            qzChoiceBtns[k].text = pos >= 0 ? $"{pos + 1}.  {q.p[k]}" : q.p[k];
+            qzChoiceBtns[k].EnableInClassList("picked", pos >= 0);
+        }
+    }
+
+    // --- Geo + date : carte du monde (clic = mon point) et annee ---------------------------
+    const string MapUrl = "https://commons.wikimedia.org/wiki/Special:FilePath/Whole_world_-_land_and_oceans.jpg?width=1920";
+    VisualElement qzGeo, qzMap, qzPin;
+    SliderInt qzYear;
+    Label qzYearLabel, qzGeoInfo;
+    Button qzGeoOk;
+    Texture2D mapTex;
+    bool geoPinned;
+    float geoLa, geoLo;
+    readonly List<VisualElement> geoMarks = new List<VisualElement>();
+
+    void BuildGeo()
+    {
+        qzGeo = Div(qzHud, "panel", "qz-geo");
+        qzMap = Div(qzGeo, "qz-map");
+        qzPin = Div(qzMap, "qz-pin");
+        qzMap.RegisterCallback<PointerDownEvent>(e =>
+        {
+            var q = game.qz;
+            if (q == null || !q.Geo || !game.MyTurn || q.players[Me].found) return;
+            var r = qzMap.contentRect;
+            geoLo = Mathf.Clamp(e.localPosition.x / r.width * 360 - 180, -180, 180);
+            geoLa = Mathf.Clamp(90 - e.localPosition.y / r.height * 180, -90, 90);
+            geoPinned = true;
+            Place(qzPin, geoLa, geoLo);
+            qzPin.style.display = DisplayStyle.Flex;
+            qzGeoOk.SetEnabled(true);
+            Sound.I.UI("tick");
+        });
+        var row = Div(qzGeo, "row", "qz-geo-row");
+        qzYearLabel = Text(row, "", "qz-year");
+        foreach (var d in new[] { -100, -10, -1 }) { int dd = d; Btn(row, d.ToString(), () => qzYear.value += dd, "ghost", "small", "qz-step"); }
+        qzYear = new SliderInt(-3000, 2025) { value = 1900 };
+        qzYear.AddToClassList("qz-year-slider");
+        qzYear.RegisterValueChangedCallback(e => qzYearLabel.text = YearText(e.newValue));
+        row.Add(qzYear);
+        foreach (var d in new[] { 1, 10, 100 }) { int dd = d; Btn(row, "+" + d, () => qzYear.value += dd, "ghost", "small", "qz-step"); }
+        qzGeoOk = Btn(row, "Valider", () =>
+        {
+            if (!geoPinned || game.qz == null || !game.MyTurn) return;
+            game.Act("guess|" + Game.GeoText(geoLa, geoLo, qzYear.value));
+            qzGeoOk.SetEnabled(false);
+        }, "green", "qz-geo-ok");
+        qzGeoInfo = Text(qzGeo, "", "qz-geo-info");
+        qzGeo.style.display = DisplayStyle.None;
+    }
+
+    static string YearText(int y) => y > 0 ? y.ToString() : $"{-y} av. J.-C.";
+
+    void Place(VisualElement el, float la, float lo)
+    {
+        el.style.left = Length.Percent((lo + 180) / 360f * 100);
+        el.style.top = Length.Percent((90 - la) / 180f * 100);
+    }
+
+    IEnumerator LoadMap()
+    {
+        using (var r = UnityEngine.Networking.UnityWebRequestTexture.GetTexture(MapUrl))
+        {
+            r.timeout = 30;
+            yield return r.SendWebRequest();
+            if (r.result == UnityEngine.Networking.UnityWebRequest.Result.Success) { mapTex = UnityEngine.Networking.DownloadHandlerTexture.GetContent(r); qzMap.style.backgroundImage = mapTex; }
+        }
+    }
+
+    void GeoQuestion(bool on)
+    {
+        qzGeo.style.display = on ? DisplayStyle.Flex : DisplayStyle.None;
+        if (!on) return;
+        if (mapTex == null) game.StartCoroutine(LoadMap());
+        geoPinned = false;
+        qzPin.style.display = DisplayStyle.None;
+        foreach (var m in geoMarks) m.RemoveFromHierarchy();
+        geoMarks.Clear();
+        qzYear.value = 1900; qzYearLabel.text = YearText(1900);
+        qzYear.SetEnabled(true);
+        qzGeoOk.SetEnabled(false);
+        qzGeoInfo.text = "";
+    }
+
+    // Revelation : le vrai lieu (etoile) et le point de chacun, a sa couleur.
+    void GeoReveal()
+    {
+        var q = game.qz; var cur = q.Current;
+        foreach (var pl in q.players.Where(p => p.geoSet))
+        {
+            var m = Div(qzMap, "qz-mark"); m.style.backgroundColor = Board.Colors[pl.seat % Board.Colors.Length];
+            Place(m, pl.geoLa, pl.geoLo); geoMarks.Add(m);
+        }
+        var star = Div(qzMap, "qz-mark", "qz-true"); Place(star, cur.la, cur.lo); geoMarks.Add(star);
+        qzPin.style.display = DisplayStyle.None;
+        var me = q.players[Me];
+        qzGeoInfo.text = me.geoSet
+            ? $"{Quiz.DistanceKm(cur.la, cur.lo, me.geoLa, me.geoLo):0} km d'écart, {Mathf.Abs(me.geoY - cur.y)} ans d'écart : +{me.gained}"
+            : $"C'était en {YearText(cur.y)}.";
+        qzYear.SetEnabled(false); qzGeoOk.SetEnabled(false);
     }
 
     int Me => game.qz != null && game.mySeat >= 0 && game.mySeat < game.qz.players.Count ? game.mySeat : 0;
@@ -156,16 +284,21 @@ public partial class Ui
     public void QuizQuestion()
     {
         var q = game.qz;
-        qzCategory.text = q.trivia ? $"{q.Current.c}  ·  question {q.round}" : $"{Quiz.CategoryName(q.Current.c)}  ·  image {q.round}";
-        qzInput.style.display = q.Mcq ? DisplayStyle.None : DisplayStyle.Flex;
-        qzChoices.style.display = q.Mcq ? DisplayStyle.Flex : DisplayStyle.None;
-        for (int k = 0; k < 4 && q.Mcq; k++)
+        qzCategory.text = q.trivia ? $"{Quiz.FamilyName(q.Current.c)}  ·  question {q.round}" : $"{Quiz.CategoryName(q.Current.c)}  ·  image {q.round}";
+        bool buttons = q.Mcq || q.Rank;
+        qzInput.style.display = buttons || q.Geo ? DisplayStyle.None : DisplayStyle.Flex;
+        qzChoices.style.display = buttons ? DisplayStyle.Flex : DisplayStyle.None;
+        qzReplay.style.display = q.Current.k == "audio" ? DisplayStyle.Flex : DisplayStyle.None;
+        GeoQuestion(q.Geo);
+        rankPick.Clear();
+        for (int k = 0; k < 4 && buttons; k++)
         {
             var b = qzChoiceBtns[k];
-            b.text = $"{k + 1}.  {q.Current.p[k]}";
+            b.text = q.Rank ? q.Current.p[k] : $"{k + 1}.  {q.Current.p[k]}";
             b.SetEnabled(true);
             b.RemoveFromClassList("good"); b.RemoveFromClassList("bad"); b.RemoveFromClassList("picked");
         }
+        qzChoices.EnableInClassList("qz-rank", q.Rank);
         qzReveal.style.display = DisplayStyle.None;
         qzFeed.Clear();
         qzInput.SetEnabled(true);
@@ -176,17 +309,19 @@ public partial class Ui
     public void QuizFound(int seat, int points)
     {
         var p = game.qz.players[seat];
-        var line = Text(qzFeed, seat == Me ? $"Bien joué ! +{points}" : $"{p.name} a trouvé ! +{points}", "qz-feed-line", "found");
+        bool geo = game.qz.Geo;
+        var line = Text(qzFeed, geo ? (seat == Me ? $"Réponse envoyée ! +{points}" : $"{p.name} a répondu ! +{points}")
+            : seat == Me ? $"Bien joué ! +{points}" : $"{p.name} a trouvé ! +{points}", "qz-feed-line", "found");
         line.style.color = Board.Colors[seat % Board.Colors.Length];
         if (seat == Me) { qzInput.SetEnabled(false); qzInput.value = ""; LockChoices(true); }
-        game.qview.Strip(seat, $"Trouvé ! +{points}", Board.Hex("1c7a3c"));
+        game.qview.Strip(seat, geo ? $"+{points}" : $"Trouvé ! +{points}", Board.Hex("1c7a3c"));
     }
 
     public void QuizWrong(int seat, string text)
     {
         var p = game.qz.players[seat];
-        if (seat == Me && game.qz.Mcq) LockChoices(false);
-        var line = Text(qzFeed, game.qz.Mcq ? (seat == Me ? "Raté !" : $"{p.name} s'est trompé !") : $"{p.name} : {text}", "qz-feed-line");
+        if (seat == Me && (game.qz.Mcq || game.qz.Rank)) LockChoices(false);
+        var line = Text(qzFeed, game.qz.Mcq || game.qz.Rank ? (seat == Me ? "Raté !" : $"{p.name} s'est trompé !") : $"{p.name} : {text}", "qz-feed-line");
         line.style.color = Board.Colors[seat % Board.Colors.Length];
         while (qzFeed.childCount > 8) qzFeed.RemoveAt(0);
         game.qview.Strip(seat, text, Board.Hex("b3262b"));
@@ -205,10 +340,17 @@ public partial class Ui
         if (game.qz.Mcq)
             for (int k = 0; k < 4; k++) qzChoiceBtns[k].EnableInClassList("good", q.p[k] == q.d);
         qzCredit.text = string.Join("\n", new[] { q.h, q.cr }.Where(x => !string.IsNullOrEmpty(x)));
-        // Grand quiz : la reponse et l'anecdote s'affichent sur l'ecran geant, pas dans un encadre par-dessus.
-        qzReveal.style.display = game.qz.trivia ? DisplayStyle.None : DisplayStyle.Flex;
+        // Grand quiz : la reponse et l'anecdote s'affichent sur l'ecran geant, pas dans un encadre par-dessus
+        // (sauf les images plein ecran : tetes floutees, logos).
+        qzReveal.style.display = game.qz.trivia && !QuizView.FullImage(q) ? DisplayStyle.None : DisplayStyle.Flex;
+        if (game.qz.Geo) GeoReveal();
+        if (game.qz.Rank)
+        {
+            var order = game.qz.RankOrder;
+            for (int k = 0; k < 4; k++) { qzChoiceBtns[k].text = $"{Array.IndexOf(order, q.p[k]) + 1}.  {q.p[k]}"; qzChoiceBtns[k].EnableInClassList("good", true); }
+        }
         qzInput.SetEnabled(false);
-        Sound.I.Play(game.qz.players[Me].found ? "bj_chips" : "lose", 0.6f);
+        Sound.I.Play(game.qz.players[Me].found && (!game.qz.Geo || game.qz.players[Me].gained >= 6) ? "bj_chips" : "lose", 0.6f);
     }
 
     void RefreshQuiz()
@@ -232,7 +374,10 @@ public partial class Ui
         }
         bool guessing = q.phase == QPhase.Guess;
         qzStatus.text = q.Finished ? "" : game.Spectating ? "Tu regardes la partie : tu joueras à la prochaine !" : !guessing ? (q.round == 0 ? "La partie commence..." : q.trivia ? "Prochaine question..." : "Prochaine image...")
+            : q.Geo && q.players[Me].found ? "Réponse envoyée ! Attends les autres..."
             : q.players[Me].found ? "Trouvé ! Attends les autres..." : q.players[Me].locked ? "Raté... attends la prochaine question !"
+            : q.Geo ? "Clique sur la carte, règle l'année puis Valider"
+            : q.Rank ? "Clique les 4 réponses dans l'ordre, de la première à la dernière (ou touches 1 à 4)"
             : q.Mcq ? "Choisis ta réponse (clic ou touches 1 à 4)" : "Tape ta réponse puis Entrée";
     }
 
