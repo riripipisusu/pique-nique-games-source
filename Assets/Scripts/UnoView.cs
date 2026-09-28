@@ -9,7 +9,7 @@ using UnityEngine;
 // est dans l'interface) ; defausse en vrac et pioche epaisse au milieu, grandes fleches du sens du jeu.
 public class UnoView : MonoBehaviour
 {
-    public static readonly Vector3 Center = new Vector3(1500, 0, 1500);
+    public static readonly Vector3 Center = Clairiere.Center;
     const float CardW = 0.42f, CardH = 0.65f;
     static readonly Vector3 PileAt = new Vector3(0.12f, 0, 0.5f), DeckAt = new Vector3(-0.85f, 0, 1.05f), RingAt = new Vector3(0, 0.03f, 0.55f);
 
@@ -65,47 +65,9 @@ public class UnoView : MonoBehaviour
         return g.transform;
     }
 
-    // Vichy rouge : trois tons (rouge plein au croisement, rose sur les bandes, blanc casse ailleurs).
-    static Texture2D Gingham()
-    {
-        const int N = 64;
-        var t = new Texture2D(N, N, TextureFormat.RGB24, true) { wrapMode = TextureWrapMode.Repeat, filterMode = FilterMode.Bilinear, anisoLevel = 8 };
-        Color red = Board.Hex("c9372f"), pink = Board.Hex("e98a80"), white = Board.Hex("f8efe2");
-        for (int y = 0; y < N; y++)
-            for (int x = 0; x < N; x++)
-            {
-                bool a = x < N / 2, b = y < N / 2;
-                t.SetPixel(x, y, a && b ? red : a || b ? pink : white);
-            }
-        t.Apply();
-        return t;
-    }
-
-    // --- Decor : prairie, grande nappe ronde, panier, clairiere d'arbres ------------------------------------
+    // --- Decor propre au Uno (la clairiere et la nappe : Clairiere) : fleches du sens, defausse, pioche ---------
     void BuildSet()
     {
-        var ground = Prim(PrimitiveType.Cylinder, new Vector3(0, -0.05f, 0), new Vector3(120, 0.05f, 120), Synty.I && Synty.I.ground ? Synty.I.ground : Mat("5f8f3a"), transform);
-        ground.GetComponent<Renderer>().shadowCastingMode = UnityEngine.Rendering.ShadowCastingMode.Off;
-        var cloth = Mat("ffffff", 0.05f);
-        cloth.SetTexture("_BaseMap", Gingham());
-        cloth.SetTextureScale("_BaseMap", new Vector2(9, 9));
-        Prim(PrimitiveType.Cylinder, new Vector3(0, 0.01f, 0.5f), new Vector3(6.6f, 0.01f, 6.6f), Mat("9e2a24"), transform);     // ourlet
-        Prim(PrimitiveType.Cylinder, new Vector3(0, 0.015f, 0.5f), new Vector3(6.4f, 0.012f, 6.4f), cloth, transform);
-        // Lumiere chaude au milieu de la nappe (le halo du jeu Uno, en version gouter au soleil).
-        var glow = new GameObject("halo").AddComponent<Light>();
-        glow.transform.SetParent(transform, false);
-        glow.transform.localPosition = new Vector3(0, 1.6f, 0.6f);
-        glow.type = LightType.Point; glow.range = 4.5f; glow.intensity = 2.2f; glow.color = Board.Hex("ffd9a0");
-        // Clairiere : herbe et fleurs autour de la nappe, buissons et rochers, arbres en couronne.
-        var rng = new System.Random(11);
-        float R(float a, float b) => a + (float)rng.NextDouble() * (b - a);
-        Vector3 Around(float r0, float r1) { float a = R(0, Mathf.PI * 2), r = R(r0, r1); return new Vector3(Mathf.Cos(a) * r, 0, 0.5f + Mathf.Sin(a) * r); }
-        string[] grass = { "SM_Env_Grass_Short_Clump_01", "SM_Env_Grass_Short_Clump_02", "SM_Env_Grass_Med_Clump_01", "SM_Env_Wildflowers_01", "SM_Env_Wildflowers_02", "SM_Env_Flowers_Flat_01", "SM_Env_Flowers_Flat_02" };
-        for (int i = 0; i < 160; i++) Model(grass[i % grass.Length], Around(3.6f, 16), R(0.9f, 1.5f), R(0, 360));
-        string[] bushes = { "SM_Env_Bush_01", "SM_Env_Bush_02", "SM_Env_Bush_03", "SM_Env_Grass_Bush_01", "SM_Env_Rock_01", "SM_Env_Rock_02", "SM_Env_Rock_Small_Pile_01" };
-        for (int i = 0; i < 26; i++) Model(bushes[i % bushes.Length], Around(8, 18), R(0.8f, 1.3f), R(0, 360));
-        string[] trees = { "SM_Env_Tree_Meadow_01", "SM_Env_Tree_Meadow_02", "SM_Env_Tree_Birch_01", "SM_Env_Tree_Birch_02", "SM_Env_Tree_Fruit_01", "SM_Env_Tree_Fruit_02" };
-        for (int i = 0; i < 34; i++) Model(trees[i % trees.Length], Around(13, 32), R(0.85f, 1.25f), R(0, 360));
         // Sens du jeu : deux grandes fleches en cercle autour des piles, qui tournent doucement.
         // uno_ring : fleches dans le sens horaire vu du dessus (sens +1 : le tour part vers la gauche) ; uno_ring_ccw : l'inverse.
         arrows = Ring("UnoFX/Board_Arrow");        // fleches officielles (sens horaire vu du dessus)
@@ -160,6 +122,7 @@ public class UnoView : MonoBehaviour
 
     public void Build(Uno u, IList<string> avatars, int mySeat)
     {
+        Clairiere.Show(true);
         gameObject.SetActive(true);
         uno = u;
         me = Mathf.Clamp(mySeat, 0, u.players.Count - 1);
@@ -181,7 +144,7 @@ public class UnoView : MonoBehaviour
         Sync();
     }
 
-    public void Hide() { StopAllCoroutines(); Dealing = false; shown = null; HideWheel(); foreach (var c in cursors) if (c) Destroy(c.gameObject); cursors.Clear(); cursorColor = -1; gameObject.SetActive(false); }
+    public void Hide() { StopAllCoroutines(); Dealing = false; shown = null; HideWheel(); foreach (var c in cursors) if (c) Destroy(c.gameObject); cursors.Clear(); cursorColor = -1; gameObject.SetActive(false); Clairiere.Show(false); }
 
     // Point d'accroche de la vignette d'un joueur (au-dessus de son eventail).
     public Vector3 TagOf(int seat) => seats[seat].fan.position + Vector3.up * CardH * FanScale * 0.6f;

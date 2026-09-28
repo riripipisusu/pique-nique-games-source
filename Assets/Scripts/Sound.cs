@@ -7,8 +7,6 @@ public class Sound : MonoBehaviour
     AudioSource music, sfx, ui;
     readonly Dictionary<string, AudioClip> clips = new Dictionary<string, AudioClip>();
     Settings s;
-    AudioClip next;
-    float fade = 1;
 
     public static void Create(Settings s)
     {
@@ -32,26 +30,13 @@ public class Sound : MonoBehaviour
         ui.volume = s.ui;
     }
 
-    // Fondu enchaine : on baisse la musique en cours, puis on lance la suivante.
-    public void Music(string name)
-    {
-        var clip = clips[name];
-        if (music.clip == clip) return;
-        next = clip;
-        fade = 0;
-    }
+    // Changement de morceau : l'ancien s'arrete net (on n'entend plus le jeu une fois revenu a l'accueil), le nouveau monte en fondu.
+    public void Music(string name) => MusicClip(clips[name]);
 
     void Update()
     {
         if (held) return;
-        if (next != null && music.volume <= 0.001f)
-        {
-            music.clip = next;
-            music.Play();
-            next = null;
-            fade = 1;
-        }
-        music.volume = Mathf.MoveTowards(music.volume, s.music * fade, Time.unscaledDeltaTime * 0.6f);
+        music.volume = Mathf.MoveTowards(music.volume, s.music, Time.unscaledDeltaTime * 0.6f);
     }
 
     // Clip charge a part (sons du Uno) : joue tel quel, sans variation de hauteur.
@@ -62,12 +47,14 @@ public class Sound : MonoBehaviour
         sfx.PlayOneShot(c, vol);
     }
 
-    // Musique chargee a part (Uno) : meme fondu enchaine que Music().
+    // Musique chargee a part (Uno) : comme Music().
     public void MusicClip(AudioClip clip)
     {
         if (!clip || music.clip == clip) return;
-        next = clip;
-        fade = 0;
+        music.Stop();
+        music.clip = clip;
+        music.volume = 0;
+        if (!held) music.Play();
     }
 
     public void Play(string n, float vol = 1, float pitchVar = 0.08f)
@@ -102,7 +89,7 @@ public class Sound : MonoBehaviour
     public float MasterVolume => s.mute ? 0 : s.master;
     // Coupe la musique (generique video) : rien ne la relance tant que held est vrai, meme un changement de morceau.
     bool held;
-    public void PauseMusic(bool pause) { held = pause; if (pause) music.Pause(); else music.UnPause(); }
+    public void PauseMusic(bool pause) { held = pause; if (pause) music.Pause(); else { music.UnPause(); if (!music.isPlaying) music.Play(); } }
 
     public void UI(string n) { if (clips.TryGetValue(n, out var c)) ui.PlayOneShot(c); }
 }

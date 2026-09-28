@@ -930,3 +930,24 @@ Button.pick-game.selected { border-color: #FF9B2F; border-width: 6px; scale: 1.0
 }
 .uno-skip-mark.pop { scale: 0.2 0.2; opacity: 0; }
 .uno-skip-mark.gone { opacity: 0; scale: 1.2 1.2; }
+
+/* Petits chevaux : le plateau occupe le milieu de l'ecran -> panneau d'action en bas a droite, bandeau plus petit en haut */
+.chx .action { left: auto; right: 30px; bottom: 56px; translate: 0 0; }
+.chx .banner-row { top: 118px; }
+.chx .banner { font-size: 40px; padding: 4px 40px 6px 40px; border-bottom-width: 9px; }
+
+/* Salon : la colonne de droite ne comprime plus ses blocs (ils se chevauchaient), choix de chanson compact */
+.lobby-right > * { flex-shrink: 0; }
+.lobby-right > .grow { flex-shrink: 1; }
+.lobby-options .rh-cover { display: none; }
+.lobby-options .rh-pick-head .mode-name { font-size: 22px; }
+.lobby-options .rh-pick-head .mode-desc { font-size: 15px; white-space: normal; }
+.lobby-options .rh-list { height: 150px; }
+.lobby-options .rh-pick-head { margin-bottom: 2px; }
+.lobby-options .rh-song-name { font-size: 18px; }
+/* Vignette d'un jeu sans illustration (en attendant l'image) : son nom */
+.pick-name { font-size: 13px; white-space: normal; -unity-text-align: middle-center; color: #2E1B10; -unity-font-style: bold; flex-grow: 1; }
+.lobby-art .pick-name { font-size: 22px; }
+/* Aide en bas a droite : sur une pastille sombre, lisible sur la nappe comme sur l'herbe */
+.hint { background-color: rgba(46, 27, 16, 0.62); border-radius: 14px; padding: 4px 14px; -unity-text-outline-width: 0; }
+.lobby-options .rh-alt { display: none; }

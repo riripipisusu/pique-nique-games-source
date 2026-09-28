@@ -259,7 +259,7 @@ public partial class Ui
         var txt = Div(head, "grow");
         Text(txt, cur.t, "mode-name");
         Text(txt, $"{cur.Chapter}  ·  {cur.Difficulty}  ·  {cur.Notes} notes  ·  {cur.by}", "mode-desc");
-        if (!string.IsNullOrEmpty(cur.d) && cur.d != cur.t) Text(txt, cur.d, "mode-desc");
+        if (!string.IsNullOrEmpty(cur.d) && cur.d != cur.t) Text(txt, cur.d, "mode-desc", "rh-alt");
         Ico(Btn(head, "Au hasard", () => pick(Random.Range(0, songs.Count)), "ghost", "small"), "play");
         var tabs = Div(box, "row", "rh-tabs");
         foreach (var ch in songs.Select(s => s.ch).Distinct())

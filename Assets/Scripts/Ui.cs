@@ -257,6 +257,7 @@ public partial class Ui : MonoBehaviour
     static readonly Dictionary<GameId, (string art, int cat, string meta, string desc)> GameInfo = new Dictionary<GameId, (string, int, string, string)>
     {
         [GameId.Croque] = ("croque", 0, "2 à 4 joueurs · Plateau", "Grimpe la montagne jusqu'au potager... mais gare aux trous quand la carotte tourne !"),
+        [GameId.Chevaux] = ("chevaux", 0, "2 à 4 joueurs · Plateau", "Un 6 pour sortir, fais le tour du plateau et grimpe l'escalier jusqu'au centre !"),
         [GameId.Uno] = ("uno", 0, "2 à 10 joueurs · Cartes", "Même couleur ou même symbole, et n'oublie pas de crier UNO !"),
         [GameId.Blackjack] = ("blackjack", 1, "2 à 4 joueurs · Cartes", "Approche-toi de 21 sans dépasser et bats le croupier."),
         [GameId.Roulette] = ("roulette", 1, "1 à 4 joueurs · Casino", "Pleins, chevaux, carrés, rouge ou noir... Le plus riche gagne."),
@@ -424,7 +425,9 @@ public partial class Ui : MonoBehaviour
         if (game.gameId == GameId.Uno) { int keep = current & ~3; var raw = pick; pick = v => raw(v | keep); current &= 3; }   // les regles maison sont gardees
         parent.Clear();
         if (game.gameId == GameId.Rhythm) { SongPicker(parent, current, pick); return; }
-        var opts = game.gameId == GameId.Uno
+        var opts = game.gameId == GameId.Chevaux
+            ? new[] { (0, "4 chevaux", "La partie complète."), (1, "3 chevaux", "Un peu plus courte."), (2, "2 chevaux", "Partie moyenne."), (3, "1 cheval", "Partie express !") }
+            : game.gameId == GameId.Uno
             ? new[] { (0, "Une manche", "Le premier qui n'a plus de cartes gagne."), (1, "Partie courte", "Premier à 200 points."), (2, "Partie officielle", "Premier à 500 points, comme la règle.") }
             : game.gameId == GameId.Croque
             ? new[] { (0, "Classique", "19 cases en spirale. La carotte ouvre 1 à 3 trous au hasard."), (1, "Amélioré", "25 cases, trous selon un cycle secret à deviner.") }
@@ -730,6 +733,14 @@ public partial class Ui : MonoBehaviour
             S("Répondre", "Tape ta réponse puis Entrée, autant de fois que tu veux pendant les 20 secondes. Le titre français ou original, les abréviations connues (GTA, AoT...) et les petites fautes de frappe sont acceptés. Les mauvaises réponses de chacun s'affichent pour tout le monde.");
             S("Les points", "Plus tu trouves vite, plus tu gagnes : 10 points tout de suite, 3 à la dernière seconde, et 2 de bonus pour le premier qui trouve.");
         }
+        else if (game.gameId == GameId.Chevaux)
+        {
+            S("Le but", "Chaque joueur a de 1 à 4 chevaux dans son écurie (au choix de l'hôte). Fais-leur faire le tour du plateau (56 cases, dans le sens des aiguilles d'une montre) puis monte ton escalier jusqu'au centre. Le premier qui y rentre tous ses chevaux gagne.");
+            S("À ton tour", "Lance le dé : maintiens le clic pour le prendre en main, puis lâche-le d'un geste vers le plateau (ou appuie sur Espace, ou sur le bouton). Choisis ensuite le cheval qui avance : clique dessus, ou appuie sur 1, 2, 3 ou 4. Les chevaux qui peuvent bouger sautillent. Si aucun ne peut bouger, tu passes ton tour.");
+            S("Le 6", "Il faut faire un 6 pour sortir un cheval de l'écurie : il se pose sur la case de départ de sa couleur. Et un 6 fait rejouer ! Mais attention : trois 6 de suite, et tu dois renvoyer un de tes chevaux en jeu à l'écurie (celui de ton choix).");
+            S("Manger", "Si ton cheval s'arrête pile sur la case d'un cheval adverse, celui-ci retourne à son écurie. On ne peut pas passer par-dessus un cheval adverse : il faut faire le compte exact pour tomber dessus. Si tu arrives sur (ou dépasses) un de tes propres chevaux, tu t'arrêtes juste derrière lui.");
+            S("L'escalier", "Il faut le compte exact pour s'arrêter au pied de ton escalier (la case juste avant ton départ) : si le dé est trop fort, le cheval va jusqu'au pied puis recule de ce qui dépasse. Ensuite, il faut faire 1 pour monter sur la 1re marche, 2 pour la 2e, et ainsi de suite jusqu'à 6 pour la 6e marche. Un dernier 6 et le cheval arrive au centre !");
+        }
         else if (game.gameId == GameId.Uno)
         {
             S("Le but", "Être le premier à se débarrasser de toutes ses cartes. Chacun reçoit 7 cartes ; on pose à tour de rôle une carte de la même couleur ou du même chiffre (ou symbole) que celle du dessus de la défausse.");
@@ -842,7 +853,8 @@ public partial class Ui : MonoBehaviour
         if (un) ShowUnoHud();
         rhHud.style.display = rh ? DisplayStyle.Flex : DisplayStyle.None;
         if (rh) ShowRhythmHud();
-        ccHud.style.display = game.rules != null ? DisplayStyle.Flex : DisplayStyle.None;
+        ccHud.style.display = game.rules != null || game.ch != null ? DisplayStyle.Flex : DisplayStyle.None;
+        hud.EnableInClassList("chx", game.ch != null);
         bjHud.style.display = bj ? DisplayStyle.Flex : DisplayStyle.None;
         rtHud.style.display = rt ? DisplayStyle.Flex : DisplayStyle.None;
         qzHud.style.display = qz ? DisplayStyle.Flex : DisplayStyle.None;
@@ -856,7 +868,7 @@ public partial class Ui : MonoBehaviour
         bubbles.Clear();
         seatTags.Clear();
         playersBar.style.display = feed.style.display = bj || rt || qz || rh || un ? DisplayStyle.None : DisplayStyle.Flex;
-        hint.text = bj || rt || qz || rh || un ? "" : "Clic droit : tourner  ·  Molette : zoom  ·  Échap : pause";
+        hint.text = bj || rt || qz || rh || un ? "" : game.ch != null ? "Maintiens le clic pour prendre le dé, lâche-le d'un geste pour le lancer  ·  Molette : zoom  ·  Échap : pause" : "Clic droit : tourner  ·  Molette : zoom  ·  Échap : pause";
         if (rt) ResetRouletteBets();
         if (bj) betAmount = Blackjack.MinBet * 5;
         Refresh();
@@ -897,6 +909,7 @@ public partial class Ui : MonoBehaviour
         else if (game.qz != null) RefreshQuiz();
         else if (game.rh != null) RefreshRhythm();
         else if (game.uno != null) RefreshUno();
+        else if (game.ch != null) RefreshChevaux();
     }
 
     void PlayerCard(int i, string name, string avatar, bool active)
@@ -920,6 +933,7 @@ public partial class Ui : MonoBehaviour
     void RefreshCroque()
     {
         var r = game.rules;
+        DrawLabel("Piocher une carte", "cards");
         playersBar.Clear();
         for (int i = 0; i < r.players.Count; i++)
         {
@@ -1138,6 +1152,15 @@ public partial class Ui : MonoBehaviour
             winTitle.style.color = Board.Colors[w.color];
             winSub.text = "Ses trois lapins festoient au potager.";
         }
+        else if (game.ch != null)
+        {
+            var c = game.ch;
+            var w = c.players[c.winner];
+            winTitle.text = $"{w.name} gagne !";
+            winTitle.style.color = Board.Colors[c.ColorOf(c.winner)];
+            winSub.text = string.Join("\n", c.players.OrderByDescending(p => p.seat == c.winner).ThenByDescending(p => p.Home).ThenByDescending(p => p.horses.Where(h => h >= 0).Sum())
+                .Select((p, i) => $"{i + 1}.  {p.name}  —  {p.Home} cheva{(p.Home > 1 ? "ux" : "l")} au centre"));
+        }
         else
         {
             var ranking = (game.bj != null ? game.bj.players.Select(p => (p.name, p.seat, p.chips))
@@ -1157,7 +1180,7 @@ public partial class Ui : MonoBehaviour
     }
 
     // --- En ligne -----------------------------------------------------------------------
-    VisualElement lobbyList, lobbyOptions, myPortraitBox;
+    VisualElement lobbyList, lobbyOptions, myPortraitBox, lobbyGameCard;
     TextField onlineName, codeField;
     Label onlineStatus, lobbyCode, lobbyStatus, onlineTitle, lobbyGame;
     Button startBtn;
@@ -1237,7 +1260,7 @@ public partial class Ui : MonoBehaviour
         inviteBtn = Ico(Btn(inv, "Copier l'invitation (Discord)", () => { GUIUtility.systemCopyBuffer = game.net.Invite; lobbyStatus.text = "Invitation copiée : colle-la dans Discord !"; }, "ghost", "small"), "copy");
         Text(right, "Tes amis la collent dans « Rejoindre » : même code pour toutes les parties.", "muted");
         lobbyPick = Div(right, "row", "lobby-pick");
-        var gc = Div(right, "row", "lobby-game");
+        var gc = lobbyGameCard = Div(right, "row", "lobby-game");
         lobbyArt = Div(gc, "lobby-art");
         var gt = Div(gc);
         lobbyGame = Text(gt, "", "mode-name");
@@ -1259,8 +1282,12 @@ public partial class Ui : MonoBehaviour
         if (n.Active && n.Lobby.Count > 0 && current == onlineScreen) Go(lobbyScreen);
         if (!n.Active && current == lobbyScreen) Go(onlineScreen, false);
         lobbyGame.text = Games.Name(n.LobbyGame);
+        lobbyGameCard.style.display = n.LobbyGame == GameId.Rhythm ? DisplayStyle.None : DisplayStyle.Flex;   // le choix de chanson a deja son titre
         lobbyMeta.text = GameInfo[n.LobbyGame].meta;
-        lobbyArt.style.backgroundImage = Resources.Load<Texture2D>("UI/Games/" + GameInfo[n.LobbyGame].art);
+        var lart = Resources.Load<Texture2D>("UI/Games/" + GameInfo[n.LobbyGame].art);
+        lobbyArt.style.backgroundImage = lart;
+        lobbyArt.Clear();
+        if (!lart) Text(lobbyArt, Games.Name(n.LobbyGame), "pick-name");
         int max = Games.MaxPlayers(n.LobbyGame);
         lobbyCount.text = $"{n.Lobby.Count} dans le salon · jusqu'à {max} joueurs";
         lobbyCode.text = n.Code;
@@ -1276,7 +1303,9 @@ public partial class Ui : MonoBehaviour
             var b = new Button(() => { Sound.I.UI("tick"); n.SetGame(gid); });
             b.AddToClassList("pick-game");
             b.EnableInClassList("selected", g == n.LobbyGame);
-            b.style.backgroundImage = Resources.Load<Texture2D>("UI/Games/" + GameInfo[g].art);
+            var art = Resources.Load<Texture2D>("UI/Games/" + GameInfo[g].art);
+            b.style.backgroundImage = art;
+            if (!art) Text(b, Games.Name(g), "pick-name").pickingMode = PickingMode.Ignore;   // pas encore d'illustration
             b.tooltip = Games.Name(g);
             lobbyPick.Add(b);
         }

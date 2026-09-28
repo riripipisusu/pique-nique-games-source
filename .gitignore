@@ -66,3 +66,9 @@
 /Assets/Resources/UnoFX.meta
 /Assets/Resources/UnoSfx/
 /Assets/Resources/UnoSfx.meta
+
+# De des petits chevaux fourni par l utilisatrice (licence inconnue) : dans les builds, pas dans le depot
+/Assets/Resources/Chevaux/De/
+/Assets/Resources/Chevaux/De.meta
+/Assets/Board Game Items/
+/Assets/Board Game Items.meta

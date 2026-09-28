@@ -147,7 +147,7 @@ public partial class Ui
         }
     }
 
-    bool OverUi(Vector2 screen)
+    public bool OverUi(Vector2 screen)
     {
         if (root.panel == null) return false;
         var p = RuntimePanelUtils.ScreenToPanel(root.panel, new Vector2(screen.x, UnityEngine.Screen.height - screen.y));
