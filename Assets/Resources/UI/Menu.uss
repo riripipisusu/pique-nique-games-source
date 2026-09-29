@@ -1077,10 +1077,10 @@ Button.bac-word:hover { background-color: #FFF3D9; }
 Button.gl.bp-step { width: 80px; }
 Button.gl.bp-step .gl-label { font-size: 40px; }
 /* Choix du jeu : 4 colonnes (11 jeux et plus tiennent sans deborder sur le bouton Retour) */
-.game-card { width: 392px; height: 176px; margin: 0 5px 12px 5px; }
-.game-art { width: 150px; }
-.game-art .pick-name { font-size: 22px; }
-.game-txt { padding: 8px 12px; }
+.game-card { width: 392px; height: 150px; margin: 0 5px 9px 5px; }
+.game-art { width: 118px; }
+.game-art .pick-name { font-size: 16px; }
+.game-txt { padding: 6px 12px; }
 .game-card .mode-name { font-size: 22px; }
 .game-meta { font-size: 15px; }
 .game-card .mode-desc { font-size: 14px; }
@@ -1128,3 +1128,29 @@ Button.qz-geo-ok { margin-left: 12px; }
 .qz-geo-info { font-size: 24px; -unity-font-style: bold; color: #2E1B10; margin-top: 6px; }
 .tq-text.tq-clues { font-size: 50px; -unity-text-align: middle-left; }
 .tq-answer.tq-rank-answer { font-size: 50px; white-space: normal; -unity-text-align: middle-center; }
+
+/* Qui suis-je ? */
+.qsj-status { position: absolute; top: 18px; left: 50%; translate: -50% 0; font-size: 26px; -unity-font-style: bold; color: rgb(255, 245, 220); padding: 6px 20px; border-radius: 16px; background-color: rgba(15, 10, 25, 0.8); }
+.qsj-hint { position: absolute; top: 68px; left: 50%; translate: -50% 0; font-size: 17px; color: rgb(255, 245, 220); padding: 3px 14px; border-radius: 12px; background-color: rgba(15, 10, 25, 0.72); }
+.qsj-clues { position: absolute; left: 16px; top: 90px; width: 400px; padding: 12px 16px; }
+.qsj-clues-title { font-size: 24px; -unity-font-style: bold; color: #2E1B10; margin-bottom: 6px; }
+.qsj-clue { font-size: 16px; color: #2E1B10; white-space: normal; margin: 2px 0; }
+.qsj-clue.yes { color: rgb(28, 122, 60); } .qsj-clue.no { color: rgb(179, 38, 43); } .qsj-clue.idk { color: rgb(120, 100, 80); }
+.qsj-panel { position: absolute; bottom: 14px; left: 50%; translate: -50% 0; width: 1180px; padding: 12px 18px; }
+.qsj-row { align-items: center; margin-top: 6px; }
+.qsj-input { flex-grow: 1; font-size: 20px; margin-right: 8px; }
+.qsj-vote { position: absolute; bottom: 20px; left: 50%; translate: -50% 0; width: 760px; padding: 16px 20px; align-items: center; }
+.qsj-vote-text { font-size: 24px; -unity-font-style: bold; color: #2E1B10; -unity-text-align: middle-center; white-space: normal; }
+.qsj-tag { position: absolute; background-color: rgba(255, 250, 240, 0.92); border-radius: 12px; border-bottom-width: 5px; padding: 3px 12px; align-items: center; }
+.qsj-tag.active { background-color: rgb(255, 228, 92); }
+.qsj-tag-name { font-size: 18px; -unity-font-style: bold; color: #2E1B10; }
+.qsj-tag-score { font-size: 14px; color: #6B4A30; }
+.qsj-bubble { position: absolute; max-width: 360px; background-color: #FFFFFF; border-radius: 18px; padding: 8px 16px; border-width: 3px; border-color: #2E1B10; }
+.qsj-bubble > Label { font-size: 20px; -unity-font-style: bold; color: #2E1B10; white-space: normal; -unity-text-align: middle-center; }
+.qsj-bubble.yes { background-color: rgb(142, 240, 138); } .qsj-bubble.no { background-color: rgb(255, 150, 140); } .qsj-bubble.idk { background-color: rgb(230, 220, 200); }
+Button.qsj-no { background-color: #F0503E; color: #FFFFFF; border-color: #6B120A; }
+.qsj-tabs { margin-bottom: 8px; }
+Button.qsj-tab { margin-right: 6px; }
+Button.qsj-tab.selected { background-color: #F03C92; color: #FFFFFF; }
+.qsj-grid { flex-direction: row; flex-wrap: wrap; justify-content: center; margin: 4px 0 6px 0; }
+Button.qsj-q { margin: 3px; }

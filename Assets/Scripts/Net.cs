@@ -373,6 +373,10 @@ public class Net : MonoBehaviour
         if (shadow is Uno && p.Length > 2 && (p[1] == "uno" || p[1] == "catch" || p[1] == "jump") && seat >= 0) p[2] = seat.ToString();   // on n'annonce que pour soi
         if (shadow is Uno && p.Length > 1 && p[1] == "next" && seat >= 0) return;
         if (shadow is Rhythm && p.Length > 1 && (p[1] == "go" || p[1] == "end") && seat >= 0) return;          // reserve a l'hote
+        if (shadow is QuiSuisJe && p.Length > 2 && p[1] == "vote") { if (seat < 0) return; p = new[] { "act", "vote", seat.ToString(), p[2] }; }   // on ne vote que pour soi
+        if (shadow is QuiSuisJe && p.Length > 1 && p[1] == "voteend" && seat >= 0) return;                                               // reserve a l'hote
+        if (shadow is QuiSuisJe && p.Length > 2 && (p[1] == "askfree" || p[1] == "guess")) p[2] = Clean(p[2]);
+        if (shadow is QuiSuisJe && p.Length > 2 && p[1] == "pick") { if (seat < 0) return; p = new[] { "act", "pick", seat.ToString(), Clean(p[2]) }; }   // on ne choisit que pour son voisin
         if (shadow.Finished || !shadow.TryApply(p.Skip(1).ToArray())) return;
         var msg = string.Join("|", p);
         actions.Add(msg);
@@ -383,9 +387,9 @@ public class Net : MonoBehaviour
     void Update()
     {
         // Quiz : l'hote pilote les phases (fin du temps ou tout le monde a trouve, puis question suivante).
-        if (IsHost && InGame && (shadow is Quiz || shadow is Rhythm || shadow is PetitBac || (shadow is Uno u0 && u0.phase == UPhase.RoundOver)) && game.Idle)
+        if (IsHost && InGame && (shadow is Quiz || shadow is Rhythm || shadow is PetitBac || (shadow is Uno u0 && u0.phase == UPhase.RoundOver) || (shadow is QuiSuisJe w0 && w0.phase == WPhase.Vote)) && game.Idle)
         {
-            var tick = shadow is Rhythm r ? game.RhythmTick(r) : shadow is Uno u ? game.UnoTick(u) : shadow is PetitBac b ? game.BacTick(b) : game.QuizTick((Quiz)shadow);
+            var tick = shadow is QuiSuisJe w ? game.QsjTick(w) : shadow is Rhythm r ? game.RhythmTick(r) : shadow is Uno u ? game.UnoTick(u) : shadow is PetitBac b ? game.BacTick(b) : game.QuizTick((Quiz)shadow);
             if (tick != null) HostAct(new[] { "act", tick });
             return;
         }

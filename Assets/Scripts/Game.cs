@@ -23,7 +23,7 @@ public partial class Game : MonoBehaviour
     public Blackjack bj;
     public Roulette rt;
     public Quiz qz;
-    public IMatch Match => (IMatch)rules ?? (IMatch)bj ?? (IMatch)rt ?? (IMatch)qz ?? (IMatch)rh ?? (IMatch)uno ?? (IMatch)ch ?? (IMatch)bac ?? (IMatch)sp ?? (IMatch)bp ?? pq;
+    public IMatch Match => (IMatch)rules ?? (IMatch)bj ?? (IMatch)rt ?? (IMatch)qz ?? (IMatch)rh ?? (IMatch)uno ?? (IMatch)ch ?? (IMatch)bac ?? (IMatch)sp ?? (IMatch)bp ?? (IMatch)pq ?? qsj;
     public bool busy;
 
     Board board;
@@ -96,6 +96,7 @@ public partial class Game : MonoBehaviour
         sview = new GameObject("PlateauSerpents").AddComponent<SerpentsView>();
         bpview = new GameObject("PlateauBonnePaye").AddComponent<BonnePayeView>();
         pview = new GameObject("NappePouilleux").AddComponent<PouilleuxView>();
+        qsview = new GameObject("QuiSuisJe").AddComponent<QuiSuisJeView>();
         rview.Init(table);
         MenuBackdrop();
 
@@ -216,7 +217,7 @@ public partial class Game : MonoBehaviour
         }
         while (busy || (pending.Count > 0 && applied < 30)) yield return null;
         yield return Shot("fin");
-        var log = rules?.log ?? bj?.log ?? rt?.log ?? qz?.log ?? uno?.log ?? ch?.log ?? bp?.log ?? pq?.log ?? bac?.log ?? sp?.log ?? new List<string>();
+        var log = rules?.log ?? bj?.log ?? rt?.log ?? qz?.log ?? uno?.log ?? ch?.log ?? bp?.log ?? pq?.log ?? qsj?.log ?? bac?.log ?? sp?.log ?? new List<string>();
         System.IO.File.WriteAllText(System.IO.Path.Combine(dir, role + ".txt"),
             $"status={net.Status}\nseat={mySeat}\nspectateur={Spectating}\napplied={applied}\noption={net.LobbyOption}\navatars={string.Join(" ; ", net.LobbyAvatars)}\n" + string.Join("\n", log));
         // Retour au salon : l'hote attend que le spectateur ait fini son rattrapage, puis ramene tout le monde.
@@ -330,6 +331,16 @@ public partial class Game : MonoBehaviour
             cview.Speed = 5;   // test : animations accelerees (sans toucher aux reglages enregistres)
             yield return new WaitForSeconds(1.5f); yield return Shot("c1-debut");
             yield return ChevauxTest(dir, Shot);
+            Application.Quit();
+            yield break;
+        }
+        if (Array.IndexOf(Environment.GetCommandLineArgs(), "-quisuisje") >= 0)   // qui suis-je : moi (auto) contre 3 bots
+        {
+            SelectGame(GameId.QuiSuisJe);
+            ui.OpenForTest("setup"); yield return new WaitForSeconds(1); yield return Shot("w0-setup");
+            quizBots = 3;
+            StartQuizWithBots();
+            yield return QuiSuisJeTest(dir, Shot);
             Application.Quit();
             yield break;
         }
@@ -784,18 +795,21 @@ public partial class Game : MonoBehaviour
         sp = null;
         bp = null;
         pq = null;
+        qsj = null;
         live.Hide();
         uview.Hide();
         cview.Hide();
         sview.Hide();
         bpview.Hide();
         pview.Hide();
+        qsview.Hide();
         if (g == GameId.Rhythm) StartRhythm(n, opt, av);
         else if (g == GameId.Chevaux) StartChevaux(n, opt, seed);
         else if (g == GameId.Bac) StartBac(n, opt, seed, av, text);
         else if (g == GameId.Serpents) StartSerpents(n, opt, seed);
         else if (g == GameId.BonnePaye) StartBonnePaye(n, opt, seed);
         else if (g == GameId.Pouilleux) StartPouilleux(n, opt, seed, av);
+        else if (g == GameId.QuiSuisJe) StartQuiSuisJe(n, opt, seed, av);
         else if (g == GameId.Uno) StartUno(n, opt, seed, av);
         else if (Games.TvTime(g))
         {
@@ -838,7 +852,7 @@ public partial class Game : MonoBehaviour
             var first = rt.events.ToList();
             StartCoroutine(Run(rview.Play(first, s => ui.Say(s)), null));
         }
-        Casino(g != GameId.Croque && g != GameId.Uno && g != GameId.Chevaux && g != GameId.Serpents && g != GameId.BonnePaye && g != GameId.Pouilleux);   // Uno, petits chevaux : en plein air, sur la nappe
+        Casino(g != GameId.Croque && g != GameId.Uno && g != GameId.Chevaux && g != GameId.Serpents && g != GameId.BonnePaye && g != GameId.Pouilleux && g != GameId.QuiSuisJe);   // Uno, petits chevaux : en plein air, sur la nappe
         // Plateau TV : tout est eclaire de face, uniformement (lumiere directionnelle propre au quiz).
         if (Games.TvTime(g)) RenderSettings.ambientLight = Board.Hex(g == GameId.Rhythm ? "3a3450" : "9a8f8a");
         if (!quizLight)
@@ -854,7 +868,7 @@ public partial class Game : MonoBehaviour
         quizLight.enabled = Games.TvTime(g) && g != GameId.Rhythm;
         snapCam = true;
         if (!Games.TvTime(g))   // TV Time : la musique demarre apres le generique et les regles
-            Sound.I.Music(g == GameId.Croque || g == GameId.Uno || g == GameId.Chevaux || g == GameId.Serpents || g == GameId.BonnePaye || g == GameId.Pouilleux ? "music_game" : g == GameId.Quiz ? "music_quiz" : "music_blackjack");
+            Sound.I.Music(g == GameId.Croque || g == GameId.Uno || g == GameId.Chevaux || g == GameId.Serpents || g == GameId.BonnePaye || g == GameId.Pouilleux || g == GameId.QuiSuisJe ? "music_game" : g == GameId.Quiz ? "music_quiz" : "music_blackjack");
         catchingUp = watch;
         if (watch) { Time.timeScale = 12; AudioListener.volume = 0; catchSince = Time.realtimeSinceStartup; }
         if (Spectating) ui.Say("Tu regardes la partie en cours", 4);
@@ -884,7 +898,7 @@ public partial class Game : MonoBehaviour
 
     public void PlayerLeft(int seat)
     {
-        string n = rules?.players[seat].name ?? bj?.players[seat].name ?? rt?.players[seat].name ?? qz?.players[seat].name ?? rh?.players[seat].name ?? uno?.players[seat].name ?? bac?.players[seat].name ?? sp?.players[seat].name ?? bp?.players[seat].name ?? pq?.players[seat].name ?? ch.players[seat].name;
+        string n = rules?.players[seat].name ?? bj?.players[seat].name ?? rt?.players[seat].name ?? qz?.players[seat].name ?? rh?.players[seat].name ?? uno?.players[seat].name ?? bac?.players[seat].name ?? sp?.players[seat].name ?? bp?.players[seat].name ?? pq?.players[seat].name ?? qsj?.players[seat].name ?? ch.players[seat].name;
         ui.Say($"{n} est parti : l'hôte joue pour lui.", 3.5f);
     }
 
@@ -1166,6 +1180,7 @@ public partial class Game : MonoBehaviour
         if (sp != null) { ApplySerpents(p); return; }
         if (bp != null) { ApplyBonnePaye(p); return; }
         if (pq != null) { ApplyPouilleux(p); return; }
+        if (qsj != null) { ApplyQuiSuisJe(p); return; }
         if (rules != null)
         {
             if (p[0] == "draw") DoDraw(); else DoMove(int.Parse(p[1]));
@@ -1303,6 +1318,8 @@ public partial class Game : MonoBehaviour
         bp = null;
         pview.Hide();
         pq = null;
+        qsview.Hide();
+        qsj = null;
         snapCam = true;
         pitch = 14;
         dist = 6.5f;
@@ -1321,6 +1338,7 @@ public partial class Game : MonoBehaviour
         SerpentsInput();
         BonnePayeInput();
         PouilleuxUpdate();
+        QuiSuisJeUpdate();
         if (inGame && qz != null)
         {
             // L'image se devoile en 18 s ; seul (hors ligne), c'est ce PC qui pilote les phases.
@@ -1382,6 +1400,7 @@ public partial class Game : MonoBehaviour
         bool focus = Focused;
         if (tour.HasValue) { cam.transform.SetPositionAndRotation(tour.Value.position, tour.Value.rotation); return; }
         cam.fieldOfView = 50;
+        cam.nearClipPlane = 0.3f;
         if (inGame && (qz != null || bac != null))
         {
             var qp = tvCloseUp ? qview.TennaPose : qview.CamPose;
@@ -1396,6 +1415,16 @@ public partial class Game : MonoBehaviour
             cam.transform.SetPositionAndRotation(up.position, up.rotation);
             if (dof) dof.active = paused;
             ui.UpdateUno(cam);
+            return;
+        }
+        if (inGame && qsj != null)
+        {
+            var wp = qsview.CamPose;
+            cam.transform.SetPositionAndRotation(wp.position, wp.rotation);
+            cam.fieldOfView = qsview.Fov;
+            cam.nearClipPlane = 0.04f;   // vue a la premiere personne : mes genoux sont tout pres
+            if (dof) dof.active = paused;
+            ui.UpdateQuiSuisJe(cam);
             return;
         }
         if (inGame && pq != null)

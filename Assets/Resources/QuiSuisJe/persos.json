@@ -1,0 +1,5546 @@
+[
+{
+"n": "Barack Obama",
+"a": [
+"Barack Obama",
+"Obama"
+],
+"f": "perso",
+"y": [
+"humain",
+"vivant",
+"avant1970",
+"amerique",
+"politique"
+]
+},
+{
+"n": "William Shakespeare",
+"a": [
+"William Shakespeare",
+"Shakespeare"
+],
+"f": "perso",
+"y": [
+"humain",
+"avant1900",
+"avant1970",
+"europe",
+"cinema",
+"lettres"
+]
+},
+{
+"n": "Michael Jackson",
+"a": [
+"Michael Jackson",
+"Jackson"
+],
+"f": "perso",
+"y": [
+"humain",
+"avant1970",
+"amerique",
+"musique"
+]
+},
+{
+"n": "Vladimir Poutine",
+"a": [
+"Vladimir Poutine",
+"Poutine"
+],
+"f": "perso",
+"y": [
+"humain",
+"vivant",
+"avant1970",
+"europe",
+"asie",
+"politique"
+]
+},
+{
+"n": "Karl Marx",
+"a": [
+"Karl Marx",
+"Marx"
+],
+"f": "perso",
+"y": [
+"humain",
+"avant1900",
+"avant1970",
+"europe",
+"politique",
+"lettres"
+]
+},
+{
+"n": "Léonard de Vinci",
+"a": [
+"Léonard de Vinci",
+"Vinci"
+],
+"f": "perso",
+"y": [
+"humain",
+"avant1900",
+"avant1970",
+"europe",
+"science"
+]
+},
+{
+"n": "Isaac Newton",
+"a": [
+"Isaac Newton",
+"Newton"
+],
+"f": "perso",
+"y": [
+"humain",
+"avant1900",
+"avant1970",
+"europe",
+"science",
+"lettres"
+]
+},
+{
+"n": "Nelson Mandela",
+"a": [
+"Nelson Mandela",
+"Mandela"
+],
+"f": "perso",
+"y": [
+"humain",
+"avant1970",
+"afrique",
+"cinema",
+"politique"
+]
+},
+{
+"n": "Napoléon Ier",
+"a": [
+"Napoléon Ier",
+"Napoléon"
+],
+"f": "perso",
+"y": [
+"humain",
+"avant1900",
+"avant1970",
+"francais",
+"europe",
+"politique",
+"royaute"
+]
+},
+{
+"n": "Mohandas Karamchand Gandhi",
+"a": [
+"Mohandas Karamchand Gandhi",
+"Gandhi"
+],
+"f": "perso",
+"y": [
+"humain",
+"avant1900",
+"avant1970",
+"asie",
+"politique",
+"lettres"
+]
+},
+{
+"n": "Jules César",
+"a": [
+"Jules César",
+"César"
+],
+"f": "perso",
+"y": [
+"humain",
+"avant1900",
+"avant1970",
+"politique",
+"lettres"
+]
+},
+{
+"n": "Charles Darwin",
+"a": [
+"Charles Darwin",
+"Darwin"
+],
+"f": "perso",
+"y": [
+"humain",
+"avant1900",
+"avant1970",
+"europe",
+"science",
+"lettres"
+]
+},
+{
+"n": "Socrate",
+"a": [
+"Socrate"
+],
+"f": "perso",
+"y": [
+"humain",
+"avant1900",
+"avant1970",
+"europe",
+"lettres"
+]
+},
+{
+"n": "Wolfgang Amadeus Mozart",
+"a": [
+"Wolfgang Amadeus Mozart",
+"Mozart"
+],
+"f": "perso",
+"y": [
+"humain",
+"avant1900",
+"avant1970",
+"europe",
+"musique"
+]
+},
+{
+"n": "Ludwig van Beethoven",
+"a": [
+"Ludwig van Beethoven",
+"Beethoven"
+],
+"f": "perso",
+"y": [
+"humain",
+"avant1900",
+"avant1970",
+"europe",
+"musique"
+]
+},
+{
+"n": "Galilée",
+"a": [
+"Galilée"
+],
+"f": "perso",
+"y": [
+"humain",
+"avant1900",
+"avant1970",
+"europe",
+"science"
+]
+},
+{
+"n": "Vincent van Gogh",
+"a": [
+"Vincent van Gogh",
+"Gogh"
+],
+"f": "perso",
+"y": [
+"humain",
+"avant1900",
+"avant1970",
+"europe",
+"art"
+]
+},
+{
+"n": "Pablo Picasso",
+"a": [
+"Pablo Picasso",
+"Picasso"
+],
+"f": "perso",
+"y": [
+"humain",
+"avant1900",
+"avant1970",
+"europe",
+"cinema",
+"lettres",
+"art"
+]
+},
+{
+"n": "Alexandre le Grand",
+"a": [
+"Alexandre le Grand",
+"Grand"
+],
+"f": "perso",
+"y": [
+"humain",
+"avant1900",
+"avant1970",
+"europe",
+"politique",
+"royaute"
+]
+},
+{
+"n": "Charlie Chaplin",
+"a": [
+"Charlie Chaplin",
+"Chaplin"
+],
+"f": "perso",
+"y": [
+"humain",
+"avant1900",
+"avant1970",
+"europe",
+"cinema",
+"lettres"
+]
+},
+{
+"n": "Winston Churchill",
+"a": [
+"Winston Churchill",
+"Churchill"
+],
+"f": "perso",
+"y": [
+"humain",
+"avant1900",
+"avant1970",
+"europe",
+"politique"
+]
+},
+{
+"n": "Voltaire",
+"a": [
+"Voltaire"
+],
+"f": "perso",
+"y": [
+"humain",
+"avant1900",
+"avant1970",
+"europe",
+"lettres"
+]
+},
+{
+"n": "Élisabeth II",
+"a": [
+"Élisabeth II"
+],
+"f": "perso",
+"y": [
+"humain",
+"femme",
+"avant1970",
+"europe",
+"royaute"
+]
+},
+{
+"n": "Thomas Edison",
+"a": [
+"Thomas Edison",
+"Edison"
+],
+"f": "perso",
+"y": [
+"humain",
+"avant1900",
+"avant1970",
+"amerique",
+"cinema",
+"science"
+]
+},
+{
+"n": "René Descartes",
+"a": [
+"René Descartes",
+"Descartes"
+],
+"f": "perso",
+"y": [
+"humain",
+"avant1900",
+"avant1970",
+"francais",
+"europe",
+"science",
+"lettres"
+]
+},
+{
+"n": "Sigmund Freud",
+"a": [
+"Sigmund Freud",
+"Freud"
+],
+"f": "perso",
+"y": [
+"humain",
+"avant1900",
+"avant1970",
+"europe",
+"lettres"
+]
+},
+{
+"n": "John Fitzgerald Kennedy",
+"a": [
+"John Fitzgerald Kennedy",
+"Kennedy"
+],
+"f": "perso",
+"y": [
+"humain",
+"avant1970",
+"amerique",
+"politique",
+"lettres"
+]
+},
+{
+"n": "Martin Luther King",
+"a": [
+"Martin Luther King",
+"King"
+],
+"f": "perso",
+"y": [
+"humain",
+"avant1970",
+"amerique",
+"politique",
+"lettres"
+]
+},
+{
+"n": "Salvador Dalí",
+"a": [
+"Salvador Dalí",
+"Dalí"
+],
+"f": "perso",
+"y": [
+"humain",
+"avant1970",
+"europe",
+"cinema",
+"art"
+]
+},
+{
+"n": "Christophe Colomb",
+"a": [
+"Christophe Colomb",
+"Colomb"
+],
+"f": "perso",
+"y": [
+"humain",
+"avant1900",
+"avant1970",
+"europe",
+"science"
+]
+},
+{
+"n": "Bill Gates",
+"a": [
+"Bill Gates",
+"Gates"
+],
+"f": "perso",
+"y": [
+"humain",
+"vivant",
+"avant1970",
+"amerique",
+"science"
+]
+},
+{
+"n": "Marilyn Monroe",
+"a": [
+"Marilyn Monroe",
+"Monroe"
+],
+"f": "perso",
+"y": [
+"humain",
+"femme",
+"avant1970",
+"amerique",
+"musique",
+"cinema"
+]
+},
+{
+"n": "Steve Jobs",
+"a": [
+"Steve Jobs",
+"Jobs"
+],
+"f": "perso",
+"y": [
+"humain",
+"avant1970",
+"amerique",
+"science"
+]
+},
+{
+"n": "Che Guevara",
+"a": [
+"Che Guevara",
+"Guevara"
+],
+"f": "perso",
+"y": [
+"humain",
+"avant1970",
+"amerique",
+"politique",
+"science"
+]
+},
+{
+"n": "Molière",
+"a": [
+"Molière"
+],
+"f": "perso",
+"y": [
+"humain",
+"avant1900",
+"avant1970",
+"europe",
+"cinema",
+"lettres"
+]
+},
+{
+"n": "Lionel Messi",
+"a": [
+"Lionel Messi",
+"Messi"
+],
+"f": "perso",
+"y": [
+"humain",
+"vivant",
+"europe",
+"amerique",
+"sport"
+]
+},
+{
+"n": "Charles de Gaulle",
+"a": [
+"Charles de Gaulle",
+"Gaulle"
+],
+"f": "perso",
+"y": [
+"humain",
+"avant1900",
+"avant1970",
+"francais",
+"europe",
+"politique"
+]
+},
+{
+"n": "Neil Armstrong",
+"a": [
+"Neil Armstrong",
+"Armstrong"
+],
+"f": "perso",
+"y": [
+"humain",
+"avant1970",
+"amerique",
+"sport",
+"science"
+]
+},
+{
+"n": "Nikola Tesla",
+"a": [
+"Nikola Tesla",
+"Tesla"
+],
+"f": "perso",
+"y": [
+"humain",
+"avant1900",
+"avant1970",
+"europe",
+"amerique",
+"science"
+]
+},
+{
+"n": "Walt Disney",
+"a": [
+"Walt Disney",
+"Disney"
+],
+"f": "perso",
+"y": [
+"humain",
+"avant1970",
+"amerique",
+"cinema",
+"science",
+"lettres"
+]
+},
+{
+"n": "Elvis Presley",
+"a": [
+"Elvis Presley",
+"Presley"
+],
+"f": "perso",
+"y": [
+"humain",
+"avant1970",
+"amerique",
+"musique"
+]
+},
+{
+"n": "Cristiano Ronaldo",
+"a": [
+"Cristiano Ronaldo",
+"Ronaldo"
+],
+"f": "perso",
+"y": [
+"humain",
+"vivant",
+"europe",
+"sport"
+]
+},
+{
+"n": "Louis Pasteur",
+"a": [
+"Louis Pasteur",
+"Pasteur"
+],
+"f": "perso",
+"y": [
+"humain",
+"avant1900",
+"avant1970",
+"francais",
+"europe",
+"science"
+]
+},
+{
+"n": "Marco Polo",
+"a": [
+"Marco Polo",
+"Polo"
+],
+"f": "perso",
+"y": [
+"humain",
+"avant1900",
+"avant1970",
+"europe",
+"lettres"
+]
+},
+{
+"n": "Pythagore",
+"a": [
+"Pythagore"
+],
+"f": "perso",
+"y": [
+"humain",
+"avant1900",
+"avant1970",
+"europe",
+"politique",
+"science",
+"lettres"
+]
+},
+{
+"n": "Stephen Hawking",
+"a": [
+"Stephen Hawking",
+"Hawking"
+],
+"f": "perso",
+"y": [
+"humain",
+"avant1970",
+"europe",
+"science",
+"lettres"
+]
+},
+{
+"n": "Elon Musk",
+"a": [
+"Elon Musk",
+"Musk"
+],
+"f": "perso",
+"y": [
+"humain",
+"vivant",
+"amerique",
+"afrique",
+"politique",
+"science"
+]
+},
+{
+"n": "Frida Kahlo",
+"a": [
+"Frida Kahlo",
+"Kahlo"
+],
+"f": "perso",
+"y": [
+"humain",
+"femme",
+"avant1970",
+"amerique",
+"art"
+]
+},
+{
+"n": "Agatha Christie",
+"a": [
+"Agatha Christie",
+"Christie"
+],
+"f": "perso",
+"y": [
+"humain",
+"femme",
+"avant1900",
+"avant1970",
+"europe",
+"lettres"
+]
+},
+{
+"n": "Jeanne d'Arc",
+"a": [
+"Jeanne d'Arc",
+"d'Arc"
+],
+"f": "perso",
+"y": [
+"humain",
+"femme",
+"avant1900",
+"avant1970",
+"europe",
+"politique"
+]
+},
+{
+"n": "Nicolas Sarkozy",
+"a": [
+"Nicolas Sarkozy",
+"Sarkozy"
+],
+"f": "perso",
+"y": [
+"humain",
+"vivant",
+"avant1970",
+"francais",
+"europe",
+"politique"
+]
+},
+{
+"n": "Madonna",
+"a": [
+"Madonna"
+],
+"f": "perso",
+"y": [
+"humain",
+"femme",
+"vivant",
+"avant1970",
+"amerique",
+"musique",
+"cinema"
+]
+},
+{
+"n": "Jules Verne",
+"a": [
+"Jules Verne",
+"Verne"
+],
+"f": "perso",
+"y": [
+"humain",
+"avant1900",
+"avant1970",
+"francais",
+"europe",
+"lettres"
+]
+},
+{
+"n": "Alan Turing",
+"a": [
+"Alan Turing",
+"Turing"
+],
+"f": "perso",
+"y": [
+"humain",
+"avant1970",
+"europe",
+"science"
+]
+},
+{
+"n": "Alfred Hitchcock",
+"a": [
+"Alfred Hitchcock",
+"Hitchcock"
+],
+"f": "perso",
+"y": [
+"humain",
+"avant1900",
+"avant1970",
+"europe",
+"amerique",
+"cinema",
+"lettres"
+]
+},
+{
+"n": "Charlemagne",
+"a": [
+"Charlemagne"
+],
+"f": "perso",
+"y": [
+"humain",
+"avant1900",
+"avant1970",
+"europe",
+"royaute"
+]
+},
+{
+"n": "Bob Dylan",
+"a": [
+"Bob Dylan",
+"Dylan"
+],
+"f": "perso",
+"y": [
+"humain",
+"vivant",
+"avant1970",
+"amerique",
+"cinema",
+"lettres"
+]
+},
+{
+"n": "John Lennon",
+"a": [
+"John Lennon",
+"Lennon"
+],
+"f": "perso",
+"y": [
+"humain",
+"avant1970",
+"europe",
+"musique",
+"cinema",
+"lettres"
+]
+},
+{
+"n": "Louis XIV",
+"a": [
+"Louis XIV"
+],
+"f": "perso",
+"y": [
+"humain",
+"avant1900",
+"avant1970",
+"europe",
+"cinema",
+"politique",
+"royaute"
+]
+},
+{
+"n": "Pelé",
+"a": [
+"Pelé"
+],
+"f": "perso",
+"y": [
+"humain",
+"avant1970",
+"amerique",
+"musique",
+"cinema",
+"politique"
+]
+},
+{
+"n": "Mohamed Ali",
+"a": [
+"Mohamed Ali"
+],
+"f": "perso",
+"y": [
+"humain",
+"avant1970",
+"amerique",
+"sport"
+]
+},
+{
+"n": "Taylor Swift",
+"a": [
+"Taylor Swift",
+"Swift"
+],
+"f": "perso",
+"y": [
+"humain",
+"femme",
+"vivant",
+"amerique",
+"musique"
+]
+},
+{
+"n": "Freddie Mercury",
+"a": [
+"Freddie Mercury",
+"Mercury"
+],
+"f": "perso",
+"y": [
+"humain",
+"avant1970",
+"europe",
+"afrique",
+"musique",
+"lettres"
+]
+},
+{
+"n": "Cléopâtre",
+"a": [
+"Cléopâtre"
+],
+"f": "perso",
+"y": [
+"humain",
+"femme",
+"avant1900",
+"avant1970",
+"afrique",
+"royaute"
+]
+},
+{
+"n": "Steven Spielberg",
+"a": [
+"Steven Spielberg",
+"Spielberg"
+],
+"f": "perso",
+"y": [
+"humain",
+"vivant",
+"avant1970",
+"amerique",
+"cinema",
+"lettres"
+]
+},
+{
+"n": "Antoine de Saint-Exupéry",
+"a": [
+"Antoine de Saint-Exupéry",
+"Saint-Exupéry"
+],
+"f": "perso",
+"y": [
+"humain",
+"avant1970",
+"francais",
+"europe",
+"science",
+"lettres"
+]
+},
+{
+"n": "Anne Frank",
+"a": [
+"Anne Frank",
+"Frank"
+],
+"f": "perso",
+"y": [
+"humain",
+"femme",
+"avant1970",
+"europe"
+]
+},
+{
+"n": "Mark Zuckerberg",
+"a": [
+"Mark Zuckerberg",
+"Zuckerberg"
+],
+"f": "perso",
+"y": [
+"humain",
+"vivant",
+"amerique",
+"science"
+]
+},
+{
+"n": "Émile Zola",
+"a": [
+"Émile Zola",
+"Zola"
+],
+"f": "perso",
+"y": [
+"humain",
+"avant1900",
+"avant1970",
+"francais",
+"europe",
+"lettres",
+"art"
+]
+},
+{
+"n": "Bob Marley",
+"a": [
+"Bob Marley",
+"Marley"
+],
+"f": "perso",
+"y": [
+"humain",
+"avant1970",
+"amerique",
+"musique"
+]
+},
+{
+"n": "Bruce Lee",
+"a": [
+"Bruce Lee"
+],
+"f": "perso",
+"y": [
+"humain",
+"avant1970",
+"amerique",
+"asie",
+"cinema",
+"lettres"
+]
+},
+{
+"n": "Jackie Chan",
+"a": [
+"Jackie Chan",
+"Chan"
+],
+"f": "perso",
+"y": [
+"humain",
+"vivant",
+"avant1970",
+"amerique",
+"asie",
+"cinema"
+]
+},
+{
+"n": "Céline Dion",
+"a": [
+"Céline Dion",
+"Dion"
+],
+"f": "perso",
+"y": [
+"humain",
+"femme",
+"vivant",
+"avant1970",
+"amerique",
+"musique"
+]
+},
+{
+"n": "Claude Monet",
+"a": [
+"Claude Monet",
+"Monet"
+],
+"f": "perso",
+"y": [
+"humain",
+"avant1900",
+"avant1970",
+"francais",
+"europe",
+"art"
+]
+},
+{
+"n": "Greta Thunberg",
+"a": [
+"Greta Thunberg",
+"Thunberg"
+],
+"f": "perso",
+"y": [
+"humain",
+"femme",
+"vivant",
+"europe"
+]
+},
+{
+"n": "Rafael Nadal",
+"a": [
+"Rafael Nadal",
+"Nadal"
+],
+"f": "perso",
+"y": [
+"humain",
+"vivant",
+"europe",
+"cinema",
+"sport"
+]
+},
+{
+"n": "Brigitte Bardot",
+"a": [
+"Brigitte Bardot",
+"Bardot"
+],
+"f": "perso",
+"y": [
+"humain",
+"femme",
+"avant1970",
+"francais",
+"europe",
+"musique",
+"cinema",
+"lettres"
+]
+},
+{
+"n": "Diana Spencer",
+"a": [
+"Diana Spencer",
+"Spencer"
+],
+"f": "perso",
+"y": [
+"humain",
+"femme",
+"avant1970",
+"europe"
+]
+},
+{
+"n": "Leonardo DiCaprio",
+"a": [
+"Leonardo DiCaprio",
+"DiCaprio"
+],
+"f": "perso",
+"y": [
+"humain",
+"vivant",
+"amerique",
+"cinema"
+]
+},
+{
+"n": "Paul McCartney",
+"a": [
+"Paul McCartney",
+"McCartney"
+],
+"f": "perso",
+"y": [
+"humain",
+"vivant",
+"avant1970",
+"europe",
+"musique",
+"cinema"
+]
+},
+{
+"n": "Brad Pitt",
+"a": [
+"Brad Pitt",
+"Pitt"
+],
+"f": "perso",
+"y": [
+"humain",
+"vivant",
+"avant1970",
+"amerique",
+"cinema"
+]
+},
+{
+"n": "Johnny Depp",
+"a": [
+"Johnny Depp",
+"Depp"
+],
+"f": "perso",
+"y": [
+"humain",
+"vivant",
+"avant1970",
+"amerique",
+"musique",
+"cinema"
+]
+},
+{
+"n": "Stephen King",
+"a": [
+"Stephen King",
+"King"
+],
+"f": "perso",
+"y": [
+"humain",
+"vivant",
+"avant1970",
+"amerique",
+"cinema",
+"lettres"
+]
+},
+{
+"n": "Édith Piaf",
+"a": [
+"Édith Piaf",
+"Piaf"
+],
+"f": "perso",
+"y": [
+"humain",
+"femme",
+"avant1970",
+"francais",
+"europe",
+"musique",
+"cinema"
+]
+},
+{
+"n": "Zinedine Zidane",
+"a": [
+"Zinedine Zidane",
+"Zidane"
+],
+"f": "perso",
+"y": [
+"humain",
+"vivant",
+"francais",
+"europe",
+"sport"
+]
+},
+{
+"n": "Jean de La Fontaine",
+"a": [
+"Jean de La Fontaine",
+"Fontaine"
+],
+"f": "perso",
+"y": [
+"humain",
+"avant1900",
+"avant1970",
+"europe",
+"lettres"
+]
+},
+{
+"n": "Arthur Rimbaud",
+"a": [
+"Arthur Rimbaud",
+"Rimbaud"
+],
+"f": "perso",
+"y": [
+"humain",
+"avant1900",
+"avant1970",
+"francais",
+"europe",
+"politique",
+"lettres"
+]
+},
+{
+"n": "Ariana Grande",
+"a": [
+"Ariana Grande",
+"Grande"
+],
+"f": "perso",
+"y": [
+"humain",
+"femme",
+"vivant",
+"amerique",
+"musique",
+"cinema"
+]
+},
+{
+"n": "Michael Jordan",
+"a": [
+"Michael Jordan",
+"Jordan"
+],
+"f": "perso",
+"y": [
+"humain",
+"vivant",
+"avant1970",
+"amerique"
+]
+},
+{
+"n": "Alain Delon",
+"a": [
+"Alain Delon",
+"Delon"
+],
+"f": "perso",
+"y": [
+"humain",
+"avant1970",
+"francais",
+"europe",
+"cinema",
+"lettres"
+]
+},
+{
+"n": "Whitney Houston",
+"a": [
+"Whitney Houston",
+"Houston"
+],
+"f": "perso",
+"y": [
+"humain",
+"femme",
+"avant1970",
+"amerique",
+"musique",
+"cinema"
+]
+},
+{
+"n": "Usain Bolt",
+"a": [
+"Usain Bolt",
+"Bolt"
+],
+"f": "perso",
+"y": [
+"humain",
+"vivant",
+"amerique",
+"sport"
+]
+},
+{
+"n": "David Bowie",
+"a": [
+"David Bowie",
+"Bowie"
+],
+"f": "perso",
+"y": [
+"humain",
+"avant1970",
+"europe",
+"musique",
+"cinema"
+]
+},
+{
+"n": "Adele",
+"a": [
+"Adele"
+],
+"f": "perso",
+"y": [
+"humain",
+"femme",
+"vivant",
+"europe",
+"musique"
+]
+},
+{
+"n": "Katy Perry",
+"a": [
+"Katy Perry",
+"Perry"
+],
+"f": "perso",
+"y": [
+"humain",
+"femme",
+"vivant",
+"amerique",
+"cinema"
+]
+},
+{
+"n": "Tom Hanks",
+"a": [
+"Tom Hanks",
+"Hanks"
+],
+"f": "perso",
+"y": [
+"humain",
+"vivant",
+"avant1970",
+"europe",
+"amerique",
+"cinema",
+"lettres"
+]
+},
+{
+"n": "Will Smith",
+"a": [
+"Will Smith",
+"Smith"
+],
+"f": "perso",
+"y": [
+"humain",
+"vivant",
+"avant1970",
+"amerique",
+"musique",
+"cinema",
+"lettres"
+]
+},
+{
+"n": "Kylian Mbappé",
+"a": [
+"Kylian Mbappé",
+"Mbappé"
+],
+"f": "perso",
+"y": [
+"humain",
+"vivant",
+"francais",
+"europe",
+"sport"
+]
+},
+{
+"n": "Marie-Antoinette",
+"a": [
+"Marie-Antoinette"
+],
+"f": "perso",
+"y": [
+"humain",
+"femme",
+"avant1900",
+"avant1970",
+"francais",
+"europe"
+]
+},
+{
+"n": "Meryl Streep",
+"a": [
+"Meryl Streep",
+"Streep"
+],
+"f": "perso",
+"y": [
+"humain",
+"femme",
+"vivant",
+"avant1970",
+"amerique",
+"cinema"
+]
+},
+{
+"n": "Amy Winehouse",
+"a": [
+"Amy Winehouse",
+"Winehouse"
+],
+"f": "perso",
+"y": [
+"humain",
+"femme",
+"europe",
+"musique"
+]
+},
+{
+"n": "Rosa Parks",
+"a": [
+"Rosa Parks",
+"Parks"
+],
+"f": "perso",
+"y": [
+"humain",
+"femme",
+"avant1970",
+"amerique"
+]
+},
+{
+"n": "Kurt Cobain",
+"a": [
+"Kurt Cobain",
+"Cobain"
+],
+"f": "perso",
+"y": [
+"humain",
+"avant1970",
+"amerique",
+"musique"
+]
+},
+{
+"n": "George Clooney",
+"a": [
+"George Clooney",
+"Clooney"
+],
+"f": "perso",
+"y": [
+"humain",
+"vivant",
+"avant1970",
+"francais",
+"europe",
+"amerique",
+"cinema",
+"lettres"
+]
+},
+{
+"n": "Morgan Freeman",
+"a": [
+"Morgan Freeman",
+"Freeman"
+],
+"f": "perso",
+"y": [
+"humain",
+"vivant",
+"avant1970",
+"amerique",
+"cinema"
+]
+},
+{
+"n": "Louis XVI",
+"a": [
+"Louis XVI"
+],
+"f": "perso",
+"y": [
+"humain",
+"avant1900",
+"avant1970",
+"francais",
+"europe",
+"politique",
+"royaute"
+]
+},
+{
+"n": "Jim Carrey",
+"a": [
+"Jim Carrey",
+"Carrey"
+],
+"f": "perso",
+"y": [
+"humain",
+"vivant",
+"avant1970",
+"amerique",
+"cinema"
+]
+},
+{
+"n": "Billie Eilish",
+"a": [
+"Billie Eilish",
+"Eilish"
+],
+"f": "perso",
+"y": [
+"humain",
+"femme",
+"vivant",
+"amerique",
+"musique"
+]
+},
+{
+"n": "Serena Williams",
+"a": [
+"Serena Williams",
+"Williams"
+],
+"f": "perso",
+"y": [
+"humain",
+"femme",
+"vivant",
+"amerique",
+"cinema",
+"lettres"
+]
+},
+{
+"n": "Sylvester Stallone",
+"a": [
+"Sylvester Stallone",
+"Stallone"
+],
+"f": "perso",
+"y": [
+"humain",
+"vivant",
+"avant1970",
+"amerique",
+"cinema"
+]
+},
+{
+"n": "Quentin Tarantino",
+"a": [
+"Quentin Tarantino",
+"Tarantino"
+],
+"f": "perso",
+"y": [
+"humain",
+"vivant",
+"avant1970",
+"amerique",
+"cinema",
+"lettres"
+]
+},
+{
+"n": "Keanu Reeves",
+"a": [
+"Keanu Reeves",
+"Reeves"
+],
+"f": "perso",
+"y": [
+"humain",
+"vivant",
+"avant1970",
+"amerique",
+"musique",
+"cinema",
+"lettres"
+]
+},
+{
+"n": "Rowan Atkinson",
+"a": [
+"Rowan Atkinson",
+"Atkinson"
+],
+"f": "perso",
+"y": [
+"humain",
+"vivant",
+"avant1970",
+"europe",
+"cinema"
+]
+},
+{
+"n": "Henri VIII",
+"a": [
+"Henri VIII",
+"VIII"
+],
+"f": "perso",
+"y": [
+"humain",
+"avant1900",
+"avant1970",
+"europe",
+"musique",
+"royaute"
+]
+},
+{
+"n": "Joe Biden",
+"a": [
+"Joe Biden",
+"Biden"
+],
+"f": "perso",
+"y": [
+"humain",
+"vivant",
+"avant1970",
+"amerique",
+"politique",
+"lettres"
+]
+},
+{
+"n": "Angela Merkel",
+"a": [
+"Angela Merkel",
+"Merkel"
+],
+"f": "perso",
+"y": [
+"humain",
+"femme",
+"vivant",
+"avant1970",
+"europe",
+"politique",
+"science"
+]
+},
+{
+"n": "Jean-Paul II",
+"a": [
+"Jean-Paul II"
+],
+"f": "perso",
+"y": [
+"humain",
+"avant1970",
+"europe",
+"lettres"
+]
+},
+{
+"n": "Albert Einstein",
+"a": [
+"Albert Einstein",
+"Einstein"
+],
+"f": "perso",
+"y": [
+"humain",
+"avant1900",
+"avant1970",
+"europe",
+"science"
+]
+},
+{
+"n": "Marie Curie",
+"a": [
+"Marie Curie",
+"Curie"
+],
+"f": "perso",
+"y": [
+"humain",
+"femme",
+"avant1900",
+"avant1970",
+"europe",
+"francais",
+"science"
+]
+},
+{
+"n": "Victor Hugo",
+"a": [
+"Victor Hugo",
+"Hugo"
+],
+"f": "perso",
+"y": [
+"humain",
+"avant1900",
+"avant1970",
+"europe",
+"francais",
+"lettres",
+"politique"
+]
+},
+{
+"n": "Coco Chanel",
+"a": [
+"Coco Chanel",
+"Chanel"
+],
+"f": "perso",
+"y": [
+"humain",
+"femme",
+"avant1900",
+"avant1970",
+"europe",
+"francais",
+"art"
+]
+},
+{
+"n": "Beyoncé",
+"a": [
+"Beyoncé"
+],
+"f": "perso",
+"y": [
+"humain",
+"femme",
+"vivant",
+"amerique",
+"musique",
+"cinema"
+]
+},
+{
+"n": "Rihanna",
+"a": [
+"Rihanna"
+],
+"f": "perso",
+"y": [
+"humain",
+"femme",
+"vivant",
+"amerique",
+"musique"
+]
+},
+{
+"n": "Eminem",
+"a": [
+"Eminem"
+],
+"f": "perso",
+"y": [
+"humain",
+"vivant",
+"avant1970",
+"amerique",
+"musique"
+]
+},
+{
+"n": "Lady Gaga",
+"a": [
+"Lady Gaga",
+"Gaga"
+],
+"f": "perso",
+"y": [
+"humain",
+"femme",
+"vivant",
+"amerique",
+"musique",
+"cinema"
+]
+},
+{
+"n": "Omar Sy",
+"a": [
+"Omar Sy"
+],
+"f": "perso",
+"y": [
+"humain",
+"vivant",
+"europe",
+"francais",
+"cinema"
+]
+},
+{
+"n": "Emmanuel Macron",
+"a": [
+"Emmanuel Macron",
+"Macron"
+],
+"f": "perso",
+"y": [
+"humain",
+"vivant",
+"europe",
+"francais",
+"politique"
+]
+},
+{
+"n": "Donald Trump",
+"a": [
+"Donald Trump",
+"Trump"
+],
+"f": "perso",
+"y": [
+"humain",
+"vivant",
+"avant1970",
+"amerique",
+"politique"
+]
+},
+{
+"n": "Mickey Mouse",
+"a": [
+"Mickey Mouse"
+],
+"f": "fiction",
+"y": [
+"animal",
+"anime",
+"fiction"
+],
+"u": [
+"vivant",
+"avant1900",
+"avant1970",
+"europe",
+"amerique",
+"asie",
+"afrique"
+]
+},
+{
+"n": "Bugs Bunny",
+"a": [
+"Bugs Bunny"
+],
+"f": "fiction",
+"y": [
+"animal",
+"anime",
+"fiction"
+],
+"u": [
+"vivant",
+"avant1900",
+"avant1970",
+"europe",
+"amerique",
+"asie",
+"afrique"
+]
+},
+{
+"n": "Homer Simpson",
+"a": [
+"Homer Simpson"
+],
+"f": "fiction",
+"y": [
+"anime",
+"fiction",
+"humain"
+],
+"u": [
+"vivant",
+"avant1900",
+"avant1970",
+"europe",
+"amerique",
+"asie",
+"afrique"
+]
+},
+{
+"n": "Bart Simpson",
+"a": [
+"Bart Simpson"
+],
+"f": "fiction",
+"y": [
+"anime",
+"fiction",
+"humain"
+],
+"u": [
+"vivant",
+"avant1900",
+"avant1970",
+"europe",
+"amerique",
+"asie",
+"afrique"
+]
+},
+{
+"n": "Bob l'éponge",
+"a": [
+"Bob l'éponge"
+],
+"f": "fiction",
+"y": [
+"animal",
+"anime",
+"eau",
+"fiction"
+],
+"u": [
+"vivant",
+"avant1900",
+"avant1970",
+"europe",
+"amerique",
+"asie",
+"afrique"
+]
+},
+{
+"n": "Shrek",
+"a": [
+"Shrek"
+],
+"f": "fiction",
+"y": [
+"anime",
+"fiction",
+"film",
+"grand"
+],
+"u": [
+"vivant",
+"avant1900",
+"avant1970",
+"europe",
+"amerique",
+"asie",
+"afrique"
+]
+},
+{
+"n": "Pikachu",
+"a": [
+"Pikachu"
+],
+"f": "fiction",
+"y": [
+"animal",
+"anime",
+"fiction",
+"jeuvideo",
+"pouvoirs"
+],
+"u": [
+"vivant",
+"avant1900",
+"avant1970",
+"europe",
+"amerique",
+"asie",
+"afrique"
+]
+},
+{
+"n": "Mario",
+"a": [
+"Mario"
+],
+"f": "fiction",
+"y": [
+"fiction",
+"humain",
+"jeuvideo"
+],
+"u": [
+"vivant",
+"avant1900",
+"avant1970",
+"europe",
+"amerique",
+"asie",
+"afrique"
+]
+},
+{
+"n": "Luigi",
+"a": [
+"Luigi"
+],
+"f": "fiction",
+"y": [
+"fiction",
+"humain",
+"jeuvideo"
+],
+"u": [
+"vivant",
+"avant1900",
+"avant1970",
+"europe",
+"amerique",
+"asie",
+"afrique"
+]
+},
+{
+"n": "Princesse Peach",
+"a": [
+"Princesse Peach"
+],
+"f": "fiction",
+"y": [
+"femme",
+"fiction",
+"humain",
+"jeuvideo"
+],
+"u": [
+"vivant",
+"avant1900",
+"avant1970",
+"europe",
+"amerique",
+"asie",
+"afrique"
+]
+},
+{
+"n": "Bowser",
+"a": [
+"Bowser"
+],
+"f": "fiction",
+"y": [
+"fiction",
+"grand",
+"jeuvideo",
+"mechant",
+"pouvoirs"
+],
+"u": [
+"vivant",
+"avant1900",
+"avant1970",
+"europe",
+"amerique",
+"asie",
+"afrique"
+]
+},
+{
+"n": "Sonic",
+"a": [
+"Sonic"
+],
+"f": "fiction",
+"y": [
+"animal",
+"fiction",
+"jeuvideo",
+"pouvoirs"
+],
+"u": [
+"vivant",
+"avant1900",
+"avant1970",
+"europe",
+"amerique",
+"asie",
+"afrique"
+]
+},
+{
+"n": "Link",
+"a": [
+"Link"
+],
+"f": "fiction",
+"y": [
+"fiction",
+"humain",
+"jeuvideo"
+],
+"u": [
+"vivant",
+"avant1900",
+"avant1970",
+"europe",
+"amerique",
+"asie",
+"afrique"
+]
+},
+{
+"n": "Lara Croft",
+"a": [
+"Lara Croft"
+],
+"f": "fiction",
+"y": [
+"femme",
+"fiction",
+"humain",
+"jeuvideo"
+],
+"u": [
+"vivant",
+"avant1900",
+"avant1970",
+"europe",
+"amerique",
+"asie",
+"afrique"
+]
+},
+{
+"n": "Pac-Man",
+"a": [
+"Pac-Man"
+],
+"f": "fiction",
+"y": [
+"fiction",
+"jeuvideo"
+],
+"u": [
+"vivant",
+"avant1900",
+"avant1970",
+"europe",
+"amerique",
+"asie",
+"afrique"
+]
+},
+{
+"n": "Kirby",
+"a": [
+"Kirby"
+],
+"f": "fiction",
+"y": [
+"fiction",
+"jeuvideo",
+"pouvoirs"
+],
+"u": [
+"vivant",
+"avant1900",
+"avant1970",
+"europe",
+"amerique",
+"asie",
+"afrique"
+]
+},
+{
+"n": "Donkey Kong",
+"a": [
+"Donkey Kong"
+],
+"f": "fiction",
+"y": [
+"animal",
+"fiction",
+"grand",
+"jeuvideo"
+],
+"u": [
+"vivant",
+"avant1900",
+"avant1970",
+"europe",
+"amerique",
+"asie",
+"afrique"
+]
+},
+{
+"n": "Harry Potter",
+"a": [
+"Harry Potter"
+],
+"f": "fiction",
+"y": [
+"fiction",
+"film",
+"humain",
+"livre",
+"pouvoirs"
+],
+"u": [
+"vivant",
+"avant1900",
+"avant1970",
+"europe",
+"amerique",
+"asie",
+"afrique"
+]
+},
+{
+"n": "Hermione Granger",
+"a": [
+"Hermione Granger"
+],
+"f": "fiction",
+"y": [
+"femme",
+"fiction",
+"film",
+"humain",
+"livre",
+"pouvoirs"
+],
+"u": [
+"vivant",
+"avant1900",
+"avant1970",
+"europe",
+"amerique",
+"asie",
+"afrique"
+]
+},
+{
+"n": "Voldemort",
+"a": [
+"Voldemort"
+],
+"f": "fiction",
+"y": [
+"fiction",
+"film",
+"humain",
+"livre",
+"mechant",
+"pouvoirs"
+],
+"u": [
+"vivant",
+"avant1900",
+"avant1970",
+"europe",
+"amerique",
+"asie",
+"afrique"
+]
+},
+{
+"n": "Dark Vador",
+"a": [
+"Dark Vador"
+],
+"f": "fiction",
+"y": [
+"fiction",
+"film",
+"humain",
+"mechant",
+"pouvoirs"
+],
+"u": [
+"vivant",
+"avant1900",
+"avant1970",
+"europe",
+"amerique",
+"asie",
+"afrique"
+]
+},
+{
+"n": "Yoda",
+"a": [
+"Yoda"
+],
+"f": "fiction",
+"y": [
+"fiction",
+"film",
+"pouvoirs"
+],
+"u": [
+"vivant",
+"avant1900",
+"avant1970",
+"europe",
+"amerique",
+"asie",
+"afrique"
+]
+},
+{
+"n": "Luke Skywalker",
+"a": [
+"Luke Skywalker"
+],
+"f": "fiction",
+"y": [
+"fiction",
+"film",
+"humain",
+"pouvoirs"
+],
+"u": [
+"vivant",
+"avant1900",
+"avant1970",
+"europe",
+"amerique",
+"asie",
+"afrique"
+]
+},
+{
+"n": "Superman",
+"a": [
+"Superman"
+],
+"f": "fiction",
+"y": [
+"bd",
+"fiction",
+"film",
+"humain",
+"pouvoirs"
+],
+"u": [
+"vivant",
+"avant1900",
+"avant1970",
+"europe",
+"amerique",
+"asie",
+"afrique"
+]
+},
+{
+"n": "Batman",
+"a": [
+"Batman"
+],
+"f": "fiction",
+"y": [
+"bd",
+"fiction",
+"film",
+"humain"
+],
+"u": [
+"vivant",
+"avant1900",
+"avant1970",
+"europe",
+"amerique",
+"asie",
+"afrique"
+]
+},
+{
+"n": "Spider-Man",
+"a": [
+"Spider-Man"
+],
+"f": "fiction",
+"y": [
+"bd",
+"fiction",
+"film",
+"humain",
+"pouvoirs"
+],
+"u": [
+"vivant",
+"avant1900",
+"avant1970",
+"europe",
+"amerique",
+"asie",
+"afrique"
+]
+},
+{
+"n": "Wonder Woman",
+"a": [
+"Wonder Woman"
+],
+"f": "fiction",
+"y": [
+"bd",
+"femme",
+"fiction",
+"film",
+"humain",
+"pouvoirs"
+],
+"u": [
+"vivant",
+"avant1900",
+"avant1970",
+"europe",
+"amerique",
+"asie",
+"afrique"
+]
+},
+{
+"n": "Le Joker",
+"a": [
+"Le Joker"
+],
+"f": "fiction",
+"y": [
+"bd",
+"fiction",
+"film",
+"humain",
+"mechant"
+],
+"u": [
+"vivant",
+"avant1900",
+"avant1970",
+"europe",
+"amerique",
+"asie",
+"afrique"
+]
+},
+{
+"n": "Iron Man",
+"a": [
+"Iron Man"
+],
+"f": "fiction",
+"y": [
+"bd",
+"fiction",
+"film",
+"humain"
+],
+"u": [
+"vivant",
+"avant1900",
+"avant1970",
+"europe",
+"amerique",
+"asie",
+"afrique"
+]
+},
+{
+"n": "Hulk",
+"a": [
+"Hulk"
+],
+"f": "fiction",
+"y": [
+"bd",
+"fiction",
+"film",
+"grand",
+"humain",
+"pouvoirs"
+],
+"u": [
+"vivant",
+"avant1900",
+"avant1970",
+"europe",
+"amerique",
+"asie",
+"afrique"
+]
+},
+{
+"n": "Astérix",
+"a": [
+"Astérix"
+],
+"f": "fiction",
+"y": [
+"bd",
+"fiction",
+"francais",
+"humain"
+],
+"u": [
+"vivant",
+"avant1900",
+"avant1970",
+"europe",
+"amerique",
+"asie",
+"afrique"
+]
+},
+{
+"n": "Obélix",
+"a": [
+"Obélix"
+],
+"f": "fiction",
+"y": [
+"bd",
+"fiction",
+"francais",
+"grand",
+"humain",
+"pouvoirs"
+],
+"u": [
+"vivant",
+"avant1900",
+"avant1970",
+"europe",
+"amerique",
+"asie",
+"afrique"
+]
+},
+{
+"n": "Tintin",
+"a": [
+"Tintin"
+],
+"f": "fiction",
+"y": [
+"bd",
+"fiction",
+"humain"
+],
+"u": [
+"vivant",
+"avant1900",
+"avant1970",
+"europe",
+"amerique",
+"asie",
+"afrique"
+]
+},
+{
+"n": "Milou",
+"a": [
+"Milou"
+],
+"f": "fiction",
+"y": [
+"animal",
+"bd",
+"fiction"
+],
+"u": [
+"vivant",
+"avant1900",
+"avant1970",
+"europe",
+"amerique",
+"asie",
+"afrique"
+]
+},
+{
+"n": "Lucky Luke",
+"a": [
+"Lucky Luke"
+],
+"f": "fiction",
+"y": [
+"bd",
+"fiction",
+"humain"
+],
+"u": [
+"vivant",
+"avant1900",
+"avant1970",
+"europe",
+"amerique",
+"asie",
+"afrique"
+]
+},
+{
+"n": "Gaston Lagaffe",
+"a": [
+"Gaston Lagaffe"
+],
+"f": "fiction",
+"y": [
+"bd",
+"fiction",
+"francais",
+"humain"
+],
+"u": [
+"vivant",
+"avant1900",
+"avant1970",
+"europe",
+"amerique",
+"asie",
+"afrique"
+]
+},
+{
+"n": "Les Schtroumpfs",
+"a": [
+"Les Schtroumpfs"
+],
+"f": "fiction",
+"y": [
+"anime",
+"bd",
+"fiction"
+],
+"u": [
+"vivant",
+"avant1900",
+"avant1970",
+"europe",
+"amerique",
+"asie",
+"afrique"
+]
+},
+{
+"n": "Garfield",
+"a": [
+"Garfield"
+],
+"f": "fiction",
+"y": [
+"animal",
+"anime",
+"bd",
+"fiction"
+],
+"u": [
+"vivant",
+"avant1900",
+"avant1970",
+"europe",
+"amerique",
+"asie",
+"afrique"
+]
+},
+{
+"n": "Snoopy",
+"a": [
+"Snoopy"
+],
+"f": "fiction",
+"y": [
+"animal",
+"anime",
+"bd",
+"fiction"
+],
+"u": [
+"vivant",
+"avant1900",
+"avant1970",
+"europe",
+"amerique",
+"asie",
+"afrique"
+]
+},
+{
+"n": "Naruto",
+"a": [
+"Naruto"
+],
+"f": "fiction",
+"y": [
+"anime",
+"bd",
+"fiction",
+"humain",
+"pouvoirs"
+],
+"u": [
+"vivant",
+"avant1900",
+"avant1970",
+"europe",
+"amerique",
+"asie",
+"afrique"
+]
+},
+{
+"n": "Son Goku",
+"a": [
+"Son Goku"
+],
+"f": "fiction",
+"y": [
+"anime",
+"bd",
+"fiction",
+"humain",
+"pouvoirs"
+],
+"u": [
+"vivant",
+"avant1900",
+"avant1970",
+"europe",
+"amerique",
+"asie",
+"afrique"
+]
+},
+{
+"n": "Luffy",
+"a": [
+"Luffy"
+],
+"f": "fiction",
+"y": [
+"anime",
+"bd",
+"fiction",
+"humain",
+"pouvoirs"
+],
+"u": [
+"vivant",
+"avant1900",
+"avant1970",
+"europe",
+"amerique",
+"asie",
+"afrique"
+]
+},
+{
+"n": "Blanche-Neige",
+"a": [
+"Blanche-Neige"
+],
+"f": "fiction",
+"y": [
+"anime",
+"femme",
+"fiction",
+"humain",
+"livre"
+],
+"u": [
+"vivant",
+"avant1900",
+"avant1970",
+"europe",
+"amerique",
+"asie",
+"afrique"
+]
+},
+{
+"n": "Cendrillon",
+"a": [
+"Cendrillon"
+],
+"f": "fiction",
+"y": [
+"anime",
+"femme",
+"fiction",
+"humain",
+"livre"
+],
+"u": [
+"vivant",
+"avant1900",
+"avant1970",
+"europe",
+"amerique",
+"asie",
+"afrique"
+]
+},
+{
+"n": "Elsa",
+"a": [
+"Elsa"
+],
+"f": "fiction",
+"y": [
+"anime",
+"femme",
+"fiction",
+"humain",
+"pouvoirs"
+],
+"u": [
+"vivant",
+"avant1900",
+"avant1970",
+"europe",
+"amerique",
+"asie",
+"afrique"
+]
+},
+{
+"n": "Simba",
+"a": [
+"Simba"
+],
+"f": "fiction",
+"y": [
+"animal",
+"anime",
+"fiction"
+],
+"u": [
+"vivant",
+"avant1900",
+"avant1970",
+"europe",
+"amerique",
+"asie",
+"afrique"
+]
+},
+{
+"n": "Buzz l'Éclair",
+"a": [
+"Buzz l'Éclair"
+],
+"f": "fiction",
+"y": [
+"anime",
+"fiction"
+],
+"u": [
+"vivant",
+"avant1900",
+"avant1970",
+"europe",
+"amerique",
+"asie",
+"afrique"
+]
+},
+{
+"n": "Woody",
+"a": [
+"Woody"
+],
+"f": "fiction",
+"y": [
+"anime",
+"fiction"
+],
+"u": [
+"vivant",
+"avant1900",
+"avant1970",
+"europe",
+"amerique",
+"asie",
+"afrique"
+]
+},
+{
+"n": "Nemo",
+"a": [
+"Nemo"
+],
+"f": "fiction",
+"y": [
+"animal",
+"anime",
+"eau",
+"fiction"
+],
+"u": [
+"vivant",
+"avant1900",
+"avant1970",
+"europe",
+"amerique",
+"asie",
+"afrique"
+]
+},
+{
+"n": "Winnie l'ourson",
+"a": [
+"Winnie l'ourson"
+],
+"f": "fiction",
+"y": [
+"animal",
+"anime",
+"fiction",
+"livre"
+],
+"u": [
+"vivant",
+"avant1900",
+"avant1970",
+"europe",
+"amerique",
+"asie",
+"afrique"
+]
+},
+{
+"n": "Pinocchio",
+"a": [
+"Pinocchio"
+],
+"f": "fiction",
+"y": [
+"anime",
+"fiction",
+"livre"
+],
+"u": [
+"vivant",
+"avant1900",
+"avant1970",
+"europe",
+"amerique",
+"asie",
+"afrique"
+]
+},
+{
+"n": "Peter Pan",
+"a": [
+"Peter Pan"
+],
+"f": "fiction",
+"y": [
+"anime",
+"fiction",
+"humain",
+"livre",
+"pouvoirs"
+],
+"u": [
+"vivant",
+"avant1900",
+"avant1970",
+"europe",
+"amerique",
+"asie",
+"afrique"
+]
+},
+{
+"n": "Capitaine Crochet",
+"a": [
+"Capitaine Crochet"
+],
+"f": "fiction",
+"y": [
+"anime",
+"fiction",
+"humain",
+"livre",
+"mechant"
+],
+"u": [
+"vivant",
+"avant1900",
+"avant1970",
+"europe",
+"amerique",
+"asie",
+"afrique"
+]
+},
+{
+"n": "Aladdin",
+"a": [
+"Aladdin"
+],
+"f": "fiction",
+"y": [
+"anime",
+"fiction",
+"humain"
+],
+"u": [
+"vivant",
+"avant1900",
+"avant1970",
+"europe",
+"amerique",
+"asie",
+"afrique"
+]
+},
+{
+"n": "Stitch",
+"a": [
+"Stitch"
+],
+"f": "fiction",
+"y": [
+"anime",
+"fiction",
+"pouvoirs"
+],
+"u": [
+"vivant",
+"avant1900",
+"avant1970",
+"europe",
+"amerique",
+"asie",
+"afrique"
+]
+},
+{
+"n": "Scooby-Doo",
+"a": [
+"Scooby-Doo"
+],
+"f": "fiction",
+"y": [
+"animal",
+"anime",
+"fiction"
+],
+"u": [
+"vivant",
+"avant1900",
+"avant1970",
+"europe",
+"amerique",
+"asie",
+"afrique"
+]
+},
+{
+"n": "Sherlock Holmes",
+"a": [
+"Sherlock Holmes"
+],
+"f": "fiction",
+"y": [
+"fiction",
+"film",
+"humain",
+"livre"
+],
+"u": [
+"vivant",
+"avant1900",
+"avant1970",
+"europe",
+"amerique",
+"asie",
+"afrique"
+]
+},
+{
+"n": "Dracula",
+"a": [
+"Dracula"
+],
+"f": "fiction",
+"y": [
+"fiction",
+"film",
+"humain",
+"livre",
+"mechant",
+"pouvoirs"
+],
+"u": [
+"vivant",
+"avant1900",
+"avant1970",
+"europe",
+"amerique",
+"asie",
+"afrique"
+]
+},
+{
+"n": "Le Petit Prince",
+"a": [
+"Le Petit Prince"
+],
+"f": "fiction",
+"y": [
+"fiction",
+"humain",
+"livre"
+],
+"u": [
+"vivant",
+"avant1900",
+"avant1970",
+"europe",
+"amerique",
+"asie",
+"afrique"
+]
+},
+{
+"n": "Gandalf",
+"a": [
+"Gandalf"
+],
+"f": "fiction",
+"y": [
+"fiction",
+"film",
+"humain",
+"livre",
+"pouvoirs"
+],
+"u": [
+"vivant",
+"avant1900",
+"avant1970",
+"europe",
+"amerique",
+"asie",
+"afrique"
+]
+},
+{
+"n": "Gollum",
+"a": [
+"Gollum"
+],
+"f": "fiction",
+"y": [
+"fiction",
+"film",
+"livre",
+"mechant"
+],
+"u": [
+"vivant",
+"avant1900",
+"avant1970",
+"europe",
+"amerique",
+"asie",
+"afrique"
+]
+},
+{
+"n": "James Bond",
+"a": [
+"James Bond"
+],
+"f": "fiction",
+"y": [
+"fiction",
+"film",
+"humain",
+"livre"
+],
+"u": [
+"vivant",
+"avant1900",
+"avant1970",
+"europe",
+"amerique",
+"asie",
+"afrique"
+]
+},
+{
+"n": "Indiana Jones",
+"a": [
+"Indiana Jones"
+],
+"f": "fiction",
+"y": [
+"fiction",
+"film",
+"humain"
+],
+"u": [
+"vivant",
+"avant1900",
+"avant1970",
+"europe",
+"amerique",
+"asie",
+"afrique"
+]
+},
+{
+"n": "E.T.",
+"a": [
+"E.T."
+],
+"f": "fiction",
+"y": [
+"fiction",
+"film",
+"pouvoirs"
+],
+"u": [
+"vivant",
+"avant1900",
+"avant1970",
+"europe",
+"amerique",
+"asie",
+"afrique"
+]
+},
+{
+"n": "Godzilla",
+"a": [
+"Godzilla"
+],
+"f": "fiction",
+"y": [
+"eau",
+"fiction",
+"film",
+"grand",
+"mechant"
+],
+"u": [
+"vivant",
+"avant1900",
+"avant1970",
+"europe",
+"amerique",
+"asie",
+"afrique"
+]
+},
+{
+"n": "King Kong",
+"a": [
+"King Kong"
+],
+"f": "fiction",
+"y": [
+"animal",
+"fiction",
+"film",
+"grand"
+],
+"u": [
+"vivant",
+"avant1900",
+"avant1970",
+"europe",
+"amerique",
+"asie",
+"afrique"
+]
+},
+{
+"n": "Jack Sparrow",
+"a": [
+"Jack Sparrow"
+],
+"f": "fiction",
+"y": [
+"fiction",
+"film",
+"humain"
+],
+"u": [
+"vivant",
+"avant1900",
+"avant1970",
+"europe",
+"amerique",
+"asie",
+"afrique"
+]
+},
+{
+"n": "Dora l'exploratrice",
+"a": [
+"Dora l'exploratrice"
+],
+"f": "fiction",
+"y": [
+"anime",
+"femme",
+"fiction",
+"humain"
+],
+"u": [
+"vivant",
+"avant1900",
+"avant1970",
+"europe",
+"amerique",
+"asie",
+"afrique"
+]
+},
+{
+"n": "Peppa Pig",
+"a": [
+"Peppa Pig"
+],
+"f": "fiction",
+"y": [
+"animal",
+"anime",
+"femme",
+"fiction"
+],
+"u": [
+"vivant",
+"avant1900",
+"avant1970",
+"europe",
+"amerique",
+"asie",
+"afrique"
+]
+},
+{
+"n": "Hello Kitty",
+"a": [
+"Hello Kitty"
+],
+"f": "fiction",
+"y": [
+"animal",
+"anime",
+"femme",
+"fiction"
+],
+"u": [
+"vivant",
+"avant1900",
+"avant1970",
+"europe",
+"amerique",
+"asie",
+"afrique"
+]
+},
+{
+"n": "Les Minions",
+"a": [
+"Les Minions"
+],
+"f": "fiction",
+"y": [
+"anime",
+"fiction"
+],
+"u": [
+"vivant",
+"avant1900",
+"avant1970",
+"europe",
+"amerique",
+"asie",
+"afrique"
+]
+},
+{
+"n": "Maléfique",
+"a": [
+"Maléfique"
+],
+"f": "fiction",
+"y": [
+"anime",
+"femme",
+"fiction",
+"film",
+"humain",
+"mechant",
+"pouvoirs"
+],
+"u": [
+"vivant",
+"avant1900",
+"avant1970",
+"europe",
+"amerique",
+"asie",
+"afrique"
+]
+},
+{
+"n": "Le Père Noël",
+"a": [
+"Le Père Noël"
+],
+"f": "fiction",
+"y": [
+"fiction",
+"humain",
+"livre",
+"pouvoirs"
+],
+"u": [
+"vivant",
+"avant1900",
+"avant1970",
+"europe",
+"amerique",
+"asie",
+"afrique"
+]
+},
+{
+"n": "Lion",
+"a": [
+"Lion"
+],
+"f": "animal",
+"y": [
+"animal",
+"carnivore",
+"grand",
+"mammifere"
+],
+"u": [
+"vivant",
+"avant1900",
+"avant1970",
+"europe",
+"amerique",
+"asie",
+"afrique",
+"femme",
+"francais"
+]
+},
+{
+"n": "Tigre",
+"a": [
+"Tigre"
+],
+"f": "animal",
+"y": [
+"animal",
+"carnivore",
+"grand",
+"mammifere"
+],
+"u": [
+"vivant",
+"avant1900",
+"avant1970",
+"europe",
+"amerique",
+"asie",
+"afrique",
+"femme",
+"francais"
+]
+},
+{
+"n": "Éléphant",
+"a": [
+"Éléphant"
+],
+"f": "animal",
+"y": [
+"animal",
+"grand",
+"mammifere"
+],
+"u": [
+"vivant",
+"avant1900",
+"avant1970",
+"europe",
+"amerique",
+"asie",
+"afrique",
+"femme",
+"francais"
+]
+},
+{
+"n": "Girafe",
+"a": [
+"Girafe"
+],
+"f": "animal",
+"y": [
+"animal",
+"grand",
+"mammifere"
+],
+"u": [
+"vivant",
+"avant1900",
+"avant1970",
+"europe",
+"amerique",
+"asie",
+"afrique",
+"femme",
+"francais"
+]
+},
+{
+"n": "Zèbre",
+"a": [
+"Zèbre"
+],
+"f": "animal",
+"y": [
+"animal",
+"grand",
+"mammifere"
+],
+"u": [
+"vivant",
+"avant1900",
+"avant1970",
+"europe",
+"amerique",
+"asie",
+"afrique",
+"femme",
+"francais"
+]
+},
+{
+"n": "Hippopotame",
+"a": [
+"Hippopotame"
+],
+"f": "animal",
+"y": [
+"animal",
+"eau",
+"grand",
+"mammifere"
+],
+"u": [
+"vivant",
+"avant1900",
+"avant1970",
+"europe",
+"amerique",
+"asie",
+"afrique",
+"femme",
+"francais"
+]
+},
+{
+"n": "Ours polaire",
+"a": [
+"Ours polaire"
+],
+"f": "animal",
+"y": [
+"animal",
+"carnivore",
+"grand",
+"mammifere"
+],
+"u": [
+"vivant",
+"avant1900",
+"avant1970",
+"europe",
+"amerique",
+"asie",
+"afrique",
+"femme",
+"francais"
+]
+},
+{
+"n": "Panda",
+"a": [
+"Panda"
+],
+"f": "animal",
+"y": [
+"animal",
+"grand",
+"mammifere"
+],
+"u": [
+"vivant",
+"avant1900",
+"avant1970",
+"europe",
+"amerique",
+"asie",
+"afrique",
+"femme",
+"francais"
+]
+},
+{
+"n": "Kangourou",
+"a": [
+"Kangourou"
+],
+"f": "animal",
+"y": [
+"animal",
+"mammifere"
+],
+"u": [
+"vivant",
+"avant1900",
+"avant1970",
+"europe",
+"amerique",
+"asie",
+"afrique",
+"femme",
+"francais"
+]
+},
+{
+"n": "Koala",
+"a": [
+"Koala"
+],
+"f": "animal",
+"y": [
+"animal",
+"mammifere"
+],
+"u": [
+"vivant",
+"avant1900",
+"avant1970",
+"europe",
+"amerique",
+"asie",
+"afrique",
+"femme",
+"francais"
+]
+},
+{
+"n": "Gorille",
+"a": [
+"Gorille"
+],
+"f": "animal",
+"y": [
+"animal",
+"grand",
+"mammifere"
+],
+"u": [
+"vivant",
+"avant1900",
+"avant1970",
+"europe",
+"amerique",
+"asie",
+"afrique",
+"femme",
+"francais"
+]
+},
+{
+"n": "Loup",
+"a": [
+"Loup"
+],
+"f": "animal",
+"y": [
+"animal",
+"carnivore",
+"mammifere"
+],
+"u": [
+"vivant",
+"avant1900",
+"avant1970",
+"europe",
+"amerique",
+"asie",
+"afrique",
+"femme",
+"francais"
+]
+},
+{
+"n": "Renard",
+"a": [
+"Renard"
+],
+"f": "animal",
+"y": [
+"animal",
+"carnivore",
+"mammifere"
+],
+"u": [
+"vivant",
+"avant1900",
+"avant1970",
+"europe",
+"amerique",
+"asie",
+"afrique",
+"femme",
+"francais"
+]
+},
+{
+"n": "Chien",
+"a": [
+"Chien"
+],
+"f": "animal",
+"y": [
+"animal",
+"carnivore",
+"domestique",
+"mammifere"
+],
+"u": [
+"vivant",
+"avant1900",
+"avant1970",
+"europe",
+"amerique",
+"asie",
+"afrique",
+"femme",
+"francais"
+]
+},
+{
+"n": "Chat",
+"a": [
+"Chat"
+],
+"f": "animal",
+"y": [
+"animal",
+"carnivore",
+"domestique",
+"mammifere"
+],
+"u": [
+"vivant",
+"avant1900",
+"avant1970",
+"europe",
+"amerique",
+"asie",
+"afrique",
+"femme",
+"francais"
+]
+},
+{
+"n": "Cheval",
+"a": [
+"Cheval"
+],
+"f": "animal",
+"y": [
+"animal",
+"domestique",
+"grand",
+"mammifere"
+],
+"u": [
+"vivant",
+"avant1900",
+"avant1970",
+"europe",
+"amerique",
+"asie",
+"afrique",
+"femme",
+"francais"
+]
+},
+{
+"n": "Vache",
+"a": [
+"Vache"
+],
+"f": "animal",
+"y": [
+"animal",
+"domestique",
+"grand",
+"mammifere"
+],
+"u": [
+"vivant",
+"avant1900",
+"avant1970",
+"europe",
+"amerique",
+"asie",
+"afrique",
+"femme",
+"francais"
+]
+},
+{
+"n": "Cochon",
+"a": [
+"Cochon"
+],
+"f": "animal",
+"y": [
+"animal",
+"domestique",
+"mammifere"
+],
+"u": [
+"vivant",
+"avant1900",
+"avant1970",
+"europe",
+"amerique",
+"asie",
+"afrique",
+"femme",
+"francais"
+]
+},
+{
+"n": "Mouton",
+"a": [
+"Mouton"
+],
+"f": "animal",
+"y": [
+"animal",
+"domestique",
+"mammifere"
+],
+"u": [
+"vivant",
+"avant1900",
+"avant1970",
+"europe",
+"amerique",
+"asie",
+"afrique",
+"femme",
+"francais"
+]
+},
+{
+"n": "Lapin",
+"a": [
+"Lapin"
+],
+"f": "animal",
+"y": [
+"animal",
+"domestique",
+"mammifere"
+],
+"u": [
+"vivant",
+"avant1900",
+"avant1970",
+"europe",
+"amerique",
+"asie",
+"afrique",
+"femme",
+"francais"
+]
+},
+{
+"n": "Souris",
+"a": [
+"Souris"
+],
+"f": "animal",
+"y": [
+"animal",
+"mammifere"
+],
+"u": [
+"vivant",
+"avant1900",
+"avant1970",
+"europe",
+"amerique",
+"asie",
+"afrique",
+"femme",
+"francais"
+]
+},
+{
+"n": "Hérisson",
+"a": [
+"Hérisson"
+],
+"f": "animal",
+"y": [
+"animal",
+"mammifere"
+],
+"u": [
+"vivant",
+"avant1900",
+"avant1970",
+"europe",
+"amerique",
+"asie",
+"afrique",
+"femme",
+"francais"
+]
+},
+{
+"n": "Écureuil",
+"a": [
+"Écureuil"
+],
+"f": "animal",
+"y": [
+"animal",
+"mammifere"
+],
+"u": [
+"vivant",
+"avant1900",
+"avant1970",
+"europe",
+"amerique",
+"asie",
+"afrique",
+"femme",
+"francais"
+]
+},
+{
+"n": "Chauve-souris",
+"a": [
+"Chauve-souris"
+],
+"f": "animal",
+"y": [
+"animal",
+"mammifere",
+"vole"
+],
+"u": [
+"vivant",
+"avant1900",
+"avant1970",
+"europe",
+"amerique",
+"asie",
+"afrique",
+"femme",
+"francais"
+]
+},
+{
+"n": "Baleine",
+"a": [
+"Baleine"
+],
+"f": "animal",
+"y": [
+"animal",
+"eau",
+"grand",
+"mammifere"
+],
+"u": [
+"vivant",
+"avant1900",
+"avant1970",
+"europe",
+"amerique",
+"asie",
+"afrique",
+"femme",
+"francais"
+]
+},
+{
+"n": "Dauphin",
+"a": [
+"Dauphin"
+],
+"f": "animal",
+"y": [
+"animal",
+"carnivore",
+"eau",
+"mammifere"
+],
+"u": [
+"vivant",
+"avant1900",
+"avant1970",
+"europe",
+"amerique",
+"asie",
+"afrique",
+"femme",
+"francais"
+]
+},
+{
+"n": "Aigle",
+"a": [
+"Aigle"
+],
+"f": "animal",
+"y": [
+"animal",
+"carnivore",
+"oiseau",
+"vole"
+],
+"u": [
+"vivant",
+"avant1900",
+"avant1970",
+"europe",
+"amerique",
+"asie",
+"afrique",
+"femme",
+"francais"
+]
+},
+{
+"n": "Hibou",
+"a": [
+"Hibou"
+],
+"f": "animal",
+"y": [
+"animal",
+"carnivore",
+"oiseau",
+"vole"
+],
+"u": [
+"vivant",
+"avant1900",
+"avant1970",
+"europe",
+"amerique",
+"asie",
+"afrique",
+"femme",
+"francais"
+]
+},
+{
+"n": "Perroquet",
+"a": [
+"Perroquet"
+],
+"f": "animal",
+"y": [
+"animal",
+"domestique",
+"oiseau",
+"vole"
+],
+"u": [
+"vivant",
+"avant1900",
+"avant1970",
+"europe",
+"amerique",
+"asie",
+"afrique",
+"femme",
+"francais"
+]
+},
+{
+"n": "Pingouin",
+"a": [
+"Pingouin"
+],
+"f": "animal",
+"y": [
+"animal",
+"carnivore",
+"eau",
+"oiseau"
+],
+"u": [
+"vivant",
+"avant1900",
+"avant1970",
+"europe",
+"amerique",
+"asie",
+"afrique",
+"femme",
+"francais"
+]
+},
+{
+"n": "Autruche",
+"a": [
+"Autruche"
+],
+"f": "animal",
+"y": [
+"animal",
+"grand",
+"oiseau"
+],
+"u": [
+"vivant",
+"avant1900",
+"avant1970",
+"europe",
+"amerique",
+"asie",
+"afrique",
+"femme",
+"francais"
+]
+},
+{
+"n": "Poule",
+"a": [
+"Poule"
+],
+"f": "animal",
+"y": [
+"animal",
+"domestique",
+"oiseau"
+],
+"u": [
+"vivant",
+"avant1900",
+"avant1970",
+"europe",
+"amerique",
+"asie",
+"afrique",
+"femme",
+"francais"
+]
+},
+{
+"n": "Canard",
+"a": [
+"Canard"
+],
+"f": "animal",
+"y": [
+"animal",
+"domestique",
+"eau",
+"oiseau",
+"vole"
+],
+"u": [
+"vivant",
+"avant1900",
+"avant1970",
+"europe",
+"amerique",
+"asie",
+"afrique",
+"femme",
+"francais"
+]
+},
+{
+"n": "Flamant rose",
+"a": [
+"Flamant rose"
+],
+"f": "animal",
+"y": [
+"animal",
+"eau",
+"oiseau",
+"vole"
+],
+"u": [
+"vivant",
+"avant1900",
+"avant1970",
+"europe",
+"amerique",
+"asie",
+"afrique",
+"femme",
+"francais"
+]
+},
+{
+"n": "Requin",
+"a": [
+"Requin"
+],
+"f": "animal",
+"y": [
+"animal",
+"carnivore",
+"eau",
+"grand",
+"poisson"
+],
+"u": [
+"vivant",
+"avant1900",
+"avant1970",
+"europe",
+"amerique",
+"asie",
+"afrique",
+"femme",
+"francais"
+]
+},
+{
+"n": "Poisson rouge",
+"a": [
+"Poisson rouge"
+],
+"f": "animal",
+"y": [
+"animal",
+"domestique",
+"eau",
+"poisson"
+],
+"u": [
+"vivant",
+"avant1900",
+"avant1970",
+"europe",
+"amerique",
+"asie",
+"afrique",
+"femme",
+"francais"
+]
+},
+{
+"n": "Crocodile",
+"a": [
+"Crocodile"
+],
+"f": "animal",
+"y": [
+"animal",
+"carnivore",
+"eau",
+"grand",
+"reptile"
+],
+"u": [
+"vivant",
+"avant1900",
+"avant1970",
+"europe",
+"amerique",
+"asie",
+"afrique",
+"femme",
+"francais"
+]
+},
+{
+"n": "Serpent",
+"a": [
+"Serpent"
+],
+"f": "animal",
+"y": [
+"animal",
+"carnivore",
+"reptile"
+],
+"u": [
+"vivant",
+"avant1900",
+"avant1970",
+"europe",
+"amerique",
+"asie",
+"afrique",
+"femme",
+"francais"
+]
+},
+{
+"n": "Tortue",
+"a": [
+"Tortue"
+],
+"f": "animal",
+"y": [
+"animal",
+"domestique",
+"eau",
+"reptile"
+],
+"u": [
+"vivant",
+"avant1900",
+"avant1970",
+"europe",
+"amerique",
+"asie",
+"afrique",
+"femme",
+"francais"
+]
+},
+{
+"n": "Grenouille",
+"a": [
+"Grenouille"
+],
+"f": "animal",
+"y": [
+"animal",
+"carnivore",
+"eau",
+"reptile"
+],
+"u": [
+"vivant",
+"avant1900",
+"avant1970",
+"europe",
+"amerique",
+"asie",
+"afrique",
+"femme",
+"francais"
+]
+},
+{
+"n": "Abeille",
+"a": [
+"Abeille"
+],
+"f": "animal",
+"y": [
+"animal",
+"insecte",
+"vole"
+],
+"u": [
+"vivant",
+"avant1900",
+"avant1970",
+"europe",
+"amerique",
+"asie",
+"afrique",
+"femme",
+"francais"
+]
+},
+{
+"n": "Papillon",
+"a": [
+"Papillon"
+],
+"f": "animal",
+"y": [
+"animal",
+"insecte",
+"vole"
+],
+"u": [
+"vivant",
+"avant1900",
+"avant1970",
+"europe",
+"amerique",
+"asie",
+"afrique",
+"femme",
+"francais"
+]
+},
+{
+"n": "Fourmi",
+"a": [
+"Fourmi"
+],
+"f": "animal",
+"y": [
+"animal",
+"insecte"
+],
+"u": [
+"vivant",
+"avant1900",
+"avant1970",
+"europe",
+"amerique",
+"asie",
+"afrique",
+"femme",
+"francais"
+]
+},
+{
+"n": "Coccinelle",
+"a": [
+"Coccinelle"
+],
+"f": "animal",
+"y": [
+"animal",
+"carnivore",
+"insecte",
+"vole"
+],
+"u": [
+"vivant",
+"avant1900",
+"avant1970",
+"europe",
+"amerique",
+"asie",
+"afrique",
+"femme",
+"francais"
+]
+},
+{
+"n": "Araignée",
+"a": [
+"Araignée"
+],
+"f": "animal",
+"y": [
+"animal",
+"carnivore",
+"insecte"
+],
+"u": [
+"vivant",
+"avant1900",
+"avant1970",
+"europe",
+"amerique",
+"asie",
+"afrique",
+"femme",
+"francais"
+]
+},
+{
+"n": "Escargot",
+"a": [
+"Escargot"
+],
+"f": "animal",
+"y": [
+"animal"
+],
+"u": [
+"vivant",
+"avant1900",
+"avant1970",
+"europe",
+"amerique",
+"asie",
+"afrique",
+"femme",
+"francais"
+]
+},
+{
+"n": "Pieuvre",
+"a": [
+"Pieuvre"
+],
+"f": "animal",
+"y": [
+"animal",
+"carnivore",
+"eau"
+],
+"u": [
+"vivant",
+"avant1900",
+"avant1970",
+"europe",
+"amerique",
+"asie",
+"afrique",
+"femme",
+"francais"
+]
+},
+{
+"n": "Méduse",
+"a": [
+"Méduse"
+],
+"f": "animal",
+"y": [
+"animal",
+"carnivore",
+"eau"
+],
+"u": [
+"vivant",
+"avant1900",
+"avant1970",
+"europe",
+"amerique",
+"asie",
+"afrique",
+"femme",
+"francais"
+]
+},
+{
+"n": "Dinosaure",
+"a": [
+"Dinosaure"
+],
+"f": "animal",
+"y": [
+"animal",
+"carnivore",
+"grand",
+"reptile"
+],
+"u": [
+"vivant",
+"avant1900",
+"avant1970",
+"europe",
+"amerique",
+"asie",
+"afrique",
+"femme",
+"francais"
+]
+},
+{
+"n": "Parapluie",
+"a": [
+"Parapluie"
+],
+"f": "objet",
+"y": [
+"objet",
+"porte"
+],
+"u": [
+"vivant",
+"avant1900",
+"avant1970",
+"europe",
+"amerique",
+"asie",
+"afrique",
+"femme",
+"francais"
+]
+},
+{
+"n": "Grille-pain",
+"a": [
+"Grille-pain"
+],
+"f": "objet",
+"y": [
+"cuisine",
+"electrique",
+"maison",
+"objet"
+],
+"u": [
+"vivant",
+"avant1900",
+"avant1970",
+"europe",
+"amerique",
+"asie",
+"afrique",
+"femme",
+"francais"
+]
+},
+{
+"n": "Réfrigérateur",
+"a": [
+"Réfrigérateur"
+],
+"f": "objet",
+"y": [
+"cuisine",
+"electrique",
+"grand",
+"maison",
+"objet"
+],
+"u": [
+"vivant",
+"avant1900",
+"avant1970",
+"europe",
+"amerique",
+"asie",
+"afrique",
+"femme",
+"francais"
+]
+},
+{
+"n": "Micro-ondes",
+"a": [
+"Micro-ondes"
+],
+"f": "objet",
+"y": [
+"cuisine",
+"electrique",
+"maison",
+"objet"
+],
+"u": [
+"vivant",
+"avant1900",
+"avant1970",
+"europe",
+"amerique",
+"asie",
+"afrique",
+"femme",
+"francais"
+]
+},
+{
+"n": "Casserole",
+"a": [
+"Casserole"
+],
+"f": "objet",
+"y": [
+"cuisine",
+"maison",
+"objet"
+],
+"u": [
+"vivant",
+"avant1900",
+"avant1970",
+"europe",
+"amerique",
+"asie",
+"afrique",
+"femme",
+"francais"
+]
+},
+{
+"n": "Fourchette",
+"a": [
+"Fourchette"
+],
+"f": "objet",
+"y": [
+"cuisine",
+"maison",
+"objet"
+],
+"u": [
+"vivant",
+"avant1900",
+"avant1970",
+"europe",
+"amerique",
+"asie",
+"afrique",
+"femme",
+"francais"
+]
+},
+{
+"n": "Téléphone portable",
+"a": [
+"Téléphone portable"
+],
+"f": "objet",
+"y": [
+"electrique",
+"objet",
+"porte"
+],
+"u": [
+"vivant",
+"avant1900",
+"avant1970",
+"europe",
+"amerique",
+"asie",
+"afrique",
+"femme",
+"francais"
+]
+},
+{
+"n": "Ordinateur",
+"a": [
+"Ordinateur"
+],
+"f": "objet",
+"y": [
+"electrique",
+"maison",
+"objet"
+],
+"u": [
+"vivant",
+"avant1900",
+"avant1970",
+"europe",
+"amerique",
+"asie",
+"afrique",
+"femme",
+"francais"
+]
+},
+{
+"n": "Télévision",
+"a": [
+"Télévision"
+],
+"f": "objet",
+"y": [
+"electrique",
+"maison",
+"objet"
+],
+"u": [
+"vivant",
+"avant1900",
+"avant1970",
+"europe",
+"amerique",
+"asie",
+"afrique",
+"femme",
+"francais"
+]
+},
+{
+"n": "Lampe",
+"a": [
+"Lampe"
+],
+"f": "objet",
+"y": [
+"electrique",
+"maison",
+"objet"
+],
+"u": [
+"vivant",
+"avant1900",
+"avant1970",
+"europe",
+"amerique",
+"asie",
+"afrique",
+"femme",
+"francais"
+]
+},
+{
+"n": "Aspirateur",
+"a": [
+"Aspirateur"
+],
+"f": "objet",
+"y": [
+"electrique",
+"maison",
+"objet",
+"outil"
+],
+"u": [
+"vivant",
+"avant1900",
+"avant1970",
+"europe",
+"amerique",
+"asie",
+"afrique",
+"femme",
+"francais"
+]
+},
+{
+"n": "Machine à laver",
+"a": [
+"Machine à laver"
+],
+"f": "objet",
+"y": [
+"electrique",
+"grand",
+"maison",
+"objet"
+],
+"u": [
+"vivant",
+"avant1900",
+"avant1970",
+"europe",
+"amerique",
+"asie",
+"afrique",
+"femme",
+"francais"
+]
+},
+{
+"n": "Lit",
+"a": [
+"Lit"
+],
+"f": "objet",
+"y": [
+"grand",
+"maison",
+"objet"
+],
+"u": [
+"vivant",
+"avant1900",
+"avant1970",
+"europe",
+"amerique",
+"asie",
+"afrique",
+"femme",
+"francais"
+]
+},
+{
+"n": "Chaise",
+"a": [
+"Chaise"
+],
+"f": "objet",
+"y": [
+"maison",
+"objet"
+],
+"u": [
+"vivant",
+"avant1900",
+"avant1970",
+"europe",
+"amerique",
+"asie",
+"afrique",
+"femme",
+"francais"
+]
+},
+{
+"n": "Canapé",
+"a": [
+"Canapé"
+],
+"f": "objet",
+"y": [
+"grand",
+"maison",
+"objet"
+],
+"u": [
+"vivant",
+"avant1900",
+"avant1970",
+"europe",
+"amerique",
+"asie",
+"afrique",
+"femme",
+"francais"
+]
+},
+{
+"n": "Montre",
+"a": [
+"Montre"
+],
+"f": "objet",
+"y": [
+"objet",
+"porte"
+],
+"u": [
+"vivant",
+"avant1900",
+"avant1970",
+"europe",
+"amerique",
+"asie",
+"afrique",
+"femme",
+"francais"
+]
+},
+{
+"n": "Lunettes",
+"a": [
+"Lunettes"
+],
+"f": "objet",
+"y": [
+"objet",
+"porte"
+],
+"u": [
+"vivant",
+"avant1900",
+"avant1970",
+"europe",
+"amerique",
+"asie",
+"afrique",
+"femme",
+"francais"
+]
+},
+{
+"n": "Chapeau",
+"a": [
+"Chapeau"
+],
+"f": "objet",
+"y": [
+"objet",
+"porte"
+],
+"u": [
+"vivant",
+"avant1900",
+"avant1970",
+"europe",
+"amerique",
+"asie",
+"afrique",
+"femme",
+"francais"
+]
+},
+{
+"n": "Chaussure",
+"a": [
+"Chaussure"
+],
+"f": "objet",
+"y": [
+"objet",
+"porte"
+],
+"u": [
+"vivant",
+"avant1900",
+"avant1970",
+"europe",
+"amerique",
+"asie",
+"afrique",
+"femme",
+"francais"
+]
+},
+{
+"n": "Clé",
+"a": [
+"Clé"
+],
+"f": "objet",
+"y": [
+"objet",
+"porte"
+],
+"u": [
+"vivant",
+"avant1900",
+"avant1970",
+"europe",
+"amerique",
+"asie",
+"afrique",
+"femme",
+"francais"
+]
+},
+{
+"n": "Brosse à dents",
+"a": [
+"Brosse à dents"
+],
+"f": "objet",
+"y": [
+"maison",
+"objet"
+],
+"u": [
+"vivant",
+"avant1900",
+"avant1970",
+"europe",
+"amerique",
+"asie",
+"afrique",
+"femme",
+"francais"
+]
+},
+{
+"n": "Guitare",
+"a": [
+"Guitare"
+],
+"f": "objet",
+"y": [
+"maison",
+"objet"
+],
+"u": [
+"vivant",
+"avant1900",
+"avant1970",
+"europe",
+"amerique",
+"asie",
+"afrique",
+"femme",
+"francais"
+]
+},
+{
+"n": "Piano",
+"a": [
+"Piano"
+],
+"f": "objet",
+"y": [
+"grand",
+"maison",
+"objet"
+],
+"u": [
+"vivant",
+"avant1900",
+"avant1970",
+"europe",
+"amerique",
+"asie",
+"afrique",
+"femme",
+"francais"
+]
+},
+{
+"n": "Ballon",
+"a": [
+"Ballon"
+],
+"f": "objet",
+"y": [
+"jouet",
+"objet"
+],
+"u": [
+"vivant",
+"avant1900",
+"avant1970",
+"europe",
+"amerique",
+"asie",
+"afrique",
+"femme",
+"francais"
+]
+},
+{
+"n": "Peluche",
+"a": [
+"Peluche"
+],
+"f": "objet",
+"y": [
+"jouet",
+"maison",
+"objet"
+],
+"u": [
+"vivant",
+"avant1900",
+"avant1970",
+"europe",
+"amerique",
+"asie",
+"afrique",
+"femme",
+"francais"
+]
+},
+{
+"n": "Vélo",
+"a": [
+"Vélo"
+],
+"f": "objet",
+"y": [
+"objet",
+"transport"
+],
+"u": [
+"vivant",
+"avant1900",
+"avant1970",
+"europe",
+"amerique",
+"asie",
+"afrique",
+"femme",
+"francais"
+]
+},
+{
+"n": "Voiture",
+"a": [
+"Voiture"
+],
+"f": "objet",
+"y": [
+"electrique",
+"grand",
+"objet",
+"transport"
+],
+"u": [
+"vivant",
+"avant1900",
+"avant1970",
+"europe",
+"amerique",
+"asie",
+"afrique",
+"femme",
+"francais"
+]
+},
+{
+"n": "Avion",
+"a": [
+"Avion"
+],
+"f": "objet",
+"y": [
+"grand",
+"objet",
+"transport"
+],
+"u": [
+"vivant",
+"avant1900",
+"avant1970",
+"europe",
+"amerique",
+"asie",
+"afrique",
+"femme",
+"francais"
+]
+},
+{
+"n": "Bateau",
+"a": [
+"Bateau"
+],
+"f": "objet",
+"y": [
+"eau",
+"grand",
+"objet",
+"transport"
+],
+"u": [
+"vivant",
+"avant1900",
+"avant1970",
+"europe",
+"amerique",
+"asie",
+"afrique",
+"femme",
+"francais"
+]
+},
+{
+"n": "Trottinette",
+"a": [
+"Trottinette"
+],
+"f": "objet",
+"y": [
+"objet",
+"transport"
+],
+"u": [
+"vivant",
+"avant1900",
+"avant1970",
+"europe",
+"amerique",
+"asie",
+"afrique",
+"femme",
+"francais"
+]
+},
+{
+"n": "Marteau",
+"a": [
+"Marteau"
+],
+"f": "objet",
+"y": [
+"objet",
+"outil"
+],
+"u": [
+"vivant",
+"avant1900",
+"avant1970",
+"europe",
+"amerique",
+"asie",
+"afrique",
+"femme",
+"francais"
+]
+},
+{
+"n": "Ciseaux",
+"a": [
+"Ciseaux"
+],
+"f": "objet",
+"y": [
+"maison",
+"objet",
+"outil"
+],
+"u": [
+"vivant",
+"avant1900",
+"avant1970",
+"europe",
+"amerique",
+"asie",
+"afrique",
+"femme",
+"francais"
+]
+},
+{
+"n": "Crayon",
+"a": [
+"Crayon"
+],
+"f": "objet",
+"y": [
+"objet",
+"outil",
+"porte"
+],
+"u": [
+"vivant",
+"avant1900",
+"avant1970",
+"europe",
+"amerique",
+"asie",
+"afrique",
+"femme",
+"francais"
+]
+},
+{
+"n": "Livre",
+"a": [
+"Livre"
+],
+"f": "objet",
+"y": [
+"maison",
+"objet"
+],
+"u": [
+"vivant",
+"avant1900",
+"avant1970",
+"europe",
+"amerique",
+"asie",
+"afrique",
+"femme",
+"francais"
+]
+},
+{
+"n": "Console de jeux",
+"a": [
+"Console de jeux"
+],
+"f": "objet",
+"y": [
+"electrique",
+"jouet",
+"maison",
+"objet"
+],
+"u": [
+"vivant",
+"avant1900",
+"avant1970",
+"europe",
+"amerique",
+"asie",
+"afrique",
+"femme",
+"francais"
+]
+},
+{
+"n": "Balai",
+"a": [
+"Balai"
+],
+"f": "objet",
+"y": [
+"maison",
+"objet",
+"outil"
+],
+"u": [
+"vivant",
+"avant1900",
+"avant1970",
+"europe",
+"amerique",
+"asie",
+"afrique",
+"femme",
+"francais"
+]
+}
+]

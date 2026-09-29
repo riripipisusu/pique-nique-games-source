@@ -1,7 +1,7 @@
 using System;
 using System.Collections.Generic;
 
-public enum GameId { Croque, Blackjack, Roulette, Quiz, Trivia, Rhythm, Uno, Chevaux, Bac, Serpents, BonnePaye, Pouilleux }
+public enum GameId { Croque, Blackjack, Roulette, Quiz, Trivia, Rhythm, Uno, Chevaux, Bac, Serpents, BonnePaye, Pouilleux, QuiSuisJe }
 
 // Ce que le reseau a besoin de savoir d'une partie, quel que soit le jeu.
 public interface IMatch
@@ -14,10 +14,10 @@ public interface IMatch
 
 public static class Games
 {
-    public static string Name(GameId g) => g == GameId.Croque ? "Croque-Carotte" : g == GameId.Blackjack ? "Blackjack" : g == GameId.Roulette ? "Roulette française" : g == GameId.Quiz ? "Quiz d'images" : g == GameId.Rhythm ? "Pique-Nique Live" : g == GameId.Uno ? "Uno" : g == GameId.Chevaux ? "Petits chevaux" : g == GameId.Bac ? "Petit bac" : g == GameId.Serpents ? "Serpents et échelles" : g == GameId.BonnePaye ? "La Bonne Paye" : g == GameId.Pouilleux ? "Le pouilleux" : "Le grand quiz de Tenna";
+    public static string Name(GameId g) => g == GameId.Croque ? "Croque-Carotte" : g == GameId.Blackjack ? "Blackjack" : g == GameId.Roulette ? "Roulette française" : g == GameId.Quiz ? "Quiz d'images" : g == GameId.Rhythm ? "Pique-Nique Live" : g == GameId.Uno ? "Uno" : g == GameId.Chevaux ? "Petits chevaux" : g == GameId.Bac ? "Petit bac" : g == GameId.Serpents ? "Serpents et échelles" : g == GameId.BonnePaye ? "La Bonne Paye" : g == GameId.Pouilleux ? "Le pouilleux" : g == GameId.QuiSuisJe ? "Qui suis-je ?" : "Le grand quiz de Tenna";
 
     public static string OptionName(GameId g, int option) =>
-        g == GameId.Pouilleux ? "Classique" : g == GameId.BonnePaye ? BonnePaye.Months(option) + " mois" : g == GameId.Serpents ? "Classique" : g == GameId.Bac ? PetitBac.Rounds(option) + " manches" : g == GameId.Chevaux ? (Chevaux.Count(option) > 1 ? Chevaux.Count(option) + " chevaux par joueur" : "1 cheval par joueur") : g == GameId.Croque ? (option == 0 ? "Classique" : "Amélioré") : g == GameId.Blackjack ? option + " manches" : g == GameId.Roulette ? option + " coups" : g == GameId.Quiz ? new[] { "Flou", "Pixelisé", "Mélangé", "Image nette" }[option] : g == GameId.Rhythm ? Rhythm.Song(option).t : g == GameId.Uno ? new[] { "Une manche", "200 points", "500 points" }[Math.Min(2, option & 3)] + ((option & 4) != 0 ? ", cumul" : "") + ((option & 8) != 0 ? ", 7-0" : "") + ((option & 16) != 0 ? ", intervention" : "") + ((option & 32) != 0 ? ", pioche jusqu'à jouer" : "") + ((option & 64) != 0 ? ", jeu forcé" : "") : new[] { "QCM", "Réponse libre" }[option & 1];
+        g == GameId.QuiSuisJe ? $"{QuiSuisJe.RoundChoices[(option >> 5) & 3]} tours" : g == GameId.Pouilleux ? "Classique" : g == GameId.BonnePaye ? BonnePaye.Months(option) + " mois" : g == GameId.Serpents ? "Classique" : g == GameId.Bac ? PetitBac.Rounds(option) + " manches" : g == GameId.Chevaux ? (Chevaux.Count(option) > 1 ? Chevaux.Count(option) + " chevaux par joueur" : "1 cheval par joueur") : g == GameId.Croque ? (option == 0 ? "Classique" : "Amélioré") : g == GameId.Blackjack ? option + " manches" : g == GameId.Roulette ? option + " coups" : g == GameId.Quiz ? new[] { "Flou", "Pixelisé", "Mélangé", "Image nette" }[option] : g == GameId.Rhythm ? Rhythm.Song(option).t : g == GameId.Uno ? new[] { "Une manche", "200 points", "500 points" }[Math.Min(2, option & 3)] + ((option & 4) != 0 ? ", cumul" : "") + ((option & 8) != 0 ? ", 7-0" : "") + ((option & 16) != 0 ? ", intervention" : "") + ((option & 32) != 0 ? ", pioche jusqu'à jouer" : "") + ((option & 64) != 0 ? ", jeu forcé" : "") : new[] { "QCM", "Réponse libre" }[option & 1];
 
     public static IMatch Create(GameId g, int option, IList<string> names, int seed, string text = null) =>
         g == GameId.Croque ? new Rules(option == 0 ? Mode.Classique : Mode.Ameliore, names, seed)
@@ -31,12 +31,13 @@ public static class Games
         : g == GameId.Serpents ? new Serpents(names, option, seed)
         : g == GameId.BonnePaye ? new BonnePaye(names, option, seed)
         : g == GameId.Pouilleux ? new Pouilleux(names, option, seed)
+        : g == GameId.QuiSuisJe ? new QuiSuisJe(names, option | 1, seed)   // en ligne : mode libre
         : (IMatch)new Quiz(names, option, seed, Quiz.TriviaPool, true);
 
     public static bool TvTime(GameId g) => g == GameId.Quiz || g == GameId.Trivia || g == GameId.Rhythm || g == GameId.Bac;
 
-    public static int MaxPlayers(GameId g) => TvTime(g) ? Quiz.MaxPlayers : g == GameId.Uno ? Uno.MaxPlayers : g == GameId.Chevaux ? Chevaux.MaxPlayers : g == GameId.Serpents ? Serpents.MaxPlayers : g == GameId.BonnePaye ? BonnePaye.MaxPlayers : g == GameId.Pouilleux ? Pouilleux.MaxPlayers : Rules.MaxPlayers;
+    public static int MaxPlayers(GameId g) => TvTime(g) ? Quiz.MaxPlayers : g == GameId.Uno ? Uno.MaxPlayers : g == GameId.Chevaux ? Chevaux.MaxPlayers : g == GameId.Serpents ? Serpents.MaxPlayers : g == GameId.BonnePaye ? BonnePaye.MaxPlayers : g == GameId.Pouilleux ? Pouilleux.MaxPlayers : g == GameId.QuiSuisJe ? QuiSuisJe.MaxPlayers : Rules.MaxPlayers;
 
     // Hors ligne contre des bots (et non a plusieurs sur le meme PC) : jeux a main cachee ou tout le monde joue a la fois.
-    public static bool WithBots(GameId g) => TvTime(g) || g == GameId.Uno || g == GameId.Pouilleux;
+    public static bool WithBots(GameId g) => TvTime(g) || g == GameId.Uno || g == GameId.Pouilleux || g == GameId.QuiSuisJe;
 }

@@ -259,14 +259,15 @@ public partial class Ui : MonoBehaviour
         [GameId.Croque] = ("croque", 0, "2 à 4 joueurs · Plateau", "Grimpe la montagne jusqu'au potager... mais gare aux trous quand la carotte tourne !"),
         [GameId.Chevaux] = ("chevaux", 0, "2 à 4 joueurs · Plateau", "Un 6 pour sortir, fais le tour du plateau et grimpe l'escalier jusqu'au centre !"),
         [GameId.BonnePaye] = ("bonnepaye", 0, "2 à 6 joueurs · Plateau", "Factures, affaires, loterie et Jour de paye : le plus riche à la fin du mois gagne !"),
-        [GameId.Serpents] = ("serpents", 0, "2 à 4 joueurs · Plateau", "Grimpe aux échelles, évite les serpents : le premier sur la case 100 gagne !"),
+        [GameId.Serpents] = ("serpents", 0, "2 à 4 joueurs · Plateau", "Grimpe aux échelles, évite les serpents : vise la case 100 !"),
+        [GameId.QuiSuisJe] = ("quisuisje", 0, "1 à 8 joueurs · Devinettes", "Un post-it sur le front : devine qui tu es ! Contre des bots ou en ligne."),
         [GameId.Pouilleux] = ("pouilleux", 0, "2 à 6 joueurs · Cartes", "Pioche chez ton voisin, jette tes paires... et ne finis pas avec le valet de pique !"),
         [GameId.Uno] = ("uno", 0, "2 à 10 joueurs · Cartes", "Même couleur ou même symbole, et n'oublie pas de crier UNO !"),
         [GameId.Blackjack] = ("blackjack", 1, "2 à 4 joueurs · Cartes", "Approche-toi de 21 sans dépasser et bats le croupier."),
         [GameId.Roulette] = ("roulette", 1, "1 à 4 joueurs · Casino", "Pleins, chevaux, carrés, rouge ou noir... Le plus riche gagne."),
         [GameId.Quiz] = ("quiz", 2, "1 à 10 joueurs · Images", "Une image floutée se dévoile : films, jeux, drapeaux, pochettes..."),
-        [GameId.Trivia] = ("trivia", 2, "1 à 10 joueurs · 14 catégories", "Maths, logos, rébus, têtes floutées, cris d'animaux, géo... Tenna pose les questions !"),
-        [GameId.Bac] = ("bac", 2, "1 à 10 joueurs · Mots", "Une lettre, des catégories : trouve un mot pour chacune avant que quelqu'un crie STOP !"),
+        [GameId.Trivia] = ("trivia", 2, "1 à 10 joueurs · 14 catégories", "Maths, logos, rébus, géo... avec Tenna !"),
+        [GameId.Bac] = ("bac", 2, "1 à 10 joueurs · Mots", "Une lettre, des catégories : le premier qui a tout crie STOP !"),
         [GameId.Rhythm] = ("rhythm", 2, "1 à 10 joueurs · Musique", "121 chansons de Deltarune et Undertale : tout le monde joue en rythme, en même temps !"),
     };
 
@@ -375,7 +376,21 @@ public partial class Ui : MonoBehaviour
     void ThemeChips(VisualElement parent, GameId g, int option, Action<int> pick, string text = null, Action<string> setText = null)
     {
         parent.Clear();
-        parent.style.display = g == GameId.Trivia || g == GameId.Uno || g == GameId.Bac ? DisplayStyle.Flex : DisplayStyle.None;
+        parent.style.display = g == GameId.Trivia || g == GameId.Uno || g == GameId.Bac || g == GameId.QuiSuisJe ? DisplayStyle.Flex : DisplayStyle.None;
+        if (g == GameId.QuiSuisJe)
+        {
+            Text(parent, "Nombre de tours", "h2");
+            var trow = Div(parent, "row", "theme-row");
+            foreach (int k in new[] { 3, 0, 1, 2 })
+            {
+                int kk = k;
+                var chip = new Button(() => { Sound.I.UI("tick"); pick((option & ~(3 << 5)) | (kk << 5)); }) { text = QuiSuisJe.RoundChoices[k] + " tours" };
+                chip.AddToClassList("theme-chip");
+                chip.EnableInClassList("selected", ((option >> 5) & 3) == k);
+                trow.Add(chip);
+            }
+            return;
+        }
         if (g == GameId.Bac)
         {
             // Categories : a cocher dans la liste, et en saisie libre (separees par des virgules).
@@ -451,6 +466,7 @@ public partial class Ui : MonoBehaviour
     {
         // Grand quiz : les cartes ne changent que le mode (bit 0), les themes sont gardes.
         if (game.gameId == GameId.Trivia) { int keep = current & ~1; var raw = pick; pick = v => raw(v | keep); current &= 1; }
+        if (game.gameId == GameId.QuiSuisJe) { int keep = current & ~1; var raw = pick; pick = v => raw(v | keep); current &= 1; }
         if (game.gameId == GameId.Uno || game.gameId == GameId.Bac) { int keep = current & ~3; var raw = pick; pick = v => raw(v | keep); current &= 3; }   // les regles maison sont gardees
         parent.Clear();
         if (game.gameId == GameId.Rhythm) { SongPicker(parent, current, pick); return; }
@@ -466,7 +482,9 @@ public partial class Ui : MonoBehaviour
             Text(box, "Un mois = un tour de plateau (environ 20 min à 4). On pourra prolonger à la fin.", "mode-desc");
             return;
         }
-        var opts = game.gameId == GameId.Pouilleux
+        var opts = game.gameId == GameId.QuiSuisJe
+            ? new[] { (0, "Classique", "En ligne : chacun écrit le personnage de son voisin, questions à l'écrit ou à l'oral, les autres votent. Contre des bots : personnages et questions à choisir dans une liste.") }
+            : game.gameId == GameId.Pouilleux
             ? new[] { (0, "Classique", "Le valet de pique est le pouilleux : ne le garde pas !") }
             : game.gameId == GameId.Serpents
             ? new[] { (0, "Classique", "10 échelles, 10 serpents, il faut tomber pile sur 100.") }
@@ -800,6 +818,15 @@ public partial class Ui : MonoBehaviour
             S("Contester un +4", "On n'a le droit de poser un +4 que si on n'a aucune carte de la couleur demandée. Le joueur visé peut « Dénoncer » : si c'était du bluff, le poseur pioche 4 cartes à sa place ; si le +4 était réglo, celui qui a dénoncé en pioche 6 !");
             S("Règles maison (options)", "Cumul : un +2 se contre avec un +2 (ou un +4), un +4 avec un +4, et le suivant pioche le total. 7-0 : un 7 échange ta main avec le joueur de ton choix, un 0 fait tourner toutes les mains. Intervention : si tu as la carte exactement identique à celle du dessus, tu peux la poser même hors de ton tour. Piocher jusqu'à jouer : on pioche jusqu'à trouver une carte qui va. Jeu forcé : une carte piochée qui va doit être posée.");
         }
+        else if (game.gameId == GameId.QuiSuisJe)
+        {
+            S("Le but", "Chacun a un post-it sur le front avec un personnage choisi par son voisin : une star, un héros, un animal, un objet, un copain... Tout le monde le voit, sauf toi ! Devine qui tu es.");
+            S("Le choix", "Au début, chacun choisit le personnage du joueur suivant. Il ne le verra pas, mais tous les autres oui.");
+            S("Contre des bots", "Les bots ne lisent pas les questions écrites : hors ligne, tu choisis leur personnage parmi des propositions et tes questions dans une liste ; le jeu répond tout seul.");
+            S("À ton tour", "Pose une question fermée : écris-la, ou pose-la à l'oral sur Discord puis clique « Posée à l'oral ». Les autres votent Oui, Non ou Je ne sais pas, la majorité répond. Oui : tu rejoues ; sinon, la main passe. Tu peux proposer un nom à tout moment de ton tour : si c'est faux, la main passe aussi.");
+            S("Les points", "Trouver en peu de questions rapporte plus : 12 points moins le nombre de questions (2 au minimum), et 3 de bonus pour le premier. La partie s'arrête quand tout le monde a trouvé ou au bout des tours.");
+            S("La vue", "Tu es assis autour de la nappe : clic droit pour tourner la tête, molette pour zoomer, clic sur un joueur pour lire son post-it de près.");
+        }
         else if (game.gameId == GameId.Pouilleux)
         {
             S("Le but", "Ne pas finir avec le pouilleux ! On joue avec un jeu de 52 cartes dont on a retiré le valet de trèfle : le valet de pique n'a donc pas de paire, c'est lui le pouilleux.");
@@ -918,6 +945,7 @@ public partial class Ui : MonoBehaviour
         BuildBacHud();
         BuildBonnePayeHud();
         BuildPouilleuxHud();
+        BuildQuiSuisJeHud();
 
         var bannerRow = Div(hud, "banner-row");
         bannerRow.pickingMode = PickingMode.Ignore;
@@ -937,8 +965,10 @@ public partial class Ui : MonoBehaviour
         card.style.display = DisplayStyle.None;
         bool bj = game.bj != null, rt = game.rt != null, qz = game.qz != null, rh = game.rh != null, un = game.uno != null, bc = game.bac != null;
         bacHud.style.display = bc ? DisplayStyle.Flex : DisplayStyle.None;
-        bool bpg = game.bp != null, pqg = game.pq != null;
-        pqHud.style.display = pqg ? DisplayStyle.Flex : DisplayStyle.None;
+        bool bpg = game.bp != null, pqg = game.pq != null || game.qsj != null;
+        qsHud.style.display = game.qsj != null ? DisplayStyle.Flex : DisplayStyle.None;
+        qsTags.Clear(); qsTagEls.Clear(); qsBubbles.Clear(); qsBubbleUntil.Clear();
+        pqHud.style.display = game.pq != null ? DisplayStyle.Flex : DisplayStyle.None;
         pqTags.Clear(); pqTagEls.Clear();
         bpHud.style.display = bpg ? DisplayStyle.Flex : DisplayStyle.None;
         if (bc) BacRound();
@@ -950,7 +980,7 @@ public partial class Ui : MonoBehaviour
         hud.EnableInClassList("chx", game.ch != null || game.sp != null);
         hud.EnableInClassList("bacx", game.bac != null);
         hud.EnableInClassList("bpx", game.bp != null);
-        hud.EnableInClassList("pqx", game.pq != null);
+        hud.EnableInClassList("pqx", game.pq != null || game.qsj != null);
         bjHud.style.display = bj ? DisplayStyle.Flex : DisplayStyle.None;
         rtHud.style.display = rt ? DisplayStyle.Flex : DisplayStyle.None;
         qzHud.style.display = qz ? DisplayStyle.Flex : DisplayStyle.None;
@@ -1010,6 +1040,7 @@ public partial class Ui : MonoBehaviour
         else if (game.sp != null) RefreshSerpents();
         else if (game.bp != null) RefreshBonnePaye();
         else if (game.pq != null) RefreshPouilleux();
+        else if (game.qsj != null) RefreshQuiSuisJe();
     }
 
     void PlayerCard(int i, string name, string avatar, bool active)
@@ -1251,6 +1282,14 @@ public partial class Ui : MonoBehaviour
             winTitle.text = $"{w.name} gagne !";
             winTitle.style.color = Board.Colors[w.color];
             winSub.text = "Ses trois lapins festoient au potager.";
+        }
+        else if (game.qsj != null)
+        {
+            var w = game.qsj;
+            var best = w.players.OrderByDescending(p => p.score).First();
+            winTitle.text = $"{best.name} gagne !";
+            winTitle.style.color = Board.Colors[best.seat % Board.Colors.Length];
+            winSub.text = string.Join("\n", w.players.OrderByDescending(p => p.score).Select((p, i) => $"{i + 1}.  {p.name} : {p.score} pts  ({p.perso}{(p.Found ? "" : ", pas trouvé")})"));
         }
         else if (game.pq != null)
         {

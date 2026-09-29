@@ -9,7 +9,8 @@ public class Clairiere : MonoBehaviour
 
     public static void Show(bool on)
     {
-        if (!instance) { if (!on) return; instance = new GameObject("Clairiere").AddComponent<Clairiere>(); }
+        if (!instance) { if (!on) return; instance = new GameObject("Clairiere").AddComponent<Clairiere>(); Fog(true); return; }
+        if (instance.gameObject.activeSelf != on) Fog(on);
         instance.gameObject.SetActive(on);
     }
 
@@ -80,5 +81,36 @@ public class Clairiere : MonoBehaviour
         for (int i = 0; i < 26; i++) Model(bushes[i % bushes.Length], Around(8, 18), R(0.8f, 1.3f), R(0, 360));
         string[] trees = { "SM_Env_Tree_Meadow_01", "SM_Env_Tree_Meadow_02", "SM_Env_Tree_Birch_01", "SM_Env_Tree_Birch_02", "SM_Env_Tree_Fruit_01", "SM_Env_Tree_Fruit_02" };
         for (int i = 0; i < 34; i++) Model(trees[i % trees.Length], Around(13, 32), R(0.85f, 1.25f), R(0, 360));
+        // Foret profonde : plusieurs rangees serrees d'arbres plus grands, et des buissons dans les trous, jusqu'au bout
+        // du sol ; la brume (voir Show) les fond au loin. On ne voit plus le bord du monde.
+        for (int i = 0; i < 150; i++) Model(trees[i % trees.Length], Around(30, 58), R(1.2f, 1.9f), R(0, 360));
+        for (int i = 0; i < 70; i++) Model(bushes[i % 3], Around(24, 55), R(1.4f, 2.4f), R(0, 360));
+    }
+
+    // Brume de la clairiere, seulement pendant qu'elle est affichee (les autres decors gardent la leur).
+    // Le bas du ciel (cache ailleurs par les collines) passe a la couleur de la brume : la foret s'y fond.
+    static (bool on, FogMode mode, Color color, float start, float end, Color skyLow, Color skyTop) savedFog;
+    static void Fog(bool on)
+    {
+        var sky = RenderSettings.skybox;
+        bool hasSky = sky && sky.HasProperty("_ColorBottom");
+        if (on)
+        {
+            savedFog = (RenderSettings.fog, RenderSettings.fogMode, RenderSettings.fogColor, RenderSettings.fogStartDistance, RenderSettings.fogEndDistance,
+                        hasSky ? sky.GetColor("_ColorBottom") : Color.white, hasSky ? sky.GetColor("_ColorTop") : Color.white);
+            var haze = Board.Hex("c9dde0");
+            RenderSettings.fog = true; RenderSettings.fogMode = FogMode.Linear;
+            RenderSettings.fogColor = haze; RenderSettings.fogStartDistance = 14; RenderSettings.fogEndDistance = 50;   // fondu total avant le bord du sol (60 m)
+            // Tout le ciel prend la couleur de la brume (un peu plus bleu en haut) : les trous entre les feuillages s'y fondent.
+            if (hasSky) { sky.SetColor("_ColorBottom", haze); sky.SetColor("_ColorTop", Board.Hex("a9c9e2")); }
+            // Pas de ciel du tout : un fond couleur de brume, les trous entre les arbres et le bout du sol s y fondent.
+            if (Camera.main) { Camera.main.clearFlags = CameraClearFlags.SolidColor; Camera.main.backgroundColor = haze; }
+        }
+        else
+        {
+            (RenderSettings.fog, RenderSettings.fogMode, RenderSettings.fogColor, RenderSettings.fogStartDistance, RenderSettings.fogEndDistance, _, _) = savedFog;
+            if (hasSky) { sky.SetColor("_ColorBottom", savedFog.skyLow); sky.SetColor("_ColorTop", savedFog.skyTop); }
+            if (Camera.main) Camera.main.clearFlags = CameraClearFlags.Skybox;
+        }
     }
 }
