@@ -12,7 +12,8 @@ public class QuiSuisJeView : MonoBehaviour
     class Seat { public Transform root, crate, postit; public Animator an; public TextMesh text; public Renderer paper; }
     readonly List<Seat> seats = new List<Seat>();
     QuiSuisJe qs;
-    int me, fitFrames, eyeFrames;
+    int n, me, fitFrames, eyeFrames;
+    bool live;   // vue construite (Qui suis-je, ou Limite Limite sans post-its)
     Transform myHead;
     Transform cast;
     Material lit, paperMat, foundMat;
@@ -35,23 +36,27 @@ public class QuiSuisJeView : MonoBehaviour
     Vector3 SeatPos(int i)
     {
         // Moi en bas ; les autres en arc en face de moi (entre 70 et 290 degres) : tout le monde tient dans le champ.
-        int n = qs.players.Count, k = ((i - me) % n + n) % n;
+        int k = ((i - me) % n + n) % n;
         float a = (k == 0 ? 0 : n == 2 ? 180 : 70 + (k - 1) * 220f / (n - 2)) * Mathf.Deg2Rad;
         return Middle + new Vector3(Mathf.Sin(a), 0, -Mathf.Cos(a)) * Radius;
     }
     Quaternion Facing(int i) { var d = Middle - SeatPos(i); d.y = 0; return Quaternion.LookRotation(d); }
 
-    public void Build(QuiSuisJe q, int mySeat, IList<string> avatars)
+    public void Build(QuiSuisJe q, int mySeat, IList<string> avatars) { qs = q; BuildSeats(q.players.Count, mySeat, avatars); }
+    // Meme table, sans post-its (Limite Limite).
+    public void BuildPlain(int count, int mySeat, IList<string> avatars) { qs = null; BuildSeats(count, mySeat, avatars); }
+
+    void BuildSeats(int count, int mySeat, IList<string> avatars)
     {
         Clairiere.Show(true);
         gameObject.SetActive(true);
-        qs = q;
-        me = Mathf.Clamp(mySeat, 0, q.players.Count - 1);
+        n = count; live = true;
+        me = Mathf.Clamp(mySeat, 0, n - 1);
         if (cast) Destroy(cast.gameObject);
         cast = new GameObject("joueurs").transform;
         cast.SetParent(transform, false);
         seats.Clear();
-        for (int i = 0; i < q.players.Count; i++)
+        for (int i = 0; i < n; i++)
         {
             var s = new Seat();
             var pos = SeatPos(i); var face = Facing(i);
@@ -74,11 +79,8 @@ public class QuiSuisJeView : MonoBehaviour
             s.text.font = font; s.text.GetComponent<MeshRenderer>().sharedMaterial = RoueView.TextMat(font);
             s.text.fontSize = 96; s.text.anchor = TextAnchor.MiddleCenter; s.text.alignment = TextAlignment.Center;
             s.text.fontStyle = FontStyle.Bold; s.text.color = Board.Hex("2e1b10");
-            if (i == me)
-            {
-                myHead = s.an.GetBoneTransform(HumanBodyBones.Head);   // je vois mon corps, pas ma tete (ecrasee dans LateUpdate)
-                s.postit.gameObject.SetActive(false);
-            }
+            if (i == me) myHead = s.an.GetBoneTransform(HumanBodyBones.Head);   // je vois mon corps, pas ma tete (ecrasee dans LateUpdate)
+            if (i == me || qs == null) s.postit.gameObject.SetActive(false);
             seats.Add(s);
         }
         fitFrames = 3; eyeFrames = 5; eye = Vector3.zero;
@@ -86,7 +88,7 @@ public class QuiSuisJeView : MonoBehaviour
         Sync();
     }
 
-    public void Hide() { qs = null; gameObject.SetActive(false); Clairiere.Show(false); }
+    public void Hide() { qs = null; live = false; gameObject.SetActive(false); Clairiere.Show(false); }
 
     Transform Model(string name, Vector3 pos, float scale, float rot)
     {
@@ -135,7 +137,7 @@ public class QuiSuisJeView : MonoBehaviour
 
     void LateUpdate()
     {
-        if (qs == null) return;
+        if (!live) return;
         // Une fois la pose assise calculee, chacun se pose sur sa caisse (comme les amis de l'accueil).
         if (fitFrames > 0 && --fitFrames == 0)
             for (int i = 0; i < seats.Count; i++)
@@ -153,7 +155,7 @@ public class QuiSuisJeView : MonoBehaviour
             var fwd = seats[i].root.forward;
             // Mon oeil : pris une fois, apres m'etre assis (suivre la tete animee fait tanguer la camera).
             if (i == me) { if (eyeFrames > 0 && --eyeFrames == 0) eye = h.position + fwd * 0.12f + Vector3.up * 0.06f; continue; }
-            seats[i].postit.position = h.position + fwd * 0.13f + Vector3.up * 0.2f;   // sur le front
+            seats[i].postit.position = h.position + fwd * 0.24f + Vector3.up * 0.22f;   // devant le front, en avant des meches (sinon certaines coupes le cachent)
             seats[i].postit.rotation = Quaternion.LookRotation(-fwd);
         }
         if (myHead) myHead.localScale = Vector3.one * 0.001f;   // ma tete (et mes cheveux) ne bouchent pas la vue

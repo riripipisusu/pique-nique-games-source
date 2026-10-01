@@ -23,7 +23,7 @@ public partial class Game : MonoBehaviour
     public Blackjack bj;
     public Roulette rt;
     public Quiz qz;
-    public IMatch Match => (IMatch)rules ?? (IMatch)bj ?? (IMatch)rt ?? (IMatch)qz ?? (IMatch)rh ?? (IMatch)uno ?? (IMatch)ch ?? (IMatch)bac ?? (IMatch)sp ?? (IMatch)bp ?? (IMatch)pq ?? (IMatch)qsj ?? roue;
+    public IMatch Match => (IMatch)rules ?? (IMatch)bj ?? (IMatch)rt ?? (IMatch)qz ?? (IMatch)rh ?? (IMatch)uno ?? (IMatch)ch ?? (IMatch)bac ?? (IMatch)sp ?? (IMatch)bp ?? (IMatch)pq ?? (IMatch)qsj ?? (IMatch)ll ?? roue;
     public bool busy;
 
     Board board;
@@ -32,7 +32,7 @@ public partial class Game : MonoBehaviour
     public QuizView qview;
     Light quizLight;
     Hub hub;
-    Ui ui;
+    public Ui ui;
     Camera cam;
     Light sun;
     DepthOfField dof;
@@ -99,6 +99,7 @@ public partial class Game : MonoBehaviour
         bpview = new GameObject("PlateauBonnePaye").AddComponent<BonnePayeView>();
         pview = new GameObject("NappePouilleux").AddComponent<PouilleuxView>();
         qsview = new GameObject("QuiSuisJe").AddComponent<QuiSuisJeView>();
+        lview = new GameObject("LimiteLimite").AddComponent<LimiteView>();
         rview.Init(table);
         MenuBackdrop();
 
@@ -243,7 +244,7 @@ public partial class Game : MonoBehaviour
         }
         while (busy || (pending.Count > 0 && applied < 30)) yield return null;
         yield return Shot("fin");
-        var log = rules?.log ?? bj?.log ?? rt?.log ?? qz?.log ?? uno?.log ?? ch?.log ?? bp?.log ?? pq?.log ?? qsj?.log ?? roue?.log ?? bac?.log ?? sp?.log ?? new List<string>();
+        var log = rules?.log ?? bj?.log ?? rt?.log ?? qz?.log ?? uno?.log ?? ch?.log ?? bp?.log ?? pq?.log ?? qsj?.log ?? ll?.log ?? roue?.log ?? bac?.log ?? sp?.log ?? new List<string>();
         System.IO.File.WriteAllText(System.IO.Path.Combine(dir, role + ".txt"),
             $"status={net.Status}\nseat={mySeat}\nspectateur={Spectating}\napplied={applied}\noption={net.LobbyOption}\navatars={string.Join(" ; ", net.LobbyAvatars)}\n" + string.Join("\n", log));
         // Retour au salon : l'hote attend que le spectateur ait fini son rattrapage, puis ramene tout le monde.
@@ -494,6 +495,16 @@ public partial class Game : MonoBehaviour
             while (ui.DialogueShown || ui.IntroShown || tvCloseUp) { introSkip = true; if (ui.DialogueShown) { ui.DialogueKey(true); ui.DialogueKey(false); } yield return null; }
             yield return new WaitForSeconds(1); yield return Shot("f1-plateau");
             yield return RoueTest(dir, Shot);
+            Application.Quit();
+            yield break;
+        }
+        if (Array.IndexOf(Environment.GetCommandLineArgs(), "-limite") >= 0)   // limite limite : moi (auto) contre 3 bots
+        {
+            SelectGame(GameId.Limite);
+            ui.OpenForTest("setup"); yield return new WaitForSeconds(1); yield return Shot("l0-setup");
+            quizBots = 3;
+            StartQuizWithBots();
+            yield return LimiteTest(dir, Shot);
             Application.Quit();
             yield break;
         }
@@ -959,6 +970,7 @@ public partial class Game : MonoBehaviour
         bp = null;
         pq = null;
         qsj = null;
+        ll = null;
         roue = null;
         if (rset) rset.Hide();
         cam.clearFlags = CameraClearFlags.Skybox;
@@ -969,6 +981,7 @@ public partial class Game : MonoBehaviour
         bpview.Hide();
         pview.Hide();
         qsview.Hide();
+        lview.Hide();
         if (g == GameId.Rhythm) StartRhythm(n, opt, av);
         else if (g == GameId.Chevaux) StartChevaux(n, opt, seed);
         else if (g == GameId.Bac) StartBac(n, opt, seed, av, text);
@@ -976,6 +989,7 @@ public partial class Game : MonoBehaviour
         else if (g == GameId.BonnePaye) StartBonnePaye(n, opt, seed);
         else if (g == GameId.Pouilleux) StartPouilleux(n, opt, seed, av);
         else if (g == GameId.QuiSuisJe) StartQuiSuisJe(n, opt, seed, av);
+        else if (g == GameId.Limite) StartLimite(n, opt, seed, av);
         else if (g == GameId.Roue) StartRoue(n, opt, seed, av);
         else if (g == GameId.Uno) StartUno(n, opt, seed, av);
         else if (Games.TvTime(g))
@@ -1019,7 +1033,7 @@ public partial class Game : MonoBehaviour
             var first = rt.events.ToList();
             StartCoroutine(Run(rview.Play(first, s => ui.Say(s)), null));
         }
-        Casino(g != GameId.Croque && g != GameId.Uno && g != GameId.Chevaux && g != GameId.Serpents && g != GameId.BonnePaye && g != GameId.Pouilleux && g != GameId.QuiSuisJe);   // Uno, petits chevaux : en plein air, sur la nappe
+        Casino(g != GameId.Croque && g != GameId.Uno && g != GameId.Chevaux && g != GameId.Serpents && g != GameId.BonnePaye && g != GameId.Pouilleux && g != GameId.QuiSuisJe && g != GameId.Limite);   // Uno, petits chevaux : en plein air, sur la nappe
         // Plateau TV : tout est eclaire de face, uniformement (lumiere directionnelle propre au quiz).
         if (Games.TvTime(g)) RenderSettings.ambientLight = Board.Hex(g == GameId.Rhythm ? "3a3450" : "9a8f8a");
         if (!quizLight)
@@ -1035,7 +1049,7 @@ public partial class Game : MonoBehaviour
         quizLight.enabled = Games.TvTime(g) && g != GameId.Rhythm;
         snapCam = true;
         if (!Games.TvTime(g))   // TV Time : la musique demarre apres le generique et les regles
-            Sound.I.Music(g == GameId.Croque || g == GameId.Uno || g == GameId.Chevaux || g == GameId.Serpents || g == GameId.BonnePaye || g == GameId.Pouilleux || g == GameId.QuiSuisJe ? "music_game" : g == GameId.Quiz ? "music_quiz" : "music_blackjack");
+            Sound.I.Music(g == GameId.Croque || g == GameId.Uno || g == GameId.Chevaux || g == GameId.Serpents || g == GameId.BonnePaye || g == GameId.Pouilleux || g == GameId.QuiSuisJe || g == GameId.Limite ? "music_game" : g == GameId.Quiz ? "music_quiz" : "music_blackjack");
         catchingUp = watch;
         if (watch) { Time.timeScale = 12; AudioListener.volume = 0; catchSince = Time.realtimeSinceStartup; }
         if (Spectating) ui.Say("Tu regardes la partie en cours", 4);
@@ -1065,7 +1079,7 @@ public partial class Game : MonoBehaviour
 
     public void PlayerLeft(int seat)
     {
-        string n = rules?.players[seat].name ?? bj?.players[seat].name ?? rt?.players[seat].name ?? qz?.players[seat].name ?? rh?.players[seat].name ?? uno?.players[seat].name ?? bac?.players[seat].name ?? sp?.players[seat].name ?? bp?.players[seat].name ?? pq?.players[seat].name ?? qsj?.players[seat].name ?? roue?.players[seat].name ?? ch.players[seat].name;
+        string n = rules?.players[seat].name ?? bj?.players[seat].name ?? rt?.players[seat].name ?? qz?.players[seat].name ?? rh?.players[seat].name ?? uno?.players[seat].name ?? bac?.players[seat].name ?? sp?.players[seat].name ?? bp?.players[seat].name ?? pq?.players[seat].name ?? qsj?.players[seat].name ?? ll?.players[seat].name ?? roue?.players[seat].name ?? ch.players[seat].name;
         ui.Say($"{n} est parti : l'hôte joue pour lui.", 3.5f);
     }
 
@@ -1082,6 +1096,7 @@ public partial class Game : MonoBehaviour
     {
         var n = new List<string> { PlayerPrefs.GetString("cc-name", "Joueur") };
         var av = new List<string> { myAvatar };
+        if (gameId == GameId.Limite) quizBots = Mathf.Max(2, quizBots);   // 3 joueurs au moins
         for (int i = 0; i < quizBots; i++) { n.Add(BotNames[i]); av.Add(BotAvatars[i]); }
         StartGame(gameId, option, n, UnityEngine.Random.Range(0, int.MaxValue), av, false, bacText);
     }
@@ -1162,6 +1177,7 @@ public partial class Game : MonoBehaviour
         else Sound.I.Music("music_quiz_game");   // musique de partie (TV_GAME)
         quizPhaseStart = Time.time;
         busy = false;
+        if (Online && net.IsHost) net.SkipOpening();   // l'hote commence : ceux encore dans les regles le rejoignent
         ui.Refresh();
     }
 
@@ -1359,6 +1375,7 @@ public partial class Game : MonoBehaviour
         if (bp != null) { ApplyBonnePaye(p); return; }
         if (pq != null) { ApplyPouilleux(p); return; }
         if (qsj != null) { ApplyQuiSuisJe(p); return; }
+        if (ll != null) { ApplyLimite(p); return; }
         if (roue != null) { ApplyRoue(p); return; }
         if (rules != null)
         {
@@ -1498,7 +1515,9 @@ public partial class Game : MonoBehaviour
         pview.Hide();
         pq = null;
         qsview.Hide();
+        lview.Hide();
         qsj = null;
+        ll = null;
         roue = null;
         if (rset) rset.Hide();
         cam.clearFlags = CameraClearFlags.Skybox;
@@ -1521,6 +1540,7 @@ public partial class Game : MonoBehaviour
         BonnePayeInput();
         PouilleuxUpdate();
         QuiSuisJeUpdate();
+        LimiteUpdate();
         RoueUpdate();
         if (inGame && qz != null)
         {
@@ -1611,6 +1631,16 @@ public partial class Game : MonoBehaviour
             cam.transform.SetPositionAndRotation(up.position, up.rotation);
             if (dof) dof.active = paused;
             ui.UpdateUno(cam);
+            return;
+        }
+        if (inGame && ll != null)
+        {
+            var lp = lview.CamPose(llDist);
+            cam.transform.SetPositionAndRotation(lp.position, lp.rotation);
+            cam.fieldOfView = 50;
+            cam.nearClipPlane = 0.05f;
+            if (dof) dof.active = paused;
+            ui.UpdateLimite();
             return;
         }
         if (inGame && qsj != null)

@@ -39,6 +39,7 @@ public partial class Game
                 case WEv.Pass: ui.QsjBubble(e.seat, "Je passe."); break;
                 case WEv.Turn: if (e.seat == MySeatOr0) Sound.I.Play("open", 0.7f); break;
                 case WEv.Over: StartCoroutine(QsjEnd()); break;
+                case WEv.Round: qsview.Sync(); ui.Say($"Manche {qsj.round} !", 2.5f); Sound.I.Play("open"); break;
             }
         }
         qsjBotAt = Time.time + Random.Range(1.4f, 2.4f);

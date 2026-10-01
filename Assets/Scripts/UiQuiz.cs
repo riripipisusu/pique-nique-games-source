@@ -206,7 +206,7 @@ public partial class Ui
         Text(introAsk, "Passer l'introduction ?", "panel-title");
         var row = Div(introAsk, "row");
         Btn(row, "Non", () => AskSkip(false), "ghost").style.width = 220;
-        Btn(row, "Oui, passer", () => { game.introSkip = true; }, "green").style.width = 260;
+        Btn(row, "Oui, passer", SkipOpening, "green").style.width = 260;
         introAsk.style.display = DisplayStyle.None;
         img.RegisterCallback<PointerDownEvent>(_ => AskSkip(true));
     }
@@ -215,8 +215,12 @@ public partial class Ui
     {
         if (!IntroAsking) { if (!escape) AskSkip(true); }
         else if (escape) AskSkip(false);
-        else game.introSkip = true;
+        else SkipOpening();
     }
+
+    // Passer le generique ou les regles : pour tout le monde en ligne (sinon la partie ne commence pas en meme temps).
+    void SkipOpening() { ForceSkipOpening(); if (game.Online) game.net.SkipOpening(); }
+    public void ForceSkipOpening() { game.introSkip = true; if (dialogue != null) dialogue.skip = true; }
     // Boite de dialogue de Tenna : texte lettre par lettre, un "bip" toutes les deux lettres (voix Deltarune).
     // Clic / Espace / Entree : finit la phrase, puis passe a la suivante. Echap ou "Passer" : confirmation.
     public class Dialogue
@@ -259,7 +263,7 @@ public partial class Ui
         Text(d.ask, "Passer les règles ?", "panel-title");
         var row = Div(d.ask, "row");
         Btn(row, "Non", () => d.ask.style.display = DisplayStyle.None, "ghost").style.width = 220;
-        Btn(row, "Oui, passer", () => d.skip = true, "green").style.width = 260;
+        Btn(row, "Oui, passer", SkipOpening, "green").style.width = 260;
         d.ask.style.display = DisplayStyle.None;
         box.RegisterCallback<PointerDownEvent>(_ => DialogueKey(false));
         dialogue = d;
@@ -272,7 +276,7 @@ public partial class Ui
         if (d == null) return;
         bool asking = d.ask.style.display == DisplayStyle.Flex;
         if (escape) { d.ask.style.display = asking ? DisplayStyle.None : DisplayStyle.Flex; return; }
-        if (asking) { d.skip = true; return; }
+        if (asking) { SkipOpening(); return; }
         if (d.typing) d.typing = false;
         else { d.next = true; d.hint.text = ""; }
     }

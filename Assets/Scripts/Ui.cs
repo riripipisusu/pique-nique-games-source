@@ -247,6 +247,7 @@ public partial class Ui : MonoBehaviour
         [GameId.Serpents] = ("serpents", 0, "2 à 4 joueurs · Plateau", "Grimpe aux échelles, évite les serpents : vise la case 100 !"),
         [GameId.Roue] = ("roue", 2, "1 à 6 joueurs · Lettres", "Tourne la roue, trouve les lettres... et gare à la banqueroute !"),
         [GameId.QuiSuisJe] = ("quisuisje", 0, "1 à 8 joueurs · Devinettes", "Un post-it sur le front : devine qui tu es ! Contre des bots ou en ligne."),
+        [GameId.Limite] = ("limite", 0, "3 à 10 joueurs · Cartes", "Une question à trou, vos pires réponses : le Boss choisit sa préférée. Humour noir !"),
         [GameId.Pouilleux] = ("pouilleux", 0, "2 à 6 joueurs · Cartes", "Pioche chez ton voisin, jette tes paires... et ne finis pas avec le valet de pique !"),
         [GameId.Uno] = ("uno", 0, "2 à 10 joueurs · Cartes", "Même couleur ou même symbole, et n'oublie pas de crier UNO !"),
         [GameId.Blackjack] = ("blackjack", 1, "2 à 4 joueurs · Cartes", "Approche-toi de 21 sans dépasser et bats le croupier."),
@@ -274,15 +275,29 @@ public partial class Ui : MonoBehaviour
     void ThemeChips(VisualElement parent, GameId g, int option, Action<int> pick, string text = null, Action<string> setText = null)
     {
         parent.Clear();
-        parent.style.display = g == GameId.Trivia || g == GameId.Uno || g == GameId.Bac || g == GameId.QuiSuisJe ? DisplayStyle.Flex : DisplayStyle.None;
-        if (g == GameId.QuiSuisJe)
+        parent.style.display = g == GameId.Trivia || g == GameId.Uno || g == GameId.Bac || g == GameId.QuiSuisJe || g == GameId.Limite ? DisplayStyle.Flex : DisplayStyle.None;
+        if (g == GameId.Limite)
         {
-            Text(parent, "Nombre de tours", "h2");
-            var trow = Div(parent, "row", "theme-row");
-            foreach (int k in new[] { 3, 0, 1, 2 })
+            Text(parent, "Points pour gagner", "h2");
+            var lrow = Div(parent, "row", "theme-row");
+            for (int k = 0; k < Limite.Targets.Length; k++)
             {
                 int kk = k;
-                var chip = new Button(() => { Sound.I.UI("tick"); pick((option & ~(3 << 5)) | (kk << 5)); }) { text = QuiSuisJe.RoundChoices[k] + " tours" };
+                var chip = new Button(() => { Sound.I.UI("tick"); pick((option & ~(3 << 1)) | (kk << 1)); }) { text = Limite.Targets[k] + " points" };
+                chip.AddToClassList("theme-chip");
+                chip.EnableInClassList("selected", System.Math.Min(2, (option >> 1) & 3) == k);
+                lrow.Add(chip);
+            }
+            return;
+        }
+        if (g == GameId.QuiSuisJe)
+        {
+            Text(parent, "Nombre de manches (une manche = jusqu'à ce que tout le monde ait trouvé)", "h2");
+            var trow = Div(parent, "row", "theme-row");
+            foreach (int k in new[] { 0, 1, 2, 3 })
+            {
+                int kk = k;
+                var chip = new Button(() => { Sound.I.UI("tick"); pick((option & ~(3 << 5)) | (kk << 5)); }) { text = QuiSuisJe.RoundChoices[k] + (QuiSuisJe.RoundChoices[k] > 1 ? " manches" : " manche") };
                 chip.AddToClassList("theme-chip");
                 chip.EnableInClassList("selected", ((option >> 5) & 3) == k);
                 trow.Add(chip);
@@ -364,6 +379,7 @@ public partial class Ui : MonoBehaviour
     {
         // Grand quiz : les cartes ne changent que le mode (bit 0), les themes sont gardes.
         if (game.gameId == GameId.Trivia) { int keep = current & ~1; var raw = pick; pick = v => raw(v | keep); current &= 1; }
+        if (game.gameId == GameId.Limite) { int keep = current & ~1; var raw = pick; pick = v => raw(v | keep); current &= 1; }
         if (game.gameId == GameId.QuiSuisJe) { int keep = current & ~1; var raw = pick; pick = v => raw(v | keep); current &= 1; }
         if (game.gameId == GameId.Uno || game.gameId == GameId.Bac) { int keep = current & ~3; var raw = pick; pick = v => raw(v | keep); current &= 3; }   // les regles maison sont gardees
         parent.Clear();
@@ -384,6 +400,8 @@ public partial class Ui : MonoBehaviour
             ? new[] { (0, "4 manches", "Comme à la télé : 4 manches puis la finale."), (1, "3 manches", "Un peu plus court, finale comprise."), (2, "2 manches", "Partie express, finale comprise.") }
             : game.gameId == GameId.QuiSuisJe
             ? new[] { (0, "Classique", "En ligne : chacun écrit le personnage de son voisin, questions à l'écrit ou à l'oral, les autres votent. Contre des bots : personnages et questions à choisir dans une liste.") }
+            : game.gameId == GameId.Limite
+            ? new[] { (0, "Paquet complet", "Le vrai Limite Limite : humour très noir, pour adultes."), (1, "Paquet Streamer", "Plus soft, pour jouer en stream ou en famille (enfin presque).") }
             : game.gameId == GameId.Pouilleux
             ? new[] { (0, "Classique", "Le valet de pique est le pouilleux : ne le garde pas !") }
             : game.gameId == GameId.Serpents
@@ -581,9 +599,16 @@ public partial class Ui : MonoBehaviour
             S("Le but", "Chacun a un post-it sur le front avec un personnage choisi par son voisin : une star, un héros, un animal, un objet, un copain... Tout le monde le voit, sauf toi ! Devine qui tu es.");
             S("Le choix", "Au début, chacun choisit le personnage du joueur suivant. Il ne le verra pas, mais tous les autres oui.");
             S("Contre des bots", "Les bots ne lisent pas les questions écrites : hors ligne, tu choisis leur personnage parmi des propositions et tes questions dans une liste ; le jeu répond tout seul.");
-            S("À ton tour", "Pose une question fermée : écris-la, ou pose-la à l'oral sur Discord puis clique « Posée à l'oral ». Les autres votent Oui, Non ou Je ne sais pas, la majorité répond. Oui : tu rejoues ; sinon, la main passe. Tu peux proposer un nom à tout moment de ton tour : si c'est faux, la main passe aussi.");
-            S("Les points", "Trouver en peu de questions rapporte plus : 12 points moins le nombre de questions (2 au minimum), et 3 de bonus pour le premier. La partie s'arrête quand tout le monde a trouvé ou au bout des tours.");
+            S("À ton tour", "Pose une question fermée : écris-la, ou pose-la à l'oral sur Discord puis clique « Posée à l'oral ». Les autres votent Oui, Non ou Je ne sais pas, la majorité répond. Une seule question par tour : ensuite, propose un nom ou passe la main. Si le nom est faux, la main passe aussi. Une manche dure jusqu'à ce que tout le monde ait trouvé, puis on change de post-its.");
+            S("Les points", "Trouver en peu de questions rapporte plus : 12 points moins le nombre de questions (2 au minimum), et 3 de bonus pour le premier. Les points s'additionnent d'une manche à l'autre.");
             S("La vue", "Tu es assis autour de la nappe : clic droit pour tourner la tête, molette pour zoomer, clic sur un joueur pour lire son post-it de près.");
+        }
+        else if (game.gameId == GameId.Limite)
+        {
+            S("Le but", "Le premier à atteindre le nombre de points choisi (5 par défaut) gagne. Il faut au moins 3 joueurs.");
+            S("Une manche", "Chacun a 7 cartes rouges (des réponses). Le Boss retourne une carte noire, une question à trou. Les autres posent face cachée la carte de leur main qui la complète le mieux (ou le pire). Une question à deux trous : on pose deux cartes, dans l'ordre.");
+            S("Le Boss choisit", "Quand tout le monde a joué, les réponses sont découvertes une à une, mélangées. Le Boss choisit sa préférée : un point pour son auteur, qui devient le Boss de la manche suivante. Chacun repioche pour avoir 7 cartes.");
+            S("Le temps", "75 secondes pour poser, une minute pour choisir. Au-delà, le jeu joue au hasard pour les retardataires.");
         }
         else if (game.gameId == GameId.Pouilleux)
         {
@@ -705,6 +730,7 @@ public partial class Ui : MonoBehaviour
         BuildPouilleuxHud();
         BuildQuiSuisJeHud();
         BuildRoueHud();
+        BuildLimiteHud();
 
         var bannerRow = Div(hud, "banner-row");
         bannerRow.pickingMode = PickingMode.Ignore;
@@ -728,6 +754,8 @@ public partial class Ui : MonoBehaviour
         bool bpg = game.bp != null || game.roue != null, pqg = game.pq != null || game.qsj != null;
         rfHud.style.display = game.roue != null ? DisplayStyle.Flex : DisplayStyle.None;
         qsHud.style.display = game.qsj != null ? DisplayStyle.Flex : DisplayStyle.None;
+        llHud.style.display = game.ll != null ? DisplayStyle.Flex : DisplayStyle.None;
+        if (game.ll != null) LimiteNewRound();
         qsTags.Clear(); qsTagEls.Clear(); qsBubbles.Clear(); qsBubbleUntil.Clear();
         pqHud.style.display = game.pq != null ? DisplayStyle.Flex : DisplayStyle.None;
         pqTags.Clear(); pqTagEls.Clear();
@@ -741,7 +769,7 @@ public partial class Ui : MonoBehaviour
         hud.EnableInClassList("chx", game.ch != null || game.sp != null);
         hud.EnableInClassList("bacx", game.bac != null);
         hud.EnableInClassList("bpx", game.bp != null);
-        hud.EnableInClassList("pqx", game.pq != null || game.qsj != null);
+        hud.EnableInClassList("pqx", game.pq != null || game.qsj != null || game.ll != null);
         bjHud.style.display = bj ? DisplayStyle.Flex : DisplayStyle.None;
         rtHud.style.display = rt ? DisplayStyle.Flex : DisplayStyle.None;
         qzHud.style.display = qz ? DisplayStyle.Flex : DisplayStyle.None;
@@ -802,6 +830,7 @@ public partial class Ui : MonoBehaviour
         else if (game.bp != null) RefreshBonnePaye();
         else if (game.pq != null) RefreshPouilleux();
         else if (game.qsj != null) RefreshQuiSuisJe();
+        else if (game.ll != null) RefreshLimite();
         else if (game.roue != null) RefreshRoue();
     }
 
@@ -1023,6 +1052,14 @@ public partial class Ui : MonoBehaviour
             winTitle.text = $"{best.name} remporte {best.score} € !";
             winTitle.style.color = Board.Colors[best.seat % Board.Colors.Length];
             winSub.text = string.Join("\n", f.players.OrderByDescending(p => p.score).Select((p, i) => $"{i + 1}.  {p.name} : {p.score} €"));
+        }
+        else if (game.ll != null)
+        {
+            var l = game.ll;
+            var best = l.players.OrderByDescending(p => p.score).First();
+            winTitle.text = $"{best.name} gagne !";
+            winTitle.style.color = Board.Colors[best.seat % Board.Colors.Length];
+            winSub.text = string.Join("\n", l.players.OrderByDescending(p => p.score).Select((p, i) => $"{i + 1}.  {p.name} : {p.score} pt{(p.score > 1 ? "s" : "")}"));
         }
         else if (game.qsj != null)
         {

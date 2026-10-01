@@ -108,9 +108,9 @@ public class RoueSet : MonoBehaviour
             var back = Prim(PrimitiveType.Cube, plate, Vector3.zero, new Vector3(1.15f, 0.56f, 0.04f), Glow(ColorHex(i), 1.6f), null, false);
             plateBack.Add(back.GetComponent<Renderer>());
             var up = players[i].name.ToUpperInvariant();
-            var nm = Text(plate, new Vector3(0, 0.12f, -0.03f), Mathf.Min(0.015f, 0.13f / Mathf.Max(1, up.Length)), Color.white, up);
+            var nm = Text(plate, new Vector3(0, 0.14f, -0.09f), Mathf.Min(0.015f, 0.13f / Mathf.Max(1, up.Length)), Color.white, up);
             nm.transform.localRotation = Quaternion.identity;
-            var mo = Text(plate, new Vector3(0, -0.11f, -0.03f), 0.02f, Color.white, "0 €");
+            var mo = Text(plate, new Vector3(0, -0.06f, -0.09f), 0.018f, Color.white, "0 €");
             plateName.Add(nm); plateMoney.Add(mo);
         }
         ShowBoard("", null, _ => false);
@@ -232,7 +232,8 @@ public class RoueSet : MonoBehaviour
     // Il tourne autour du podium : au sol devant (sa place), sur l'estrade des candidats au fond.
     float hostAngle = -112, hostR = 3.7f, hostLift;
     Coroutine hostMove;
-    static Vector3 OnArc(float angle, float r) => new Vector3(Mathf.Sin(angle * Mathf.Deg2Rad) * r, Mathf.Abs(angle) <= 82 ? 0.55f : 0, Mathf.Cos(angle * Mathf.Deg2Rad) * r);
+    // Hauteur : il monte sur l'estrade en douceur (avant, il sautait d'un coup de 55 cm : on aurait dit une teleportation).
+    static Vector3 OnArc(float angle, float r) => new Vector3(Mathf.Sin(angle * Mathf.Deg2Rad) * r, Mathf.SmoothStep(0, 0.55f, Mathf.InverseLerp(92, 76, Mathf.Abs(angle))), Mathf.Cos(angle * Mathf.Deg2Rad) * r);
     float SeatAngle(int i) { int n = anims.Count; return n <= 1 ? 0 : Mathf.Lerp(-62, 62, i / (float)(n - 1)); }
 
     // Aller parler au candidat (a cote de lui, sur l'estrade) ; seat < 0 : retour a sa place, devant a gauche de la roue.

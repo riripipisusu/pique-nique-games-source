@@ -88,3 +88,7 @@
 
 # Packs achetes (sources .unitypackage) : jamais commites
 /SYNTY ASSETS/
+
+# Limite Limite : texte des cartes du jeu commercial (fourni) : dans les builds, pas dans le depot
+/Assets/Resources/Limite/
+/Assets/Resources/Limite.meta

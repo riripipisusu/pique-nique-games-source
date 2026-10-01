@@ -43,6 +43,10 @@ public partial class Game
     {
         if (!uno.TryApply(p)) return;
         var evs = uno.events.ToList();
+        // Mes cartes piochees restent cachees dans ma main jusqu'a leur arrivee (sinon l'interface les affichait tout de
+        // suite, avant l'animation, et la carte ne volait plus de la pioche vers ma main).
+        int myDraw = evs.Where(e => e.type == UEv.Drew && e.seat == Mathf.Max(0, mySeat)).Sum(e => e.count);
+        if (myDraw > 0) uview.MyPending += myDraw;
         StartCoroutine(Run(uview.Play(evs, e =>
         {
             switch (e.type)
@@ -54,7 +58,7 @@ public partial class Game
                 case UEv.RoundOver:
                     unoRoundAt = Time.time;
                     Sound.I.Play("win");
-                    ui.UnoRoundOver();
+                    if (!uno.Finished) ui.UnoRoundOver();   // derniere manche : seul l'ecran de victoire
                     break;
                 case UEv.Deal: ui.UnoNewRound(); break;
                 case UEv.Challenge: ui.UnoToast(e.seat == MySeatOr0 && !Online || e.seat == mySeat ? "+4 ! Tu peux le dénoncer si tu penses que c'est du bluff." : $"{uno.players[e.seat].name} peut dénoncer le +4..."); break;

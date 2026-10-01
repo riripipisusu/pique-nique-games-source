@@ -64,7 +64,7 @@ public partial class Ui
         rfPanel = Div(rfHud, "panel", "rf-panel");
         rfHint = Text(rfPanel, "", "rf-hint");
         rfActions = Div(rfPanel, "row", "qsj-row");
-        rfSpin = Btn(rfActions, "Tourner la roue", () => { if (game.CanAct) game.Act("spin"); }, "green");
+        rfSpin = Btn(rfActions, "Tourner la roue", () => { if (game.CanAct) game.Act(game.roue?.phase == FPhase.FinalSpin ? "fspin" : "spin"); }, "green");
         rfVowel = Btn(rfActions, "Acheter une voyelle (200 €)", () => { rfVowelMode = !rfVowelMode; RefreshRoue(); }, "ghost");
         var row = Div(rfPanel, "row", "qsj-row");
         rfText = Add(row, new TextField { maxLength = 60 }, "qsj-input");
@@ -124,10 +124,13 @@ public partial class Ui
         Text(rfMoney, r.InFinal ? "Finale" : $"Manche {Mathf.Max(1, r.round)} / {r.rounds}", "rf-money-title");
         foreach (var p in r.players.OrderByDescending(p => p.score))
         {
-            var line = Text(rfMoney, $"{p.name} : {p.score} €" + (!r.InFinal && r.roundMoney[p.seat] > 0 ? $"  (+{r.roundMoney[p.seat]} €)" : ""), "rf-money-line");
-            line.style.color = Board.Colors[p.seat % Board.Colors.Length];
-            if (p.seat == r.turn && (r.phase == FPhase.Spin || r.phase == FPhase.Letter)) line.AddToClassList("rf-active");
+            var row = Div(rfMoney, "row", "rf-money-row");
+            Div(row, "rf-dot").style.backgroundColor = Board.Colors[p.seat % Board.Colors.Length];
+            var line = Text(row, $"{p.name} : {p.score} €" + (!r.InFinal && r.roundMoney[p.seat] > 0 ? $"  (+{r.roundMoney[p.seat]} €)" : ""), "rf-money-line");
+            if (p.seat == r.turn && (r.phase == FPhase.Spin || r.phase == FPhase.Letter)) row.AddToClassList("rf-active");
         }
+        // Ce que font les autres (propositions, lettres...), une fois l'action jouee a l'ecran.
+        Feed(r.log.Take(Mathf.Min(game.rfLogShown, r.log.Count)).ToList());
         // Consigne.
         string who = r.phase == FPhase.Intro ? "" : r.players[r.Actor >= 0 ? r.Actor : r.turn].name;
         rfStatus.text = r.phase switch
@@ -144,10 +147,12 @@ public partial class Ui
             FPhase.FinalEnd => "Fin de la finale !",
             _ => "Fin de la partie !",
         };
+        if (game.rfSpinCam) rfStatus.text = $"{who} fait tourner la roue...";   // le resultat seulement quand elle s'arrete
         // Panneau du bas.
         bool rapid = r.phase == FPhase.Rapid && !spect && !r.outs.Contains(me);
         bool quiet = !game.busy && !game.tvCloseUp && rfHostTyping == null && rfHost.style.display == DisplayStyle.None;
-        bool show = quiet && (rapid || mine && (r.phase == FPhase.Spin || r.phase == FPhase.Letter || r.phase == FPhase.Bonus || r.phase >= FPhase.FinalSpin && r.phase <= FPhase.FinalSolve));
+        // L'enigme rapide : le champ reste affiche pendant que les cases s'allument (sinon on perd ce qu'on tape).
+        bool show = rapid && !game.tvCloseUp || quiet && (mine && (r.phase == FPhase.Spin || r.phase == FPhase.Letter || r.phase == FPhase.Bonus || r.phase >= FPhase.FinalSpin && r.phase <= FPhase.FinalSolve));
         rfPanel.style.display = show ? DisplayStyle.Flex : DisplayStyle.None;
         if (!show) { rfVowelMode = false; return; }
         rfActions.style.display = r.phase == FPhase.Spin || r.phase == FPhase.FinalSpin ? DisplayStyle.Flex : DisplayStyle.None;

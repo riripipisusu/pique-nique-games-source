@@ -266,7 +266,7 @@ public partial class Ui
         foreach (var ch in songs.Select(s => s.ch).Distinct())
         {
             var c = ch;
-            Btn(tabs, songs.First(s => s.ch == c).Chapter, () => { songTab = c; songScroll = 0; pick(current); }, "small", c == songTab ? "blue" : "ghost");
+            Btn(tabs, songs.First(s => s.ch == c).Chapter, () => { songTab = c; songScroll = 0; pick(current); }, "small", c == songTab ? "m-blue" : "m-dark");
         }
         var list = Add(box, new ScrollView(), "rh-list");
         // Choisir une chanson reconstruit la liste : on la garde ou elle etait (seul un changement d'onglet la remonte).

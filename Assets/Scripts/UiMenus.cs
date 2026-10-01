@@ -80,7 +80,7 @@ public partial class Ui
         [GameId.Chevaux] = ("Flag_01", "#2E8B3E"), [GameId.BonnePaye] = ("Currency_Notes_01", "#12876A"),
         [GameId.Serpents] = ("Star_01", "#6A3FB5"), [GameId.Roue] = ("Currency_Coin_01", "#C8327A"),
         [GameId.QuiSuisJe] = ("ExclamationMark_01", "#E08A00"), [GameId.Pouilleux] = ("Death_01", "#3D4A63"),
-        [GameId.Uno] = ("Lightning_01", "#D8322E"), [GameId.Bac] = ("Book_01", "#1C6FC4"), [GameId.Rhythm] = ("Headphones_01", "#8E24AA"),
+        [GameId.Uno] = ("Lightning_01", "#D8322E"), [GameId.Limite] = ("Chat_01", "#B5121B"), [GameId.Bac] = ("Book_01", "#1C6FC4"), [GameId.Rhythm] = ("Headphones_01", "#8E24AA"),
     };
     static void GameArt(VisualElement e, GameId g)
     {
@@ -411,7 +411,7 @@ public partial class Ui
         addPlayer.style.alignSelf = Align.FlexStart;
         botsRow = Div(right, "row", "m-strip");
         Text(botsRow, "Hors ligne contre des bots", "m-strip-label").style.flexGrow = 1;
-        Btn(botsRow, "−", () => { game.quizBots = Mathf.Max(1, game.quizBots - 1); RefreshSetup(); }, "m-dark", "small", "square");
+        Btn(botsRow, "−", () => { game.quizBots = Mathf.Max(game.gameId == GameId.Limite ? 2 : 1, game.quizBots - 1); RefreshSetup(); }, "m-dark", "small", "square");
         botsLabel = Text(botsRow, "", "m-value");
         Btn(botsRow, "+", () => { game.quizBots = Mathf.Min(Quiz.MaxPlayers - 1, game.quizBots + 1); RefreshSetup(); }, "m-dark", "small", "square");
         Ico(Btn(botsRow, "Jouer contre les bots", () => game.StartQuizWithBots(), "m-gold", "small"), "play").style.marginLeft = 20;

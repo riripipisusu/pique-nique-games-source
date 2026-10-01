@@ -4,12 +4,12 @@ using System.Linq;
 
 // Qui suis-je ? (en ligne) : d'abord chacun ecrit le personnage de son voisin (le joueur suivant), sans qu'il le voie.
 // Puis, a son tour, on pose une question fermee, ecrite ou a l'oral (Discord) ; les autres votent Oui / Non / Je ne sais
-// pas, la majorite repond. Oui = on rejoue, sinon la main passe ; on peut proposer un nom a tout moment de son tour
-// (faux = main suivante). Trouver vite rapporte plus. Fin : tout le monde a trouve, ou les tours sont ecoules.
+// pas, la majorite repond. Une question par tour : apres la reponse (meme oui), on propose un nom ou on passe la main.
+// Trouver vite rapporte plus. Une manche dure jusqu'a ce que tout le monde ait trouve ; puis nouveaux post-its.
 // Hors ligne (contre des bots) : mode guide, personnages d'une liste connue, questions d'une liste avec reponse automatique.
-// Option : bit 0 = libre (en ligne) ; bits 5-6 = nombre de tours.
+// Option : bit 0 = libre (en ligne) ; bits 5-6 = nombre de manches.
 public enum WPhase { Choose, Ask, Vote, Over }
-public enum WEv { Chosen, Ask, Answer, Found, Wrong, Pass, Turn, Over }
+public enum WEv { Chosen, Ask, Answer, Found, Wrong, Pass, Turn, Over, Round }
 public class WEvent { public WEv type; public int seat = -1, answer = -1, points; public string text; }
 
 [Serializable] public class Perso { public string n, f; public string[] a, y, u; }
@@ -19,7 +19,7 @@ public class QuiSuisJe : IMatch
 {
     public const int MaxPlayers = 8, Oui = 1, Non = 0, NeSaitPas = 2;
     public const string Oral = "(question posée à l'oral)";
-    public static readonly int[] RoundChoices = { 8, 12, 20, 5 };
+    public static readonly int[] RoundChoices = { 1, 2, 3, 5 };   // nombre de manches
     public static string AnswerText(int a) => a == Oui ? "Oui !" : a == Non ? "Non !" : "Je ne sais pas...";
 
     // Mode guide : questions (cle, texte, groupe) et personnages connus (Tools/quisuisje_pool.py).
@@ -166,7 +166,7 @@ public class QuiSuisJe : IMatch
         p.asked++;
         p.history.Add((pending, ans));
         phase = WPhase.Ask;
-        canAsk = ans == Oui;
+        canAsk = false;   // une question par tour, meme si c'est oui (sinon trop facile)
         events.Add(new WEvent { type = WEv.Answer, seat = turn, answer = ans, text = pending });
         log.Add(free ? $"→ {AnswerText(ans)}" : $"{p.name} : « {pending} » → {AnswerText(ans)}");
         pending = null;
@@ -202,15 +202,25 @@ public class QuiSuisJe : IMatch
     void Next()
     {
         canAsk = true;
-        if (players.All(x => x.Found)) { End(); return; }
+        if (players.All(x => x.Found))
+        {
+            if (round >= maxRounds) { End(); return; }
+            // Manche suivante : nouveaux post-its, le prochain joueur commence.
+            round++;
+            foreach (var p in players) { p.perso = null; p.foundOrder = -1; p.asked = 0; p.history.Clear(); }
+            foundCount = 0;
+            phase = WPhase.Choose;
+            turn = (round - 1) % players.Count;
+            log.Add($"Manche {round} : chacun choisit un nouveau personnage pour son voisin...");
+            events.Add(new WEvent { type = WEv.Round });
+            return;
+        }
         int from = turn;
         for (int k = 1; k <= players.Count; k++)
         {
             int s = (from + k) % players.Count;
             if (!players[s].Found) { turn = s; break; }
         }
-        if (turn <= from) round++;   // on est repasse par le premier joueur
-        if (round > maxRounds) { End(); return; }
         events.Add(new WEvent { type = WEv.Turn, seat = turn });
     }
 

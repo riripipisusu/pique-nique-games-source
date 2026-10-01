@@ -9,6 +9,7 @@ public partial class Game
     public RoueSet rset;
     public RoueView wview => rset ? rset.wheel : null;
     float rfPhaseAt, rfRevealAt, rfBotAt;
+    public int rfLogShown;
     FPhase rfLastPhase;
     public bool rfSpinCam;
     public float RoueLeft(float ms) => Mathf.Max(0, ms / 1000f - (Time.time - rfPhaseAt));
@@ -191,6 +192,8 @@ public partial class Game
             ui.Refresh();
             if (w > 0) yield return new WaitForSeconds(Mathf.Min(w, 3.5f) / settings.animSpeed);
         }
+        rfLogShown = roue.log.Count;   // le journal ne montre une action qu'une fois jouee a l'ecran (pas de resultat avant la fin de la roue)
+        ui.Refresh();
         if (roue.phase != rfLastPhase) { rfLastPhase = roue.phase; rfPhaseAt = Time.time; rfRevealAt = Time.time + 1.5f; }
         rfBotAt = Time.time + Random.Range(1.2f, 2.2f) / settings.animSpeed;
     }

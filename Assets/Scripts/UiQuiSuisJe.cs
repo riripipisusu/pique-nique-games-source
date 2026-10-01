@@ -124,7 +124,7 @@ public partial class Ui
         bool myTurn = q.turn == QsMe && q.phase == WPhase.Ask && !spect;
         qsStatus.text = q.Finished ? "Fin de la partie !"
             : q.phase == WPhase.Choose ? "Chacun choisit le personnage de son voisin..."
-            : $"Tour {Mathf.Min(q.round, q.maxRounds)} / {q.maxRounds}  ·  " + (myTurn ? (q.canAsk ? (q.free ? "À toi ! Pose une question (écrite ou à l'oral) ou propose un nom." : "À toi ! Choisis une question ou propose un nom.") : "Ce n'était pas « oui » : propose un nom ou passe la main.")
+            : $"Manche {Mathf.Min(q.round, q.maxRounds)} / {q.maxRounds}  ·  " + (myTurn ? (q.canAsk ? (q.free ? "À toi ! Pose une question (écrite ou à l'oral) ou propose un nom." : "À toi ! Choisis une question ou propose un nom.") : "Réponse reçue : propose un nom ou passe la main.")
             : q.phase == WPhase.Vote ? $"{q.Current.name} attend vos votes..." : $"{q.Current.name} réfléchit...");
         // Mes indices.
         qsClues.Clear();
@@ -180,7 +180,7 @@ public partial class Ui
         if (q == null || qsTags.panel == null) return;
         for (int i = 0; i < qsTagEls.Count; i++)
         {
-            var head = game.qsview.HeadOf(i);
+            var head = game.qsview.HeadOf(i) + Vector3.up * 0.28f;   // au-dessus du post-it, pas dessus
             bool front = Vector3.Dot(cam.transform.forward, head - cam.transform.position) > 0;
             var sp = RuntimePanelUtils.CameraTransformWorldToPanel(qsTags.panel, head, cam);
             var t = qsTagEls[i];

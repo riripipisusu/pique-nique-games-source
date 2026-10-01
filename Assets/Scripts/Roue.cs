@@ -88,7 +88,8 @@ public class Roue : IMatch
     public bool Shown(int i) => answer != null && (!char.IsLetter(answer[i]) || shownCells.Contains(i) || used.Contains(answer[i]) || phase == FPhase.RoundEnd || phase == FPhase.FinalEnd || phase == FPhase.Bonus);
     public bool ConsonantsLeft => answer.Any(c => Consonants.IndexOf(c) >= 0 && !used.Contains(c));
     public bool CanSpin => phase == FPhase.Spin && ConsonantsLeft && !outs.Contains(turn);
-    public bool CanBuyVowel => phase == FPhase.Spin && roundMoney[turn] >= VowelCost && Vowels.Any(v => !used.Contains(v));
+    // Une voyelle se paie avec l'argent de la manche, puis (s'il n'y en a pas assez) avec la banque.
+    public bool CanBuyVowel => phase == FPhase.Spin && roundMoney[turn] + players[turn].score >= VowelCost && Vowels.Any(v => !used.Contains(v));
     public int Hidden => Enumerable.Range(0, answer?.Length ?? 0).Count(i => !Shown(i));
 
     void Emit(FEv t, int seat = -1, int segment = -1, char letter = ' ', int count = 0, int amount = 0, string text = null) =>
@@ -185,7 +186,9 @@ public class Roue : IMatch
             {
                 if (!CanBuyVowel || a.Length < 2 || a[1].Length != 1 || Vowels.IndexOf(a[1][0]) < 0 || used.Contains(a[1][0])) return false;
                 char v = a[1][0];
-                roundMoney[turn] -= VowelCost;
+                int fromRound = Math.Min(Math.Max(0, roundMoney[turn]), VowelCost);
+                roundMoney[turn] -= fromRound;
+                players[turn].score -= VowelCost - fromRound;
                 used.Add(v);
                 int n = answer.Count(x => x == v);
                 Emit(FEv.Vowel, turn, letter: v, count: n, amount: VowelCost);

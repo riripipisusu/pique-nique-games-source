@@ -55,8 +55,15 @@ public class Net : MonoBehaviour
         return I;
     }
 
+    // Un depart en cours (quitter le salon) : on attend qu'il soit fini avant de creer ou rejoindre un autre salon.
+    // Avant, l'arret du reseau de l'ancien salon arrivait apres le demarrage du nouveau et le coupait : l'ami restait
+    // "en attente de l'hote", puis "l'hote a quitte la partie".
+    Task leaving;
+
     async Task Init()
     {
+        if (leaving != null) { try { await leaving; } catch (Exception e) { Debug.LogWarning(e.Message); } leaving = null; }
+        while (nm && nm.ShutdownInProgress) await Task.Yield();
         if (UnityServices.State == ServicesInitializationState.Uninitialized)
         {
             // Profil aleatoire : permet de lancer deux jeux sur le meme PC pour tester.
@@ -150,7 +157,9 @@ public class Net : MonoBehaviour
         nm.OnClientDisconnectCallback += OnDisconnected;
     }
 
-    public async void Leave()
+    public void Leave() { leaving = LeaveAsync(); }
+
+    async Task LeaveAsync()
     {
         var s = session;
         session = null;
@@ -170,9 +179,10 @@ public class Net : MonoBehaviour
             nm.OnClientDisconnectCallback -= OnDisconnected;
             nm.CustomMessagingManager?.UnregisterNamedMessageHandler(Channel);
         }
-        if (s != null) try { await s.LeaveAsync(); } catch (Exception e) { Debug.LogWarning(e.Message); }
-        if (nm && nm.IsListening) nm.Shutdown();
+        if (nm && nm.IsListening) nm.Shutdown();   // tout de suite (pas apres l'attente) : rien ne doit couper le salon suivant
         Changed?.Invoke();
+        if (s != null) try { await s.LeaveAsync(); } catch (Exception e) { Debug.LogWarning(e.Message); }
+        while (nm && nm.ShutdownInProgress) await Task.Yield();
     }
 
     void OnConnected(ulong id)
@@ -251,6 +261,7 @@ public class Net : MonoBehaviour
         }
         else if (p[0] == "act" && InGame && seats.TryGetValue(sender, out int seat) && CanPlay(seat, p.Length > 1 ? p[1] : null))
             HostAct(p, seat);
+        else if (p[0] == "skip" && InGame) Broadcast("skip");
         else if (p[0] == "quit" && InGame && seats.TryGetValue(sender, out int who) && who < Players && gone.Add(who))
             Broadcast("left|" + who);   // retourne au salon en pleine partie : l'hote joue pour lui
     }
@@ -294,10 +305,15 @@ public class Net : MonoBehaviour
             case "left":
                 game.PlayerLeft(int.Parse(p[1]));
                 break;
+            case "skip":   // quelqu'un a passe le generique ou les regles (ou l'hote a fini) : tout le monde avance
+                game.ui.ForceSkipOpening();
+                break;
         }
     }
 
     // --- Actions de l'hote / des joueurs -------------------------------------------
+    public void SkipOpening() { if (!Active || !InGame) return; if (IsHost) Broadcast("skip"); else Send("skip"); }
+
     public void SetOption(int option) { if (IsHost && !InGame) { LobbyOption = option; SendLobby(); } }
     public void SetText(string text) { if (IsHost && !InGame) { LobbyText = (text ?? "").Replace("|", ""); SendLobby(); } }
 
@@ -314,7 +330,7 @@ public class Net : MonoBehaviour
         SendLobby();
     }
 
-    public int MinPlayers => Games.TvTime(LobbyGame) ? 1 : 2;
+    public int MinPlayers => Games.TvTime(LobbyGame) ? 1 : LobbyGame == GameId.Limite ? Limite.MinPlayers : 2;
 
     // Nouvelle partie avec les membres du salon (au-dela du maximum du jeu, les derniers arrives regardent).
     public void StartMatch()
@@ -379,6 +395,8 @@ public class Net : MonoBehaviour
         if (shadow is QuiSuisJe && p.Length > 2 && p[1] == "vote") { if (seat < 0) return; p = new[] { "act", "vote", seat.ToString(), p[2] }; }   // on ne vote que pour soi
         if (shadow is QuiSuisJe && p.Length > 1 && p[1] == "voteend" && seat >= 0) return;                                               // reserve a l'hote
         if (shadow is QuiSuisJe && p.Length > 2 && (p[1] == "askfree" || p[1] == "guess")) p[2] = Clean(p[2]);
+        if (shadow is Limite && p.Length > 2 && p[1] == "play") { if (seat < 0) return; p = new[] { "act", "play", seat.ToString(), p[2] }; }   // on ne joue que pour soi
+        if (shadow is Limite && p.Length > 1 && (p[1] == "next" || p[1] == "timeout") && seat >= 0) return;   // reserve a l'hote
         if (shadow is QuiSuisJe && p.Length > 2 && p[1] == "pick") { if (seat < 0) return; p = new[] { "act", "pick", seat.ToString(), Clean(p[2]) }; }   // on ne choisit que pour son voisin
         if (shadow.Finished || !shadow.TryApply(p.Skip(1).ToArray())) return;
         var msg = string.Join("|", p);
@@ -396,6 +414,7 @@ public class Net : MonoBehaviour
             if (tick != null) HostAct(new[] { "act", tick });
             return;
         }
+        if (IsHost && InGame && shadow is Limite ll0 && game.Idle) { var lt = game.LimiteTick(ll0); if (lt != null) { HostAct(new[] { "act", lt }); return; } }
         if (IsHost && InGame && shadow is Roue rr && game.Idle) { var rt = game.RoueTick(rr); if (rt != null) { HostAct(new[] { "act" }.Concat(rt.Split('|')).ToArray()); return; } }
         if (!IsHost || !InGame || shadow == null || shadow.Finished || !gone.Contains(shadow.Actor) || !game.Idle) return;
         var a = shadow.Bot();

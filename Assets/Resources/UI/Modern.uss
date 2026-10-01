@@ -998,3 +998,114 @@ Button.m-tab { flex-shrink: 0; -unity-text-align: middle-center; }
 }
 
 .unity-scroll-view__vertical-scroller, .unity-scroll-view__horizontal-scroller { display: none; }
+
+/* =====================================================================================
+   Correctif : l'ancienne "face" des boutons (Menu.uss) les peignait en blanc ou en aplat par-dessus les dalles du pack
+   -> boutons d'aspect grise partout (Qui suis-je, Roue, pause/son...). On la rend transparente partout.
+   ===================================================================================== */
+Button.gl .gl-face, Button.gl.ghost .gl-face, Button.gl.green .gl-face, Button.gl.blue .gl-face, Button.gl.red .gl-face,
+Button.gl.small .gl-face, Button.gl.lg .gl-face, Button.gl.round .gl-face {
+    background-color: rgba(0, 0, 0, 0); border-width: 0; border-top-width: 0;
+}
+.gl-shine { display: none; }
+/* boutons generiques (hors menus m-*) : dalles du pack */
+Button.gl, Button.gl:hover, Button.gl:active, Button.gl:hover:active {
+    background-color: rgba(0, 0, 0, 0); border-width: 0; overflow: visible;
+    background-image: url("/Assets/Synty/MMRes/Resources/UI/corners/slab_light.png");
+    -unity-slice-left: 25; -unity-slice-right: 25; -unity-slice-top: 25; -unity-slice-bottom: 25; -unity-slice-scale: 1px;
+    -unity-background-image-tint-color: #C94BF2;
+}
+Button.gl:hover { -unity-background-image-tint-color: #DA74FF; }
+Button.gl.ghost, Button.gl.ghost:hover, Button.gl.ghost:active, Button.gl.ghost:hover:active {
+    background-image: url("/Assets/Synty/MMRes/Resources/UI/corners/slab_dark.png"); -unity-background-image-tint-color: #FFF6FF;
+}
+Button.gl.green, Button.gl.green:hover, Button.gl.green:active { -unity-background-image-tint-color: #7FBF3A; }
+Button.gl.green:hover { -unity-background-image-tint-color: #98D654; }
+Button.gl.red, Button.gl.red:hover, Button.gl.red:active { -unity-background-image-tint-color: #D94848; }
+Button.gl.blue, Button.gl.blue:hover, Button.gl.blue:active { -unity-background-image-tint-color: #7B4DB8; }
+Button.gl .gl-label, Button.gl.ghost .gl-label, Button.gl.green .gl-label, Button.gl.red .gl-label, Button.gl.blue .gl-label {
+    -unity-font: url("../Fonts/Bungee-Regular.ttf"); -unity-font-definition: initial;
+    color: #FFFFFF; -unity-text-outline-width: 0; text-shadow: 0 2px 0 rgba(20, 0, 30, 0.7);
+}
+Button.gl.ghost .gl-label { color: #EDE4F7; }
+Button.gl .gl-ico, Button.gl.ghost .gl-ico { -unity-background-image-tint-color: #FFFFFF; }
+Button.gl:disabled { opacity: 0.35; }
+/* boutons ronds (son, pause) : pastilles violettes a icone blanche */
+Button.gl.round, Button.gl.round:hover, Button.gl.round:active, Button.gl.round:hover:active,
+Button.gl.ghost.round, Button.gl.ghost.round:hover, Button.gl.ghost.round:active {
+    width: 78px; height: 78px; padding: 0; background-image: none;
+    background-color: rgba(42, 12, 62, 0.92); border-width: 4px; border-radius: 39px; border-color: #B286E6;
+}
+Button.gl.round:hover, Button.gl.ghost.round:hover { border-color: #CDE52C; scale: 1.06 1.06; }
+Button.gl.round .gl-ico, Button.gl.ghost.round .gl-ico { width: 34px; height: 34px; margin: 0; -unity-background-image-tint-color: #FFFFFF; }
+/* champs de texte du jeu */
+TextField.qsj-input > .unity-text-field__input, TextField.name-field > .unity-text-field__input {
+    background-color: rgba(18, 6, 28, 0.92); color: #FFFFFF; border-width: 3px; border-radius: 10px; border-color: #8A6AB8; background-image: none;
+}
+TextField.qsj-input:focus > .unity-text-field__input { border-color: #CDE52C; }
+
+/* --- Roue : clavier de lettres lisible --- */
+.rf-keys { justify-content: center; }
+Button.rf-key, Button.rf-key:hover, Button.rf-key:active {
+    width: 58px; height: 62px; margin: 4px; padding: 0 0 4px 0;
+    background-image: url("/Assets/Synty/MMRes/Resources/UI/corners/slab_dark.png"); -unity-background-image-tint-color: #FFF6FF;
+}
+Button.rf-key .gl-face { padding: 0; }
+Button.rf-key .gl-label { font-size: 28px; color: #FFFFFF; }
+Button.rf-key:hover { scale: 1.1 1.1; -unity-background-image-tint-color: #FFFFFF; }
+Button.rf-key.rf-vowel, Button.rf-key.rf-vowel:hover { background-image: url("/Assets/Synty/MMRes/Resources/UI/corners/slab_light.png"); -unity-background-image-tint-color: #7B4DB8; }
+Button.rf-key.selected, Button.rf-key.selected:hover { background-image: url("/Assets/Synty/MMRes/Resources/UI/corners/slab_light.png"); -unity-background-image-tint-color: #CDE52C; }
+Button.rf-key.selected .gl-label { color: #2A0C3E; text-shadow: 0 0 0 rgba(0, 0, 0, 0); }
+Button.rf-key:disabled { opacity: 0.18; }
+.rf-money-row { align-items: center; margin: 2px 0; padding: 2px 8px; border-radius: 8px; }
+.rf-money-row.rf-active { background-color: rgba(205, 229, 44, 0.25); }
+.rf-dot { width: 14px; height: 14px; border-radius: 7px; margin-right: 8px; }
+.rf-money-line { color: #FFFFFF; }
+
+/* --- Qui suis-je, Uno, etc. : textes et panneaux --- */
+.hud .qsj-status, .hud .rf-hint { color: #FFFFFF; }
+
+/* --- chansons du Pique-Nique Live --- */
+.rh-song, .rh-song:hover {
+    background-color: rgba(30, 8, 46, 0.85); border-color: #5A3E80; border-width: 2px; border-radius: 10px;
+}
+.rh-song:hover { border-color: #B286E6; }
+.rh-song.selected { background-color: rgba(122, 40, 180, 0.9); border-color: #CDE52C; }
+.rh-song-name { color: #FFFFFF; }
+/* Qui suis-je : etiquettes des joueurs */
+.qsj-tag { background-color: rgba(30, 8, 46, 0.9); border-color: #B286E6; border-width: 2px; border-bottom-width: 4px; }
+.qsj-tag.active { background-color: rgba(122, 40, 180, 0.95); border-color: #CDE52C; }
+.qsj-tag-name { color: #FFFFFF; }
+.qsj-tag-score { color: #D8CBEA; }
+/* fiches joueurs en jeu : dalle claire (les prenoms sont a la couleur du joueur, lisibles sur fond clair) */
+.hud .pcard {
+    background-image: url("/Assets/Synty/MMRes/Resources/UI/corners/slab_light.png"); -unity-background-image-tint-color: #EDE4F7;
+}
+.hud .pcard.active { background-image: url("/Assets/Synty/MMRes/Resources/UI/corners/slab_light.png"); -unity-background-image-tint-color: #CDE52C; }
+.hud .pname { text-shadow: 0 0 0 rgba(0, 0, 0, 0); }
+.hud .pip { background-color: rgba(255, 255, 255, 0.85); border-color: #7B4DB8; color: #2A0C3E; }
+/* Roue : champ de reponse large */
+.rf-panel TextField.qsj-input { min-width: 640px; }
+.rf-panel TextField.qsj-input > .unity-text-field__input { font-size: 26px; height: 56px; }
+
+/* =====================================================================================
+   Limite Limite : la question en clair en haut, la carte survolee en grand
+   ===================================================================================== */
+.ll-black {
+    position: absolute; top: 64px; left: 50%; translate: -50% 0; width: 900px; padding: 14px 28px 16px 28px;
+    background-color: rgba(17, 16, 20, 0.92); border-radius: 18px; border-width: 3px; border-color: #F2EDE6;
+}
+.ll-black-text { font-size: 30px; color: #FFFFFF; white-space: normal; -unity-text-align: middle-center; -unity-font: url("../Fonts/SairaCondensed-ExtraBold.ttf"); -unity-font-definition: initial; }
+.ll-scores { position: absolute; top: 90px; right: 30px; width: 330px; padding: 16px 20px; }
+.ll-preview {
+    position: absolute; left: 40px; top: 50%; translate: 0 -50%; width: 300px; height: 420px; padding: 26px 24px;
+    background-color: #D7202A; border-radius: 22px; border-width: 6px; border-color: #F2EDE6;
+}
+.ll-preview.black { background-color: #141317; }
+.ll-preview-text { font-size: 34px; color: #FFFFFF; white-space: normal; -unity-font: url("../Fonts/SairaCondensed-ExtraBold.ttf"); -unity-font-definition: initial; }
+.ll-handbox { position: absolute; right: 40px; bottom: 60px; align-items: flex-end; }
+.ll-handbox Button.gl { width: 220px; height: 84px; }
+.ll-hint { font-size: 22px; color: #FFFFFF; margin-bottom: 4px; white-space: normal; -unity-text-align: middle-center; }
+.ll-actions { margin-top: 6px; align-items: center; justify-content: center; }
+.ll-write { align-items: center; margin-right: 16px; }
+.ll-write TextField.qsj-input { width: 520px; }
