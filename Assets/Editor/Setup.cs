@@ -138,55 +138,11 @@ public static class Setup
 
         RabbitSetup.Build();
         CharSetup.Build();
-        Portraits();
+        SidekickSetup.Build();   // personnages : portraits rendus a la volee
         AssetDatabase.DeleteAsset(Res + "Base.mat");
         AssetDatabase.SaveAssets();
         Diagnose();
         SelfCheck();
-    }
-
-    public static void Portraits()
-    {
-        string dir = Res + "Portraits/";
-        Directory.CreateDirectory(dir);
-        var go = new GameObject("PortraitCam");
-        var cam = go.AddComponent<Camera>();
-        cam.clearFlags = CameraClearFlags.SolidColor;
-        cam.backgroundColor = new Color(0, 0, 0, 0);
-        cam.fieldOfView = 22;
-        var lightGo = new GameObject("PortraitLight");
-        var light = lightGo.AddComponent<Light>();
-        light.type = LightType.Directional;
-        light.intensity = 1.4f;
-        lightGo.transform.rotation = Quaternion.Euler(30, -25, 0);
-        RenderSettings.ambientMode = AmbientMode.Flat;
-        RenderSettings.ambientLight = new Color(0.9f, 0.9f, 0.95f);
-        var rt = new RenderTexture(256, 256, 24, RenderTextureFormat.ARGB32);
-        cam.targetTexture = rt;
-        foreach (var old in Directory.GetFiles(dir, "*.png")) AssetDatabase.DeleteAsset(old.Replace('\\', '/'));
-        foreach (var name in Game.Characters)
-        {
-            var c = Chars.Spawn(name, null, Vector3.zero, 180, out _).gameObject;
-            var rs = c.GetComponentsInChildren<Renderer>().Where(r => r.enabled).ToArray();
-            var b = rs[0].bounds;
-            foreach (var r in rs) b.Encapsulate(r.bounds);
-            var head = new Vector3(b.center.x, b.max.y - b.size.y * 0.15f, b.center.z);   // T-pose : on cadre serre sur la tete
-            cam.transform.position = head + new Vector3(0, b.size.y * 0.03f, -b.size.y * 0.95f);
-            cam.transform.LookAt(head);
-            cam.Render();
-            RenderTexture.active = rt;
-            var tex = new Texture2D(256, 256, TextureFormat.RGBA32, false);
-            tex.ReadPixels(new Rect(0, 0, 256, 256), 0, 0);
-            tex.Apply();
-            File.WriteAllBytes(dir + Chars.PortraitName(name) + ".png", tex.EncodeToPNG());
-            RenderTexture.active = null;
-            Object.DestroyImmediate(tex);
-            Object.DestroyImmediate(c);
-        }
-        Object.DestroyImmediate(go);
-        Object.DestroyImmediate(lightGo);
-        rt.Release();
-        AssetDatabase.ImportAsset(dir, ImportAssetOptions.ImportRecursive);
     }
 
     static void Mat(string name, string shader, System.Action<Material> init)

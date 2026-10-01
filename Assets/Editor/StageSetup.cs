@@ -138,7 +138,7 @@ public static class StageSetup
         ("Right Little Proximal", "DEF-f_pinky.01.R"), ("Right Little Intermediate", "DEF-f_pinky.02.R"), ("Right Little Distal", "DEF-f_pinky.03.R"),
     };
     static readonly (string state, string file, bool loop)[] TennaStates =
-        { ("Clap", "clap", false), ("Laugh", "t_laugh", false), ("Taunt", "t_taunt", false), ("Point", "t_point", false), ("Excited", "t_excited", false) };
+        { ("Clap", "clap", false), ("Laugh", "t_laugh", false), ("Taunt", "t_taunt", false), ("Point", "t_point", false), ("Excited", "t_excited", false), ("Walk", "t_walk", true), ("Stand", "t_idle", true) };
 
     public static void TennaHuman()
     {
@@ -180,12 +180,14 @@ public static class StageSetup
         var ctrl = UnityEditor.Animations.AnimatorController.CreateAnimatorControllerAtPath(ctrlPath);
         var sm = ctrl.layers[0].stateMachine;
         var idle = sm.AddState("Idle");
-        idle.motion = AssetDatabase.LoadAllAssetsAtPath(fbx).OfType<AnimationClip>().First(c => !c.name.StartsWith("__preview"));
+        var standClip = AssetDatabase.LoadAllAssetsAtPath("Assets/Mixamo/t_idle.fbx").OfType<AnimationClip>().FirstOrDefault(c => !c.name.StartsWith("__preview"));
+        idle.motion = standClip ? standClip : AssetDatabase.LoadAllAssetsAtPath(fbx).OfType<AnimationClip>().First(c => !c.name.StartsWith("__preview"));
         sm.defaultState = idle;
         foreach (var (state, file, _) in TennaStates)
         {
             var st = sm.AddState(state);
             st.motion = AssetDatabase.LoadAllAssetsAtPath("Assets/Mixamo/" + file + ".fbx").OfType<AnimationClip>().First(c => !c.name.StartsWith("__preview"));
+            if (TennaStates.First(x => x.state == state).loop) continue;   // marche, attente : jouees tant qu'on ne dit pas autre chose
             var back = st.AddTransition(idle);
             back.hasExitTime = true; back.exitTime = 0.92f; back.duration = 0.25f;
         }

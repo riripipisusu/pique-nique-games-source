@@ -8,7 +8,7 @@ using UnityEngine.UIElements;
 public partial class Ui : MonoBehaviour
 {
     Game game;
-    VisualElement root, title, games, setup, picker, settingsScreen, rulesScreen, hud, pause, victory, onlineScreen, lobbyScreen;
+    VisualElement root, title, games, setup, creator, settingsScreen, rulesScreen, hud, pause, victory, onlineScreen, lobbyScreen;
     VisualElement current;
     readonly Stack<VisualElement> history = new Stack<VisualElement>();
 
@@ -18,8 +18,14 @@ public partial class Ui : MonoBehaviour
         game = g;
         root = doc.rootVisualElement;
         root.styleSheets.Add(Resources.Load<StyleSheet>("UI/Menu"));
+        root.styleSheets.Add(Resources.Load<StyleSheet>("UI/Modern"));
         root.AddToClassList("root");
         root.pickingMode = PickingMode.Ignore;
+        // Calque fixe de l'illustration, derriere tous les ecrans de menu : il ne disparait jamais entre deux ecrans
+        // (sinon, pendant le fondu, on voit la scene 3D derriere).
+        bgArt = Div(root, "m-art", "bg-art");
+        bgArt.pickingMode = PickingMode.Ignore;
+        arts.Add(bgArt);
         BuildTitle();
         BuildGames();
         BuildSetup();
@@ -30,7 +36,13 @@ public partial class Ui : MonoBehaviour
         BuildVictory();
         BuildOnline();
         BuildLobby();
-        BuildPicker();
+        BuildCreator();
+        // Menus : pas de barres de defilement (la molette suffit).
+        foreach (var sv in root.Query<ScrollView>().ToList())
+        {
+            sv.horizontalScrollerVisibility = ScrollerVisibility.Hidden;
+            sv.verticalScrollerVisibility = ScrollerVisibility.Hidden;
+        }
     }
 
     // --- Outils ---------------------------------------------------------------------
@@ -61,20 +73,40 @@ public partial class Ui : MonoBehaviour
             Text(face, text, "gl-label");
             face.pickingMode = PickingMode.Ignore;
             foreach (var e in face.Children()) e.pickingMode = PickingMode.Ignore;
+            if (c.Any(x => x.StartsWith("m-"))) Corners(b);   // menus violets : crochets au survol
         }
         return Add(p, b, c);
+    }
+
+    // Les 4 crochets jaune-vert du pack (visibles au survol / a la selection, cf. Modern.uss).
+    static void Corners(VisualElement b)
+    {
+        // un bouton-texte qui a des enfants ne mesure plus son texte : on lui donne sa largeur
+        if (b is Button bt && !string.IsNullOrEmpty(bt.text)) bt.style.minWidth = 64 + 17 * bt.text.Length;
+        foreach (var k in new[] { "tl", "tr", "bl", "br" })
+        {
+            var e = new VisualElement { pickingMode = PickingMode.Ignore };
+            e.AddToClassList("br-c"); e.AddToClassList(k);
+            b.Add(e);
+        }
     }
 
     static VisualElement Face(Button b) => b.Q(className: "gl-face");
     static string Label(Button b) => b.Q<Label>(className: "gl-label")?.text ?? b.text;
 
-    // Icone (Resources/UI/Icons, traits blancs) devant le texte d'un bouton.
+    // Icone blanche devant le texte d'un bouton : celle du pack Modern Menus (Synty) si on l'a, sinon la notre (Resources/UI/Icons).
+    static readonly Dictionary<string, string> PackIcons = new Dictionary<string, string>
+    {
+        ["play"] = "Play_01", ["globe"] = "Connection_01", ["gear"] = "Settings_04", ["exit"] = "Cancel_01", ["back"] = "Arrow_Back_01",
+        ["book"] = "Book_01", ["check"] = "Confirm_01", ["plus"] = "Plus_01", ["sound"] = "Sound_01_On", ["mute"] = "Sound_01_Off",
+        ["monitor"] = "Display_01", ["user"] = "Star_01",
+    };
     static Button Ico(Button b, string icon)
     {
         var face = Face(b);
         var i = face.Q(className: "gl-ico");
         if (i == null) { i = new VisualElement { pickingMode = PickingMode.Ignore }; i.AddToClassList("gl-ico"); face.Insert(1, i); }
-        i.style.backgroundImage = Resources.Load<Texture2D>("UI/Icons/" + icon);
+        i.style.backgroundImage = PackIcons.TryGetValue(icon, out var pk) && Resources.Load<Texture2D>("MM/flat/" + pk) is Texture2D t ? t : Resources.Load<Texture2D>("UI/Icons/" + icon);
         return b;
     }
 
@@ -97,7 +129,7 @@ public partial class Ui : MonoBehaviour
         soundBtns.Add(b);
         RefreshSoundBtns();
     }
-    void RefreshSoundBtns() { foreach (var b in soundBtns) Ico(b, game.settings.mute ? "mute" : "sound"); }
+    void RefreshSoundBtns() { foreach (var b in soundBtns) Ico(b, game.settings.mute ? "mute" : "sound"); RefreshHomeSound(); }
 
     // Portrait cliquable d'un personnage.
     VisualElement Portrait(VisualElement p, string avatar, Action onClick, float size = 64)
@@ -143,7 +175,7 @@ public partial class Ui : MonoBehaviour
 
     static void Hide(VisualElement s) { s.AddToClassList("hidden"); s.RemoveFromClassList("in"); }
 
-    VisualElement[] All => new[] { title, games, setup, picker, settingsScreen, rulesScreen, hud, pause, victory, onlineScreen, lobbyScreen };
+    VisualElement[] All => new[] { title, games, setup, creator, settingsScreen, rulesScreen, hud, pause, victory, onlineScreen, lobbyScreen };
 
     // Navigation entre ecrans de menu, avec retour arriere.
     void Go(VisualElement s, bool remember = true)
@@ -151,9 +183,11 @@ public partial class Ui : MonoBehaviour
         if (current != null)
         {
             if (remember) history.Push(current);
+            if (current == creator && s != creator) studio?.Show(false);   // le studio ne tourne que pendant le createur
             Hide(current);
         }
         current = s;
+        bgArt.style.display = (s.ClassListContains("m-page") || s.ClassListContains("hm")) && !s.ClassListContains("pause-scr") ? DisplayStyle.Flex : DisplayStyle.None;
         Show(s);
     }
 
@@ -172,9 +206,13 @@ public partial class Ui : MonoBehaviour
     {
         if (screen == "games") Go(games);
         else if (screen == "setup") { RefreshSetup(); Go(setup); }
-        else if (screen == "avatar") OpenPicker(a => { }, null);
+        else if (screen == "avatar") OpenCreator(a => { }, null);
         else if (screen == "settings") { SelectTab(1); Go(settingsScreen); }
         else if (screen == "online") OpenOnline();
+        else if (screen == "creator") OpenCreator(a => { }, null);
+        else if (screen.StartsWith("crtab:")) CreatorTab(screen.Substring(6));
+        else if (screen == "crrandom") { crLook = Sidekick.Random(new System.Random(7)); CreatorRefresh(); }
+        else if (screen == "crcolor") { crColorOpen = 7; CreatorRefresh(); }
     }
 
     public void ShowTitle()
@@ -188,63 +226,10 @@ public partial class Ui : MonoBehaviour
     }
 
     // --- Ecran titre ----------------------------------------------------------------
-    VisualElement profilePortrait;
-    Label profileName;
-
-    void BuildTitle()
-    {
-        title = Screen("title-screen");
-        var logo = Div(title, "logo-box");
-        Text(logo, "Pique-Nique's", "logo");
-        Text(logo, "Games", "logo", "logo2");
-        Text(title, "Des jeux de société à partager entre amis", "tagline");
-        var col = Div(title, "menu-col");
-        Ico(Btn(col, "Jouer", () => { RefreshGames(); Go(games); }, "lg"), "play");
-        Ico(Btn(col, "Jouer en ligne", OpenOnline, "green", "lg"), "globe");
-        var row = Div(col, "menu-row");
-        Ico(Btn(row, "Paramètres", () => { SelectTab(tab); Go(settingsScreen); }, "blue"), "gear");
-        Ico(Btn(row, "Quitter", Application.Quit, "red"), "exit");
-
-        // Carte "profil" : son personnage (clic = changer), et son prenom.
-        var profile = Btn(title, "", () => OpenPicker(a => { game.SetMyAvatar(a); RefreshProfile(); }, game.myAvatar), "ghost", "profile");
-        var face = Face(profile);
-        face.Q<Label>().RemoveFromHierarchy();
-        profilePortrait = Div(face, "portrait");
-        profilePortrait.style.width = profilePortrait.style.height = 70;
-        var txt = Div(face);
-        Text(txt, "Ton personnage", "profile-sub");
-        profileName = Text(txt, "", "profile-name");
-        foreach (var e in face.Query().ToList()) e.pickingMode = PickingMode.Ignore;
-
-        var corner = Div(title, "corner");
-        SoundBtn(corner);
-        Text(title, "Version " + Application.version, "version");
-        Text(title, "Décors Synty Studios · Modèles Kenney (CC0) · Personnages Synty, animations Mixamo · Lapins : Poly Art de Malbers Animations  ·  Questions : OpenQuizzDB (CC BY-SA) · Tenna : rig de ThatAverageJoe · Sons de roulette : Pixabay · Musiques : MMAudio, Geoff Harvey (Pixabay), « A Conversation with Saul » de Matthew Pablo (CC-BY 3.0)", "credits");
-        updateCard = Div(title, "panel", "update-card");
-        updateCard.style.display = DisplayStyle.None;
-        updateText = Text(updateCard, "", "p");
-        updateBtn = Btn(updateCard, "Mettre à jour", () =>
-        {
-            updateBtn.SetEnabled(false);
-            StartCoroutine(Updater.Install(p => updateText.text = $"Téléchargement... {p * 100:0} %", err => { updateText.text = err; updateBtn.SetEnabled(true); }));
-        }, "green", "small");
-        logo.schedule.Execute(() =>
-        {
-            float t = Time.unscaledTime;
-            logo.style.rotate = new Rotate(Angle.Degrees(Mathf.Sin(t * 1.3f) * 1.5f));
-            logo.style.translate = new Translate(0, Mathf.Sin(t * 2.1f) * 8f);
-        }).Every(16);
-    }
 
     VisualElement updateCard;
     Label updateText;
     Button updateBtn;
-
-    void RefreshProfile()
-    {
-        profilePortrait.style.backgroundImage = Chars.Portrait(game.myAvatar);
-        profileName.text = PlayerPrefs.GetString("cc-name", "Toi");
-    }
 
     public void ShowUpdate(string version)
     {
@@ -260,6 +245,7 @@ public partial class Ui : MonoBehaviour
         [GameId.Chevaux] = ("chevaux", 0, "2 à 4 joueurs · Plateau", "Un 6 pour sortir, fais le tour du plateau et grimpe l'escalier jusqu'au centre !"),
         [GameId.BonnePaye] = ("bonnepaye", 0, "2 à 6 joueurs · Plateau", "Factures, affaires, loterie et Jour de paye : le plus riche à la fin du mois gagne !"),
         [GameId.Serpents] = ("serpents", 0, "2 à 4 joueurs · Plateau", "Grimpe aux échelles, évite les serpents : vise la case 100 !"),
+        [GameId.Roue] = ("roue", 2, "1 à 6 joueurs · Lettres", "Tourne la roue, trouve les lettres... et gare à la banqueroute !"),
         [GameId.QuiSuisJe] = ("quisuisje", 0, "1 à 8 joueurs · Devinettes", "Un post-it sur le front : devine qui tu es ! Contre des bots ou en ligne."),
         [GameId.Pouilleux] = ("pouilleux", 0, "2 à 6 joueurs · Cartes", "Pioche chez ton voisin, jette tes paires... et ne finis pas avec le valet de pique !"),
         [GameId.Uno] = ("uno", 0, "2 à 10 joueurs · Cartes", "Même couleur ou même symbole, et n'oublie pas de crier UNO !"),
@@ -276,99 +262,11 @@ public partial class Ui : MonoBehaviour
     Label gameCount;
     readonly List<Button> gameTabs = new List<Button>();
 
-    void BuildGames()
-    {
-        games = Screen();
-        var panel = Panel(games);
-        panel.style.width = 1760;
-        Text(panel, "À quoi on joue ?", "panel-title");
-        var top = Div(panel, "row", "spread");
-        var tabsRow = Div(top, "row");
-        string[] cats = { "Tous", "Jeux de société", "Casino", "TV Time" };
-        for (int i = 0; i < cats.Length; i++)
-        {
-            int k = i - 1;
-            gameTabs.Add(Btn(tabsRow, cats[i], () => { gameFilter = k; RefreshGames(); }, "ghost", "small", "filter"));
-        }
-        gameCount = Text(top, "", "muted");
-        gameRow = Div(panel, "row", "game-row");
-        foreach (var g in GameInfo.Keys) GameCard(gameRow, g);
-        Ico(Btn(panel, "Retour", Back, "ghost", "small"), "back").style.alignSelf = Align.FlexStart;
-        RefreshGames();
-    }
-
-    void RefreshGames()
-    {
-        int n = 0;
-        foreach (var card in gameRow.Children())
-        {
-            bool on = gameFilter < 0 || GameInfo[(GameId)card.userData].cat == gameFilter;
-            card.style.display = on ? DisplayStyle.Flex : DisplayStyle.None;
-            if (on) n++;
-        }
-        for (int i = 0; i < gameTabs.Count; i++)
-        {
-            gameTabs[i].EnableInClassList("blue", i - 1 == gameFilter);
-            gameTabs[i].EnableInClassList("ghost", i - 1 != gameFilter);
-        }
-        gameCount.text = n + (n > 1 ? " jeux" : " jeu");
-    }
-
-    void GameCard(VisualElement parent, GameId g)
-    {
-        var info = GameInfo[g];
-        var b = new Button(() => { Sound.I.UI("click"); game.SelectGame(g); RefreshSetup(); Go(setup); }) { userData = g };
-        b.AddToClassList("game-card");
-        b.RegisterCallback<MouseEnterEvent>(_ => Sound.I.UI("hover"));
-        var art = Div(b, "game-art");
-        var tex = Resources.Load<Texture2D>("UI/Games/" + info.art);
-        art.style.backgroundImage = tex;
-        if (!tex) Text(art, Games.Name(g), "pick-name").pickingMode = PickingMode.Ignore;   // en attendant l'illustration
-        var txt = Div(b, "game-txt");
-        Text(txt, Games.Name(g), "mode-name");
-        Text(txt, info.meta, "game-meta");
-        Text(txt, info.desc, "mode-desc");
-        parent.Add(b);
-    }
-
     // --- Preparation d'une partie (options + joueurs) -------------------------------------
     VisualElement setupOptions, playerList, localTitle, localBtn, botsRow;
     Label botsLabel;
     Label setupTitle;
     Button addPlayer;
-
-    void BuildSetup()
-    {
-        setup = Screen();
-        var panel = Panel(setup);
-        panel.style.width = 1240;
-        setupTitle = Text(panel, "", "panel-title");
-        Text(panel, "Options", "h2");
-        setupOptions = Div(panel, "row");
-        setupThemes = Div(panel, "themes");
-        localTitle = Text(panel, "Joueurs sur ce PC (chacun son tour)", "h2");
-        playerList = Div(panel);
-        addPlayer = Ico(Btn(panel, "Ajouter un joueur", () =>
-        {
-            game.names.Add("Joueur " + (game.names.Count + 1));
-            game.avatars.Add(Game.Characters[(game.names.Count * 7) % Game.Characters.Length]);
-            RefreshSetup();
-        }, "ghost", "small"), "plus");
-        addPlayer.style.alignSelf = Align.FlexStart;
-        // Quiz : partie hors ligne contre des bots (pour s'entrainer ou tester sans second PC).
-        botsRow = Div(panel, "row", "setting");
-        Text(botsRow, "Hors ligne contre des bots", "setting-label").style.flexGrow = 1;
-        Btn(botsRow, "−", () => { game.quizBots = Mathf.Max(1, game.quizBots - 1); RefreshSetup(); }, "ghost", "small", "square");
-        botsLabel = Text(botsRow, "", "bet-label");
-        Btn(botsRow, "+", () => { game.quizBots = Mathf.Min(Quiz.MaxPlayers - 1, game.quizBots + 1); RefreshSetup(); }, "ghost", "small", "square");
-        Ico(Btn(botsRow, "Jouer contre les bots", () => game.StartQuizWithBots(), "green", "small"), "play").style.marginLeft = 20;
-        var bottom = Div(panel, "row", "spread", "bottom-row");
-        Ico(Btn(bottom, "Retour", Back, "ghost", "small"), "back");
-        Ico(Btn(bottom, "Règles", () => { RefreshRules(); Go(rulesScreen); }, "ghost", "small"), "book");
-        Div(bottom, "grow");
-        Ico(Btn(bottom, "Jouer en ligne", OpenOnline), "globe");
-        localBtn = Ico(Btn(bottom, "Jouer sur ce PC", () => game.StartGame(), "green"), "monitor");
-    }
 
     VisualElement setupThemes, lobbyThemes;
 
@@ -482,7 +380,9 @@ public partial class Ui : MonoBehaviour
             Text(box, "Un mois = un tour de plateau (environ 20 min à 4). On pourra prolonger à la fin.", "mode-desc");
             return;
         }
-        var opts = game.gameId == GameId.QuiSuisJe
+        var opts = game.gameId == GameId.Roue
+            ? new[] { (0, "4 manches", "Comme à la télé : 4 manches puis la finale."), (1, "3 manches", "Un peu plus court, finale comprise."), (2, "2 manches", "Partie express, finale comprise.") }
+            : game.gameId == GameId.QuiSuisJe
             ? new[] { (0, "Classique", "En ligne : chacun écrit le personnage de son voisin, questions à l'écrit ou à l'oral, les autres votent. Contre des bots : personnages et questions à choisir dans une liste.") }
             : game.gameId == GameId.Pouilleux
             ? new[] { (0, "Classique", "Le valet de pique est le pouilleux : ne le garde pas !") }
@@ -516,7 +416,7 @@ public partial class Ui : MonoBehaviour
 
     void RefreshSetup()
     {
-        setupTitle.text = Games.Name(game.gameId);
+        RefreshSetupCard();
         OptionCards(setupOptions, game.option, v => { game.option = v; RefreshSetup(); });
         ThemeChips(setupThemes, game.gameId, game.option, v => { game.option = v; RefreshSetup(); }, game.bacText, t => { game.bacText = t; RefreshSetup(); });
         while (game.avatars.Count < game.names.Count) game.avatars.Add(Chars.Default);
@@ -524,11 +424,11 @@ public partial class Ui : MonoBehaviour
         for (int i = 0; i < game.names.Count; i++)
         {
             int idx = i;
-            var row = Div(playerList, "player-row");
-            Ring(Portrait(row, game.avatars[i], () => OpenPicker(a => { game.avatars[idx] = a; RefreshSetup(); }, game.avatars[idx]), 60), Board.Colors[i]);
-            var field = Add(row, new TextField { value = game.names[i], maxLength = 16 }, "name-field");
+            var row = Div(playerList, "m-strip", "m-player");
+            Ring(Portrait(row, game.avatars[i], () => OpenCreator(a => { game.avatars[idx] = a; RefreshSetup(); }, game.avatars[idx]), 60), Board.Colors[i]);
+            var field = Add(row, new TextField { value = game.names[i], maxLength = 16 }, "m-field");
             field.RegisterValueChangedCallback(e => game.names[idx] = e.newValue);
-            var rm = Btn(row, "Retirer", () => { game.names.RemoveAt(idx); game.avatars.RemoveAt(idx); RefreshSetup(); }, "red", "small");
+            var rm = Btn(row, "Retirer", () => { game.names.RemoveAt(idx); game.avatars.RemoveAt(idx); RefreshSetup(); }, "m-dark", "small", "danger");
             rm.style.marginLeft = 12;
             rm.SetEnabled(game.names.Count > 2);
         }
@@ -541,53 +441,7 @@ public partial class Ui : MonoBehaviour
         botsLabel.text = game.quizBots + (game.quizBots > 1 ? " bots" : " bot");
     }
 
-    // --- Choix du personnage ---------------------------------------------------------------
-    Action<string> onPick;
-
-    // Choix du personnage : onglets par style, un portrait par modele, puis toutes ses couleurs (palette x teint).
-    static readonly (string label, string pack)[] PickTabs = { ("Mes amis", ""), ("Moderne", "City"), ("Fantaisie", "Fantasy"), ("Ferme", "Farm") };
-    readonly List<Button> pickTabs = new List<Button>();
-    VisualElement pickGrid, pickColors, pickColorsBox;
-    Label pickName;
-    string pickSel;
-    int pickTab;
-
-    void BuildPicker()
-    {
-        picker = Screen("dim");
-        var panel = Panel(picker, "settings-panel");
-        Text(panel, "Choisis ton personnage", "panel-title");
-        var bar = Div(panel, "tabs");
-        for (int i = 0; i < PickTabs.Length; i++)
-        {
-            int k = i;
-            var t = new Button(() => { Sound.I.UI("tick"); PickerTab(k); }) { text = PickTabs[i].label };
-            t.AddToClassList("tab");
-            bar.Add(t);
-            pickTabs.Add(t);
-        }
-        pickGrid = Div(Add(panel, new ScrollView(), "settings-scroll", "pick-scroll"), "avatar-grid");
-        pickColorsBox = Div(panel, "pick-colors");
-        Text(pickColorsBox, "Couleurs", "h2").style.marginTop = 0;
-        pickColors = Div(pickColorsBox, "row", "pick-row");
-        var bottom = Div(panel, "row", "bottom-row");
-        Ico(Btn(bottom, "Annuler", Back, "ghost", "small"), "back");
-        Div(bottom, "grow");
-        pickName = Text(bottom, "", "pick-name");
-        Ico(Btn(bottom, "Choisir", () => { var id = pickSel; Back(); onPick?.Invoke(id); }, "green"), "check");
-    }
-
-    void OpenPicker(Action<string> pick, string current)
-    {
-        onPick = pick;
-        pickSel = Chars.Valid(current) ? current : Chars.Default;
-        var pack = pickSel.Split('/')[0];
-        PickerTab(Chars.Friends.ContainsKey(pickSel) ? 0 : Math.Max(1, Array.FindIndex(PickTabs, t => t.pack == pack)));
-        Go(picker);
-    }
-
-    static string Mesh(string id) => Chars.Friends.ContainsKey(id) ? id : id.Split('/')[1];
-
+    // --- Choix du personnage : le createur (UiCreator) ---
     VisualElement PickCell(VisualElement parent, string id, string label, float size, Action click)
     {
         var cell = Div(parent, "avatar-cell");
@@ -600,69 +454,10 @@ public partial class Ui : MonoBehaviour
         return cell;
     }
 
-    void PickerTab(int k)
-    {
-        pickTab = k;
-        for (int i = 0; i < pickTabs.Count; i++) pickTabs[i].EnableInClassList("selected", i == k);
-        pickGrid.Clear();
-        if (k == 0)
-            foreach (var f in Chars.Friends.Keys)
-                PickCell(pickGrid, f, Chars.Label(f), 120, () => { pickSel = f; PickerRefresh(); }).userData = f;
-        else
-            foreach (var m in Chars.Models.Where(m => m.pack == PickTabs[k].pack))
-            {
-                // Le portrait montre la couleur choisie si c'est le perso actuel, sinon sa couleur par defaut.
-                string shown = !Chars.Friends.ContainsKey(pickSel) && Mesh(pickSel) == m.mesh ? pickSel : Chars.All.First(a => a.Split('/')[1] == m.mesh);
-                PickCell(pickGrid, shown, m.label, 120, () => { if (Chars.Friends.ContainsKey(pickSel) || Mesh(pickSel) != m.mesh) pickSel = shown; PickerRefresh(); }).userData = m.mesh;
-            }
-        PickerRefresh();
-    }
-
-    void PickerRefresh()
-    {
-        foreach (var cell in pickGrid.Children()) cell.EnableInClassList("selected", (string)cell.userData == Mesh(pickSel));
-        pickName.text = Chars.Label(pickSel);
-        pickColors.Clear();
-        bool friend = Chars.Friends.ContainsKey(pickSel);
-        pickColorsBox.style.display = friend ? DisplayStyle.None : DisplayStyle.Flex;
-        if (friend) return;
-        var p = pickSel.Split('/');
-        foreach (var v in Chars.Variants(p[0], p[1]))
-        {
-            var cell = PickCell(pickColors, v, null, 76, () => { pickSel = v; PickerRefresh(); });
-            cell.AddToClassList("pick-color");
-            cell.EnableInClassList("selected", v == pickSel);
-        }
-        // Le portrait de la grille suit la couleur choisie.
-        foreach (var cell in pickGrid.Children())
-            if ((string)cell.userData == p[1]) cell.Q<Button>().style.backgroundImage = Chars.Portrait(pickSel);
-    }
-
     // --- Parametres -------------------------------------------------------------------
     VisualElement settingsBody;
     readonly List<Button> tabs = new List<Button>();
     int tab;
-
-    void BuildSettings()
-    {
-        settingsScreen = Screen("dim");
-        var panel = Panel(settingsScreen, "settings-panel");
-        Text(panel, "Paramètres", "panel-title");
-        var bar = Div(panel, "tabs");
-        string[] names = { "Graphismes", "Audio", "Jeu", "Commandes" };
-        for (int i = 0; i < names.Length; i++)
-        {
-            int k = i;
-            var t = new Button(() => { Sound.I.UI("tick"); SelectTab(k); }) { text = names[i] };
-            t.AddToClassList("tab");
-            bar.Add(t);
-            tabs.Add(t);
-        }
-        settingsBody = Add(panel, new ScrollView(ScrollViewMode.Vertical), "settings-scroll");
-        var bottom = Div(panel, "row", "spread");
-        Ico(Btn(bottom, "Retour", Back, "ghost", "small"), "back");
-        Btn(bottom, "Par défaut", () => { game.ResetSettings(); SelectTab(tab); }, "ghost", "small");
-    }
 
     static readonly string[] Backs = { "back_red", "back_blue", "back_teal", "back_purple", "back_black", "back_pn" };
 
@@ -704,13 +499,13 @@ public partial class Ui : MonoBehaviour
                 Drop("Dos des cartes", new[] { "Rouge", "Bleu", "Vert", "Violet", "Noir", "Pique-Nique" }, Array.IndexOf(Backs, s.cardBack), v => s.cardBack = Backs[v]);
                 break;
             default:
-                Text(settingsBody, "Croque-Carotte", "h2");
+                Text(settingsBody, "Croque-Carotte", "m-h");
                 Info("Piocher une carte", "Espace");
                 Info("Choisir un lapin", "1  ·  2  ·  3");
-                Text(settingsBody, "Blackjack", "h2");
+                Text(settingsBody, "Blackjack", "m-h");
                 Info("Tirer / Rester", "H  ·  S");
                 Info("Doubler / Séparer", "D  ·  P");
-                Text(settingsBody, "Partout", "h2");
+                Text(settingsBody, "Partout", "m-h");
                 Info("Tourner la caméra", "Clic droit + glisser  ·  Q / E");
                 Info("Zoomer", "Molette");
                 Info("Pause", "Échap");
@@ -720,61 +515,15 @@ public partial class Ui : MonoBehaviour
 
     static string Pct(float v) => Mathf.RoundToInt(v * 100) + " %";
 
-    VisualElement Setting(string label)
-    {
-        var row = Div(settingsBody, "setting");
-        Text(row, label, "setting-label");
-        return row;
-    }
-
-    DropdownField Drop(string label, string[] choices, int index, Action<int> set)
-    {
-        var d = Add(Setting(label), new DropdownField(choices.ToList(), Mathf.Clamp(index, 0, choices.Length - 1)), "setting-field");
-        d.RegisterValueChangedCallback(_ => { Sound.I.UI("tick"); set(d.index); game.ApplySettings(); });
-        return d;
-    }
-
-    void Check(string label, bool value, Action<bool> set)
-    {
-        var t = Add(Setting(label), new Toggle { value = value });
-        t.RegisterValueChangedCallback(e => { Sound.I.UI("tick"); set(e.newValue); game.ApplySettings(); });
-    }
-
-    void Range(string label, float min, float max, float value, Action<float> set, Func<float, string> fmt)
-    {
-        var row = Setting(label);
-        var box = Div(row, "row", "setting-field");
-        var s = Add(box, new Slider(min, max) { value = value });
-        var v = Text(box, fmt(value), "value");
-        s.RegisterValueChangedCallback(e => { v.text = fmt(e.newValue); set(e.newValue); game.ApplySettings(); });
-    }
-
-    void Info(string label, string keys)
-    {
-        var row = Setting(label);
-        Text(row, keys, "setting-label").style.color = new Color(0.94f, 0.54f, 0.14f);
-    }
-
     // --- Regles -----------------------------------------------------------------------
     VisualElement rulesBody;
     Label rulesTitle;
-
-    void BuildRules()
-    {
-        rulesScreen = Screen("dim");
-        var panel = Panel(rulesScreen, "settings-panel");
-        rulesTitle = Text(panel, "", "panel-title");
-        rulesBody = Add(panel, new ScrollView(), "settings-scroll");
-        var bottom = Div(panel, "row");
-        bottom.style.justifyContent = Justify.Center;
-        Ico(Btn(bottom, "Retour", Back, "ghost", "small"), "back");
-    }
 
     void RefreshRules()
     {
         rulesTitle.text = "Règles : " + Games.Name(game.gameId);
         rulesBody.Clear();
-        void S(string h, string p) { Text(rulesBody, h, "h2"); Text(rulesBody, p, "p"); }
+        void S(string h, string p) { Text(rulesBody, h, "m-h"); Text(rulesBody, p, "m-p"); }
         if (game.gameId == GameId.Croque)
         {
             S("Le but", "Chaque joueur a 3 lapins. Le premier à les amener tous les trois au potager, en haut de la montagne, gagne la partie.");
@@ -817,6 +566,15 @@ public partial class Ui : MonoBehaviour
             S("Les points", "Celui qui finit marque les cartes restées dans la main des autres : leur chiffre pour les cartes numérotées, 20 points pour +2, inversion et passe, 50 points pour les jokers et les +4. Selon l'option : une seule manche, premier à 200 points, ou premier à 500 points (règle officielle).");
             S("Contester un +4", "On n'a le droit de poser un +4 que si on n'a aucune carte de la couleur demandée. Le joueur visé peut « Dénoncer » : si c'était du bluff, le poseur pioche 4 cartes à sa place ; si le +4 était réglo, celui qui a dénoncé en pioche 6 !");
             S("Règles maison (options)", "Cumul : un +2 se contre avec un +2 (ou un +4), un +4 avec un +4, et le suivant pioche le total. 7-0 : un 7 échange ta main avec le joueur de ton choix, un 0 fait tourner toutes les mains. Intervention : si tu as la carte exactement identique à celle du dessus, tu peux la poser même hors de ton tour. Piocher jusqu'à jouer : on pioche jusqu'à trouver une carte qui va. Jeu forcé : une carte piochée qui va doit être posée.");
+        }
+        else if (game.gameId == GameId.Roue)
+        {
+            S("Le but", "Gagner le plus d'argent en découvrant des énigmes : expressions, films, personnages, lieux... Règle du jeu TF1 Games, comme dans l'émission.");
+            S("L'énigme rapide", "Chaque manche commence par une énigme rapide : les cases s'allument une à une. Le premier qui tape la bonne réponse gagne 500 € et prend la main. Une erreur, et tu es éliminé de l'énigme rapide.");
+            S("À ton tour", "Tourne la roue : sur un montant, propose une consonne ; tu gagnes le montant pour chaque fois qu'elle apparaît, et tu rejoues. Absente : la main passe. Tu peux aussi acheter une voyelle (200 €, perdue si elle est absente) ou proposer la solution avant de tourner. Mauvaise solution : tu ne joues plus de la manche.");
+            S("Les cases", "10 000 € : la somme n'est pas multipliée. 0 € : une consonne sans gain. CAVERNE : tu empoches la somme et tu rejoues. BANQUEROUTE : tu perds les gains de la manche. PASSE : la main passe.");
+            S("Fin de manche", "Seul celui qui trouve l'énigme garde l'argent de la manche. En manche 2, l'énigme est à double sens (« D'or ou de chemise ? ») : trouve la réponse en 20 secondes pour 500 € de plus (un bouton !).");
+            S("La finale", "Chacun sa finale, du plus riche au moins riche : tourne la roue des enveloppes (montant caché), R S T L N E sont données, choisis 3 consonnes et 1 voyelle, puis tu as 20 secondes pour trouver. Réussi : tu gagnes l'enveloppe. La plus grosse fortune gagne la partie !");
         }
         else if (game.gameId == GameId.QuiSuisJe)
         {
@@ -946,6 +704,7 @@ public partial class Ui : MonoBehaviour
         BuildBonnePayeHud();
         BuildPouilleuxHud();
         BuildQuiSuisJeHud();
+        BuildRoueHud();
 
         var bannerRow = Div(hud, "banner-row");
         bannerRow.pickingMode = PickingMode.Ignore;
@@ -960,17 +719,19 @@ public partial class Ui : MonoBehaviour
         history.Clear();
         foreach (var s in All) if (s != hud) Hide(s);
         current = hud;
+        bgArt.style.display = DisplayStyle.None;   // en jeu : la vraie scene
         Show(hud);
         card.AddToClassList("flip");
         card.style.display = DisplayStyle.None;
         bool bj = game.bj != null, rt = game.rt != null, qz = game.qz != null, rh = game.rh != null, un = game.uno != null, bc = game.bac != null;
         bacHud.style.display = bc ? DisplayStyle.Flex : DisplayStyle.None;
-        bool bpg = game.bp != null, pqg = game.pq != null || game.qsj != null;
+        bool bpg = game.bp != null || game.roue != null, pqg = game.pq != null || game.qsj != null;
+        rfHud.style.display = game.roue != null ? DisplayStyle.Flex : DisplayStyle.None;
         qsHud.style.display = game.qsj != null ? DisplayStyle.Flex : DisplayStyle.None;
         qsTags.Clear(); qsTagEls.Clear(); qsBubbles.Clear(); qsBubbleUntil.Clear();
         pqHud.style.display = game.pq != null ? DisplayStyle.Flex : DisplayStyle.None;
         pqTags.Clear(); pqTagEls.Clear();
-        bpHud.style.display = bpg ? DisplayStyle.Flex : DisplayStyle.None;
+        bpHud.style.display = game.bp != null ? DisplayStyle.Flex : DisplayStyle.None;
         if (bc) BacRound();
         unoHud.style.display = un ? DisplayStyle.Flex : DisplayStyle.None;
         if (un) ShowUnoHud();
@@ -1041,6 +802,7 @@ public partial class Ui : MonoBehaviour
         else if (game.bp != null) RefreshBonnePaye();
         else if (game.pq != null) RefreshPouilleux();
         else if (game.qsj != null) RefreshQuiSuisJe();
+        else if (game.roue != null) RefreshRoue();
     }
 
     void PlayerCard(int i, string name, string avatar, bool active)
@@ -1234,44 +996,15 @@ public partial class Ui : MonoBehaviour
     Label winTitle, winSub;
     Button replayBtn, winMenu;
 
-    void BuildPause()
-    {
-        pause = Screen("dim");
-        var panel = Panel(pause);
-        panel.style.width = 700;
-        Text(panel, "Pause", "panel-title");
-        Ico(Btn(panel, "Reprendre", Back, "lg"), "play");
-        var row = Div(panel, "menu-row");
-        Ico(Btn(row, "Règles", () => { RefreshRules(); Go(rulesScreen); }, "ghost"), "book");
-        Ico(Btn(row, "Paramètres", () => { SelectTab(tab); Go(settingsScreen); }, "blue"), "gear");
-        pauseLobby = Ico(Btn(panel, "Retour au salon", () => game.net.QuitToLobby(), "green"), "back");
-        pauseQuit = Ico(Btn(panel, "Quitter la partie", () => game.ToMenu(), "red"), "exit");
-    }
-
     Button pauseLobby, pauseQuit;
 
     public void ShowPause()
     {
         // En ligne : "Retour au salon" (l'hote y ramene tout le monde, un invite y attend la prochaine partie).
         pauseLobby.style.display = game.Online ? DisplayStyle.Flex : DisplayStyle.None;
-        ((Label)pauseQuit.Q(className: "gl-label")).text = game.Online ? "Quitter le salon" : "Quitter la partie";
+        pauseQuit.Q<Label>(className: "sk-item-label").text = game.Online ? "QUITTER LE SALON" : "QUITTER LA PARTIE";
+        foreach (var b in homeItems) b.EnableInClassList("selected", b == pause.Q<Button>(className: "sk-item"));   // "Reprendre" choisi a l'ouverture
         history.Clear(); history.Push(hud); current = null; Go(pause, false);
-    }
-
-    void BuildVictory()
-    {
-        victory = Screen("dim");
-        var panel = Panel(victory);
-        panel.style.width = 900;
-        panel.style.alignItems = Align.Center;
-        winTitle = Text(panel, "", "panel-title", "win-title");
-        winSub = Text(panel, "", "p");
-        winSub.style.unityTextAlign = TextAnchor.MiddleCenter;
-        var row = Div(panel, "row");
-        row.style.marginTop = 20;
-        winMenu = Ico(Btn(row, "Menu principal", () => { if (game.Online) game.net.QuitToLobby(); else game.ToMenu(); }, "ghost"), "exit");
-        winMenu.style.marginRight = 20;
-        replayBtn = Ico(Btn(row, "Rejouer !", () => game.Replay(), "lg"), "play");
     }
 
     public void ShowVictory()
@@ -1282,6 +1015,14 @@ public partial class Ui : MonoBehaviour
             winTitle.text = $"{w.name} gagne !";
             winTitle.style.color = Board.Colors[w.color];
             winSub.text = "Ses trois lapins festoient au potager.";
+        }
+        else if (game.roue != null)
+        {
+            var f = game.roue;
+            var best = f.players.OrderByDescending(p => p.score).First();
+            winTitle.text = $"{best.name} remporte {best.score} € !";
+            winTitle.style.color = Board.Colors[best.seat % Board.Colors.Length];
+            winSub.text = string.Join("\n", f.players.OrderByDescending(p => p.score).Select((p, i) => $"{i + 1}.  {p.name} : {p.score} €"));
         }
         else if (game.qsj != null)
         {
@@ -1346,30 +1087,6 @@ public partial class Ui : MonoBehaviour
     Label onlineStatus, lobbyCode, lobbyStatus, onlineTitle, lobbyGame;
     Button startBtn;
 
-    void BuildOnline()
-    {
-        onlineScreen = Screen();
-        var panel = Panel(onlineScreen);
-        panel.style.width = 1000;
-        onlineTitle = Text(panel, "Jouer en ligne", "panel-title");
-        Text(panel, "Toi", "h2");
-        var me = Div(panel, "row");
-        myPortraitBox = Div(me);
-        onlineName = Add(me, new TextField { value = PlayerPrefs.GetString("cc-name", "Joueur"), maxLength = 16 }, "name-field");
-        onlineName.style.marginLeft = 14;
-        Text(panel, "Créer un salon", "h2");
-        Text(panel, "Tu recevras un code (ou un message d'invitation) à envoyer à tes amis, sur Discord par exemple. Dans le salon, tu choisis le jeu.", "p");
-        Ico(Btn(panel, "Créer un salon", () => { SaveName(); game.net.Host(onlineName.value, game.gameId, game.option); }), "globe");
-        Text(panel, "Rejoindre un salon", "h2");
-        Text(panel, "Tape le code, ou colle le message d'invitation reçu.", "p");
-        var row = Div(panel, "row");
-        codeField = Add(row, new TextField { maxLength = 300 }, "name-field");   // code, ou message d'invitation colle en entier
-        var join = Ico(Btn(row, "Rejoindre", () => { SaveName(); game.net.Join(codeField.value, onlineName.value); }, "blue", "small"), "play");
-        join.style.marginLeft = 12;
-        onlineStatus = Text(panel, "", "p", "status");
-        Ico(Btn(panel, "Retour", Back, "ghost", "small"), "back").style.alignSelf = Align.FlexStart;
-    }
-
     void SaveName() { PlayerPrefs.SetString("cc-name", onlineName.value); RefreshProfile(); }
 
     VisualElement lobbyArt, lobbyPick;
@@ -1396,48 +1113,12 @@ public partial class Ui : MonoBehaviour
         RefreshOnline();
     }
 
-    void BuildLobby()
-    {
-        lobbyScreen = Screen();
-        var panel = Panel(lobbyScreen);
-        panel.style.width = 1700;
-        panel.style.height = 910;   // meme taille quel que soit le jeu choisi
-        Text(panel, "Salon", "panel-title");
-        var cols = Div(panel, "row", "lobby-cols");
-        var left = Div(cols, "lobby-left");
-        var head = Div(left, "row", "spread");
-        Text(head, "Joueurs", "h2");
-        lobbyCount = Text(head, "", "muted");
-        lobbyList = Add(left, new ScrollView(), "lobby-list");
-        var lb = Div(left, "row", "spread");
-        lobbyStatus = Text(lb, "", "p", "status");
-        Ico(Btn(lb, "Quitter le salon", Back, "red", "small"), "exit");
-
-        var right = Div(cols, "lobby-right");
-        Text(right, "Code du salon", "h2");
-        var cr = Div(right, "row");
-        lobbyCode = Text(cr, "", "code");
-        Ico(Btn(cr, "Copier", () => GUIUtility.systemCopyBuffer = game.net.Code, "blue"), "copy");
-        var inv = Div(right, "row");
-        inviteBtn = Ico(Btn(inv, "Copier l'invitation (Discord)", () => { GUIUtility.systemCopyBuffer = game.net.Invite; lobbyStatus.text = "Invitation copiée : colle-la dans Discord !"; }, "ghost", "small"), "copy");
-        lobbyPick = Div(right, "row", "lobby-pick");
-        var gc = lobbyGameCard = Div(right, "row", "lobby-game");
-        lobbyArt = Div(gc, "lobby-art");
-        var gt = Div(gc);
-        lobbyGame = Text(gt, "", "mode-name");
-        lobbyMeta = Text(gt, "", "game-meta");
-        lobbyOptions = Div(right, "row", "lobby-options");
-        lobbyThemes = Div(right, "themes", "lobby-themes");
-        Div(right, "grow");
-        startBtn = Ico(Btn(right, "Lancer la partie", () => game.net.StartMatch(), "lg"), "play");
-    }
-
     public void RefreshOnline()
     {
         var n = game.net;
         onlineTitle.text = "Jouer en ligne";
         myPortraitBox.Clear();
-        Portrait(myPortraitBox, game.myAvatar, () => OpenPicker(a => { game.SetMyAvatar(a); RefreshOnline(); }, game.myAvatar), 64);
+        Portrait(myPortraitBox, game.myAvatar, () => OpenCreator(a => { game.SetMyAvatar(a); RefreshOnline(); }, game.myAvatar), 64);
         onlineStatus.text = n.Status;
         if (n.InGame && game.InMatch) return;
         if (n.Active && n.Lobby.Count > 0 && current == onlineScreen) Go(lobbyScreen);
@@ -1445,10 +1126,7 @@ public partial class Ui : MonoBehaviour
         lobbyGame.text = Games.Name(n.LobbyGame);
         lobbyGameCard.style.display = n.LobbyGame == GameId.Rhythm ? DisplayStyle.None : DisplayStyle.Flex;   // le choix de chanson a deja son titre
         lobbyMeta.text = GameInfo[n.LobbyGame].meta;
-        var lart = Resources.Load<Texture2D>("UI/Games/" + GameInfo[n.LobbyGame].art);
-        lobbyArt.style.backgroundImage = lart;
-        lobbyArt.Clear();
-        if (!lart) Text(lobbyArt, Games.Name(n.LobbyGame), "pick-name");
+        GameArt(lobbyArt, n.LobbyGame);
         int max = Games.MaxPlayers(n.LobbyGame);
         lobbyCount.text = $"{n.Lobby.Count} dans le salon · jusqu'à {max} joueurs";
         lobbyCode.text = n.Code;
@@ -1462,20 +1140,19 @@ public partial class Ui : MonoBehaviour
         {
             var gid = g;
             var b = new Button(() => { Sound.I.UI("tick"); n.SetGame(gid); });
-            b.AddToClassList("pick-game");
+            b.AddToClassList("m-pick");
             b.EnableInClassList("selected", g == n.LobbyGame);
-            var art = Resources.Load<Texture2D>("UI/Games/" + GameInfo[g].art);
-            b.style.backgroundImage = art;
-            if (!art) Text(b, Games.Name(g), "pick-name").pickingMode = PickingMode.Ignore;   // pas encore d'illustration
+            GameArt(b, g);
+            foreach (var e in b.Query().ToList()) if (e != b) e.pickingMode = PickingMode.Ignore;
             b.tooltip = Games.Name(g);
             lobbyPick.Add(b);
         }
         lobbyList.Clear();
         for (int i = 0; i < n.Lobby.Count; i++)
         {
-            var row = Div(lobbyList, "player-row");
+            var row = Div(lobbyList, "m-strip", "m-player");
             Ring(Portrait(row, i < n.LobbyAvatars.Count ? n.LobbyAvatars[i] : Chars.Default, null, 56), Board.Colors[i]);
-            Text(row, n.Lobby[i], "lobby-name").style.color = Board.Colors[i];
+            Text(row, n.Lobby[i], "m-player-name").style.color = Board.Colors[i];
             if (i == 0) Text(row, "Hôte", "pill", "pill-gold");
             if (i == game.mySeat) Text(row, "Toi", "pill", "pill-blue");
             if (n.InGame) Text(row, i < n.Players ? "En partie" : "Spectateur", "pill", i < n.Players ? "pill-green" : "pill-grey");

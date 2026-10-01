@@ -373,6 +373,9 @@ public class Net : MonoBehaviour
         if (shadow is Uno && p.Length > 2 && (p[1] == "uno" || p[1] == "catch" || p[1] == "jump") && seat >= 0) p[2] = seat.ToString();   // on n'annonce que pour soi
         if (shadow is Uno && p.Length > 1 && p[1] == "next" && seat >= 0) return;
         if (shadow is Rhythm && p.Length > 1 && (p[1] == "go" || p[1] == "end") && seat >= 0) return;          // reserve a l'hote
+        if (shadow is Roue && p.Length > 2 && p[1] == "buzz") { if (seat < 0) return; p = new[] { "act", "buzz", seat.ToString(), Clean(p[2]) }; }   // on ne buzze que pour soi
+        if (shadow is Roue && p.Length > 1 && seat >= 0 && (p[1] == "next" || p[1] == "reveal" || ((p[1] == "bonus" || p[1] == "fsolve") && (p.Length < 3 || p[2].Length == 0)))) return;   // reserve a l'hote
+        if (shadow is Roue && p.Length > 2 && (p[1] == "solve" || p[1] == "bonus" || p[1] == "fsolve")) p[2] = Clean(p[2]);
         if (shadow is QuiSuisJe && p.Length > 2 && p[1] == "vote") { if (seat < 0) return; p = new[] { "act", "vote", seat.ToString(), p[2] }; }   // on ne vote que pour soi
         if (shadow is QuiSuisJe && p.Length > 1 && p[1] == "voteend" && seat >= 0) return;                                               // reserve a l'hote
         if (shadow is QuiSuisJe && p.Length > 2 && (p[1] == "askfree" || p[1] == "guess")) p[2] = Clean(p[2]);
@@ -393,6 +396,7 @@ public class Net : MonoBehaviour
             if (tick != null) HostAct(new[] { "act", tick });
             return;
         }
+        if (IsHost && InGame && shadow is Roue rr && game.Idle) { var rt = game.RoueTick(rr); if (rt != null) { HostAct(new[] { "act" }.Concat(rt.Split('|')).ToArray()); return; } }
         if (!IsHost || !InGame || shadow == null || shadow.Finished || !gone.Contains(shadow.Actor) || !game.Idle) return;
         var a = shadow.Bot();
         if (a != null) HostAct(new[] { "act" }.Concat(a).ToArray());

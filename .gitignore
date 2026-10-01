@@ -83,3 +83,8 @@
 /Assets/Resources/BonnePaye/Images.meta
 
 /Tools/__pycache__/
+/Assets/Resources/Sidekick/
+/Assets/Resources/Sidekick.meta
+
+# Packs achetes (sources .unitypackage) : jamais commites
+/SYNTY ASSETS/

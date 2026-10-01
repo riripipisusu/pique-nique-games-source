@@ -1,0 +1,556 @@
+using System.Collections.Generic;
+using UnityEngine;
+
+// Le plateau de la Roue de la fortune, modelise d'apres l'emission : sol noir brillant et arcs de neons, la roue sur
+// son podium a etages cercle de lumiere, les candidats debout derriere un comptoir blanc courbe (un panneau colore a
+// leur nom et a leur cagnotte devant chacun), le tableau des enigmes en 3D (rangees de 12, 14, 14, 12 cases, cadre
+// argente en escalier) dans un grand anneau de neon, gradins avec public et bandes lumineuses, mur LED dore, ovale
+// d'ampoules, cabine vitree, grand ecran courbe et logo. Loin du reste du monde.
+public class RoueSet : MonoBehaviour
+{
+    public static readonly Vector3 Center = new Vector3(-1500, 0, 1500);
+    static readonly int[] RowCap = { 12, 14, 14, 12 };
+    const float CellW = 0.5f, CellH = 0.64f, Gap = 0.05f;
+    static readonly Vector3 BoardAt = new Vector3(-4.2f, 4.1f, 6.5f);   // assez haut pour passer au-dessus de Tenna et des candidats
+
+    Material lit, glowBase;
+    Font font;
+    Transform cast, board;
+    readonly List<(Renderer r, TextMesh t)> cells = new List<(Renderer, TextMesh)>();
+    Material cellGold, cellWhite, cellBlue;
+    readonly List<Animator> anims = new List<Animator>();
+    readonly List<Transform> heads = new List<Transform>();
+    readonly List<TextMesh> plateName = new List<TextMesh>(), plateMoney = new List<TextMesh>();
+    readonly List<Renderer> plateBack = new List<Renderer>();
+    public RoueView wheel;
+    bool built;
+
+    Material Mat(string hex, float smooth = 0.4f, float metal = 0)
+    {
+        var m = new Material(lit) { color = Board.Hex(hex) };
+        m.SetFloat("_Smoothness", smooth);
+        if (metal > 0) m.SetFloat("_Metallic", metal);
+        return m;
+    }
+    Material Glow(string hex, float power = 2f)
+    {
+        var m = new Material(glowBase) { color = Board.Hex(hex) };
+        m.SetColor("_EmissionColor", Board.Hex(hex) * power);
+        return m;
+    }
+    Transform Prim(PrimitiveType t, Transform parent, Vector3 pos, Vector3 scale, Material m, Quaternion? rot = null, bool shadow = true)
+    {
+        var g = GameObject.CreatePrimitive(t);
+        Destroy(g.GetComponent<Collider>());
+        g.transform.SetParent(parent, false);
+        g.transform.localPosition = pos;
+        g.transform.localScale = scale;
+        g.transform.localRotation = rot ?? Quaternion.identity;
+        var r = g.GetComponent<Renderer>();
+        r.sharedMaterial = m;
+        if (!shadow) r.shadowCastingMode = UnityEngine.Rendering.ShadowCastingMode.Off;
+        return g.transform;
+    }
+    TextMesh Text(Transform parent, Vector3 pos, float size, Color c, string s = "")
+    {
+        var t = new GameObject("texte").AddComponent<TextMesh>();
+        t.transform.SetParent(parent, false);
+        t.transform.localPosition = pos;
+        t.font = font; t.GetComponent<MeshRenderer>().sharedMaterial = RoueView.TextMat(font);
+        t.fontSize = 96; t.characterSize = size; t.anchor = TextAnchor.MiddleCenter; t.alignment = TextAlignment.Center;
+        t.fontStyle = FontStyle.Bold; t.color = c; t.text = s;
+        return t;
+    }
+
+    // Arc de neon (petits segments) : centre, rayons (x, z), angles de debut et fin (degres, 0 = +z), hauteur.
+    void Arc(Vector3 c, float rx, float rz, float a0, float a1, float y, float thick, Material m, int seg = 48, bool vertical = false, Transform parent = null)
+    {
+        for (int i = 0; i < seg; i++)
+        {
+            float t0 = Mathf.Lerp(a0, a1, i / (float)seg) * Mathf.Deg2Rad, t1 = Mathf.Lerp(a0, a1, (i + 1) / (float)seg) * Mathf.Deg2Rad;
+            Vector3 p0 = vertical ? new Vector3(Mathf.Sin(t0) * rx, Mathf.Cos(t0) * rz, 0) : new Vector3(Mathf.Sin(t0) * rx, 0, Mathf.Cos(t0) * rz);
+            Vector3 p1 = vertical ? new Vector3(Mathf.Sin(t1) * rx, Mathf.Cos(t1) * rz, 0) : new Vector3(Mathf.Sin(t1) * rx, 0, Mathf.Cos(t1) * rz);
+            var mid = c + (p0 + p1) / 2 + (vertical ? Vector3.zero : Vector3.up * y);
+            var d = p1 - p0;
+            Prim(PrimitiveType.Cube, parent ?? transform, mid, new Vector3(thick, vertical ? thick * 0.6f : 0.03f, d.magnitude + 0.01f), m, Quaternion.LookRotation(d, vertical ? Vector3.back : Vector3.up), false);
+        }
+    }
+
+    void Awake()
+    {
+        transform.position = Center;
+        gameObject.SetActive(false);
+    }
+
+    public void Build(IList<QPlayer> players, IList<string> avatars)
+    {
+        gameObject.SetActive(true);
+        if (!built) BuildSet();
+        built = true;
+        // Candidats : derriere le comptoir, sur l'arc du fond, face a la roue.
+        if (cast) Destroy(cast.gameObject);
+        cast = new GameObject("candidats").transform; cast.SetParent(transform, false);
+        anims.Clear(); heads.Clear(); plateName.Clear(); plateMoney.Clear(); plateBack.Clear();
+        int n = players.Count;
+        for (int i = 0; i < n; i++)
+        {
+            float a = (n == 1 ? 0 : Mathf.Lerp(-62, 62, i / (float)(n - 1))) * Mathf.Deg2Rad;
+            var dir = new Vector3(Mathf.Sin(a), 0, Mathf.Cos(a));
+            Chars.Spawn(avatars.Count > i ? avatars[i] : Chars.Default, cast, dir * 3.05f + Vector3.up * 0.55f, Quaternion.LookRotation(-dir).eulerAngles.y, out var an, 1.8f);   // debout sur l'estrade
+            an.Play("Idle", 0, i * 0.23f);
+            anims.Add(an);
+            heads.Add(an.GetBoneTransform(HumanBodyBones.Head));
+            // Panneau colore sur l'avant du comptoir : prenom et cagnotte.
+            var plate = new GameObject("panneau " + i).transform;
+            plate.SetParent(cast, false);
+            plate.localPosition = dir * 2.28f + Vector3.up * 0.93f;
+            plate.localRotation = Quaternion.LookRotation(dir);
+            var back = Prim(PrimitiveType.Cube, plate, Vector3.zero, new Vector3(1.15f, 0.56f, 0.04f), Glow(ColorHex(i), 1.6f), null, false);
+            plateBack.Add(back.GetComponent<Renderer>());
+            var up = players[i].name.ToUpperInvariant();
+            var nm = Text(plate, new Vector3(0, 0.12f, -0.03f), Mathf.Min(0.015f, 0.13f / Mathf.Max(1, up.Length)), Color.white, up);
+            nm.transform.localRotation = Quaternion.identity;
+            var mo = Text(plate, new Vector3(0, -0.11f, -0.03f), 0.02f, Color.white, "0 €");
+            plateName.Add(nm); plateMoney.Add(mo);
+        }
+        ShowBoard("", null, _ => false);
+    }
+
+    static string ColorHex(int i) { var c = Board.Colors[i % Board.Colors.Length]; return ColorUtility.ToHtmlStringRGB(c); }
+
+    void BuildSet()
+    {
+        lit = Resources.Load<Material>("Lit");
+        glowBase = Resources.Load<Material>("LitGlow");
+        font = Resources.Load<Font>("Fonts/Fredoka");
+        var root = transform;
+        var model = Resources.Load<GameObject>("Roue/Plateau");
+        if (model) { var m = Instantiate(model, root).transform; m.localRotation = Quaternion.Euler(0, 180, 0); Paint(m); }
+        else PrimitiveDecor(root);
+        // Tableau des enigmes : plaques argentees en escalier, cases, anneau de neon.
+        board = new GameObject("tableau").transform;
+        board.SetParent(root, false);
+        board.localPosition = BoardAt;
+        board.localRotation = Quaternion.Euler(0, -18, 0);
+        board.localScale = Vector3.one * 1.31f;   // grand ecran : ses coins touchent l'anneau
+        var silver = Glow("cfd6e2", 0.9f);   // cadre argente eclaire
+        cellGold = Glow("e0a526", 1.4f); cellWhite = Mat("fbfaf4", 0.3f); cellBlue = Glow("3d7bff", 1.4f);
+        for (int row = 0; row < 4; row++)
+        {
+            int cap = RowCap[row];
+            float y = (1.5f - row) * (CellH + Gap);
+            Prim(PrimitiveType.Cube, board, new Vector3(0, y, 0.06f), new Vector3(cap * (CellW + Gap) + 0.3f, CellH + Gap + 0.22f, 0.08f), silver);
+            Prim(PrimitiveType.Cube, board, new Vector3(0, y, 0.02f), new Vector3(cap * (CellW + Gap) + 0.06f, CellH + Gap + 0.02f, 0.06f), Mat("0b0b12", 0.5f));
+            for (int c = 0; c < cap; c++)
+            {
+                float x = (c - (cap - 1) / 2f) * (CellW + Gap);
+                var cell = Prim(PrimitiveType.Cube, board, new Vector3(x, y, -0.02f), new Vector3(CellW, CellH, 0.05f), cellGold, null, false);
+                var t = Text(board, new Vector3(x, y, -0.06f), 0.052f, Board.Hex("1e1030"));
+                cells.Add((cell.GetComponent<Renderer>(), t));
+            }
+        }
+        Arc(new Vector3(0, 0, 0.3f), 4.3f, 2.53f, 0, 360, 0, 0.26f, Glow("5a5dff", 3.2f), 64, true, board);   // anneau accroche au tableau, passant par ses coins
+        // Logo : une petite roue de couleurs derriere les candidats.
+        var logo = new GameObject("logo").transform;
+        logo.SetParent(root, false);
+        logo.localPosition = new Vector3(3.2f, 3.4f, 8.2f);
+        logo.localRotation = Quaternion.Euler(90, 0, 0) * Quaternion.Euler(0, 0, 0);
+        string[] pal = { "e8408a", "f28c1c", "f7d61c", "5fbf3a", "5aa8e0", "6a3fa8", "d8262d", "3fc4c9" };
+        for (int k = 0; k < 16; k++)
+        {
+            var g = new GameObject("part");
+            g.transform.SetParent(logo, false);
+            g.AddComponent<MeshFilter>().sharedMesh = RoueView.Slice(k * 22.5f, (k + 1) * 22.5f, 1.2f, 0.05f, 3);
+            g.AddComponent<MeshRenderer>().sharedMaterial = Glow(pal[k % pal.Length], 1.3f);
+        }
+        logo.localRotation = Quaternion.Euler(-90, 0, 0);
+        var lt = Text(root, new Vector3(3.2f, 3.4f, 8.1f), 0.03f, Color.white, "LA ROUE DE\nLA FORTUNE");
+        lt.transform.localRotation = Quaternion.identity;
+        // Lumieres : projecteurs colores et une lumiere de face sur la roue et les candidats.
+        void Spot(Vector3 at, Vector3 look, string hex, float intensity, float angle = 50)
+        {
+            var l = new GameObject("projecteur").AddComponent<Light>();
+            l.transform.SetParent(root, false);
+            l.transform.localPosition = at;
+            l.transform.LookAt(transform.TransformPoint(look));
+            l.type = LightType.Spot; l.spotAngle = angle; l.range = 30; l.intensity = intensity; l.color = Board.Hex(hex);
+        }
+        Spot(new Vector3(0, 7, -4), new Vector3(0, 1, 1.5f), "fff4e6", 9, 55);
+        Spot(new Vector3(-6, 6, 0), new Vector3(0, 1, 2), "ff6fd0", 6);
+        Spot(new Vector3(6, 6, 0), new Vector3(0, 1, 2), "5fa8ff", 6);
+        Spot(new Vector3(-4, 6, 1), BoardAt, "ffffff", 5, 40);
+        // La roue, posee sur le podium.
+        wheel = new GameObject("roue").AddComponent<RoueView>();
+        wheel.Build(root, new Vector3(0, 0.83f, 0));
+        SpawnHost();
+    }
+
+    // --- Tenna, le presentateur : debout a gauche de la roue, tourne vers le public ----------------
+    Transform host;
+    Animator hostAn;
+    SkinnedMeshRenderer hostFace;
+    readonly Dictionary<int, float> faceWeights = new Dictionary<int, float>();
+    float hostBusy;
+    static readonly Vector3 HostAt = new Vector3(-3.2f, 0, -0.9f);
+
+    void SpawnHost()
+    {
+        if (!Synty.I || !Synty.I.tenna) return;
+        var t = Instantiate(Synty.I.tenna, transform).transform;
+        t.name = "Tenna";
+        t.localPosition = OnArc(hostAngle, hostR);
+        t.localRotation = Quaternion.LookRotation(new Vector3(1.6f, 0, -6f) - HostAt);
+        // Meme taille que sur le plateau du quiz (2.35 m) : hauteur mesuree sur le maillage pose.
+        var smr = t.GetComponentInChildren<SkinnedMeshRenderer>();
+        var baked = new Mesh(); smr.BakeMesh(baked, true);
+        float lo = float.MaxValue, hi = float.MinValue;
+        foreach (var v in baked.vertices) { float y = smr.transform.TransformPoint(v).y; lo = Mathf.Min(lo, y); hi = Mathf.Max(hi, y); }
+        Destroy(baked);
+        t.localScale *= 3.06f / Mathf.Max(0.001f, hi - lo);   // meme taille que sur le plateau du quiz
+        smr.BakeMesh(baked = new Mesh(), true);
+        lo = float.MaxValue; foreach (var v in baked.vertices) lo = Mathf.Min(lo, smr.transform.TransformPoint(v).y);
+        Destroy(baked);
+        t.position += Vector3.up * (transform.position.y - lo);
+        hostLift = t.localPosition.y - OnArc(hostAngle, hostR).y;   // pieds au sol
+        foreach (var r in t.GetComponentsInChildren<SkinnedMeshRenderer>()) r.updateWhenOffscreen = true;
+        // Il s'eclaire un peu lui-meme ; l'ecran-visage est allume.
+        foreach (var r in t.GetComponentsInChildren<Renderer>())
+            foreach (var m in r.materials)
+            {
+                bool screen = m.GetTexture("_EmissionMap");
+                if (!screen) m.SetTexture("_EmissionMap", m.GetTexture("_BaseMap"));
+                m.SetColor("_EmissionColor", screen ? Color.white * 0.95f : Color.white * 0.35f);
+                if (screen) { m.SetColor("_BaseColor", Color.black); m.SetFloat("_Smoothness", 0); }
+                m.EnableKeyword("_EMISSION");
+            }
+        hostAn = t.GetComponent<Animator>();
+        hostFace = smr;
+        host = t;
+    }
+
+    // --- Tenna se deplace sur le plateau (par petits bonds : son modele n'a pas d'animation de marche) ---
+    // Il tourne autour du podium : au sol devant (sa place), sur l'estrade des candidats au fond.
+    float hostAngle = -112, hostR = 3.7f, hostLift;
+    Coroutine hostMove;
+    static Vector3 OnArc(float angle, float r) => new Vector3(Mathf.Sin(angle * Mathf.Deg2Rad) * r, Mathf.Abs(angle) <= 82 ? 0.55f : 0, Mathf.Cos(angle * Mathf.Deg2Rad) * r);
+    float SeatAngle(int i) { int n = anims.Count; return n <= 1 ? 0 : Mathf.Lerp(-62, 62, i / (float)(n - 1)); }
+
+    // Aller parler au candidat (a cote de lui, sur l'estrade) ; seat < 0 : retour a sa place, devant a gauche de la roue.
+    public void HostGoTo(int seat)
+    {
+        if (!host) return;
+        float target = seat < 0 ? -112 : SeatAngle(seat) - 19;
+        float r = seat < 0 ? 3.7f : 3.2f;
+        if (hostMove != null) StopCoroutine(hostMove);
+        hostMove = StartCoroutine(HostWalk(target, r, seat));
+    }
+
+    System.Collections.IEnumerator HostWalk(float target, float rEnd, int seat)
+    {
+        float a0 = hostAngle, r0 = hostR;
+        float dist = Mathf.Abs(target - a0) * Mathf.Deg2Rad * 3.6f;
+        if (dist < 0.2f && Mathf.Abs(rEnd - r0) < 0.1f) { FaceHost(seat); yield break; }
+        float dur = Mathf.Clamp(dist / 1.5f, 0.8f, 4.5f);   // au pas
+        if (hostAn) hostAn.CrossFadeInFixedTime("Walk", 0.2f);
+        for (float t = 0; t < 1; t += Time.deltaTime / dur)
+        {
+            float e = Mathf.SmoothStep(0, 1, t);
+            float ang = Mathf.Lerp(a0, target, e);
+            // En chemin, il passe derriere les candidats (au bord de l'estrade), puis s'avance a sa place.
+            float r = Mathf.Lerp(r0, rEnd, e) + Mathf.Sin(e * Mathf.PI) * (Mathf.Abs(ang) <= 82 ? 0.4f : 0.2f);
+            hostAngle = ang; hostR = r;
+            var p = OnArc(ang, r);
+            var next = OnArc(Mathf.Lerp(a0, target, Mathf.SmoothStep(0, 1, Mathf.Min(1, t + 0.05f))), r);
+            host.localPosition = p + Vector3.up * hostLift;
+            var dir = next - OnArc(ang, r); dir.y = 0;
+            if (dir.sqrMagnitude > 1e-5f) host.localRotation = Quaternion.Slerp(host.localRotation, Quaternion.LookRotation(dir), Time.deltaTime * 10);
+            yield return null;
+        }
+        hostAngle = target; hostR = rEnd;
+        if (hostAn) hostAn.CrossFadeInFixedTime("Idle", 0.25f);
+        host.localPosition = OnArc(target, rEnd) + Vector3.up * hostLift;
+        FaceHost(seat);
+        hostMove = null;
+    }
+
+    // Tourne vers le candidat (et un peu vers le public), ou vers le public depuis sa place.
+    void FaceHost(int seat)
+    {
+        var camSide = new Vector3(1.6f, 0, -6f) - host.localPosition;
+        var look = seat >= 0 && seat < anims.Count ? (cast.InverseTransformPoint(anims[seat].transform.position) - host.localPosition).normalized + camSide.normalized * 0.8f : camSide;
+        look.y = 0;
+        StartCoroutine(TurnHost(Quaternion.LookRotation(look)));
+    }
+    System.Collections.IEnumerator TurnHost(Quaternion to)
+    {
+        for (float t = 0; t < 1 && host; t += Time.deltaTime * 3) { host.localRotation = Quaternion.Slerp(host.localRotation, to, t); yield return null; }
+    }
+
+    // Gestes : "good" applaudit, "bad" rit ou se moque, "point" montre, "win" exulte.
+    int hostBad;
+    public void HostReact(string kind)
+    {
+        if (!hostAn || !hostAn.runtimeAnimatorController || hostMove != null) return;   // pas de geste en marchant
+        if (Time.time < hostBusy && kind == "bad") return;
+        string state = kind == "good" ? "Clap" : kind == "bad" ? (hostBad++ % 2 == 0 ? "Laugh" : "Taunt") : kind == "point" ? "Point" : "Excited";
+        hostAn.CrossFadeInFixedTime(state, 0.2f);
+        hostBusy = Time.time + 2.5f;
+    }
+
+    // Expression du visage-ecran : "Pog", "SmileSketchfab", "HmmmSketchfab".
+    public void HostFace(string shape, float hold = 1.5f)
+    {
+        if (!hostFace || !hostFace.sharedMesh) return;
+        int i = hostFace.sharedMesh.GetBlendShapeIndex(shape);
+        if (i < 0) return;
+        foreach (var k in new List<int>(faceWeights.Keys)) faceWeights[k] = 0;
+        faceWeights[i] = 100 + hold * 60;
+    }
+
+    void Update()
+    {
+        if (!hostFace) return;
+        foreach (var k in new List<int>(faceWeights.Keys))
+        {
+            faceWeights[k] = Mathf.Max(0, faceWeights[k] - Time.deltaTime * 60);
+            hostFace.SetBlendShapeWeight(k, Mathf.Min(100, faceWeights[k]));
+        }
+    }
+
+    // Decor en primitives (ancienne version, si Resources/Roue/Plateau.fbx manque).
+    void PrimitiveDecor(Transform root)
+    {
+        // Sol noir brillant et grand fond noir.
+        // Sol noir brillant : reflets des projecteurs, sans reflet du ciel ni de sonde (pixelise et deforme).
+        var floor = Mat("07070b", 0.9f, 0.2f);
+        floor.SetFloat("_EnvironmentReflections", 0); floor.EnableKeyword("_ENVIRONMENTREFLECTIONS_OFF");
+        Prim(PrimitiveType.Cylinder, root, new Vector3(0, -0.05f, 3), new Vector3(46, 0.05f, 46), floor);
+        // Arcs de neons au sol autour du podium.
+        var purple = Glow("c04dff", 3); var green = Glow("4dff7a", 2.6f); var yellow = Glow("ffd84d", 2.6f); var blue = Glow("3d8bff", 3); var white = Glow("e8f0ff", 2.2f);
+        Arc(Vector3.zero, 3.6f, 3.6f, 120, 250, 0.01f, 0.07f, purple);
+        Arc(Vector3.zero, 4.1f, 4.1f, 110, 260, 0.01f, 0.07f, green);
+        Arc(Vector3.zero, 4.6f, 4.6f, 100, 270, 0.01f, 0.07f, yellow);
+        Arc(new Vector3(-2, 0, 4), 6.5f, 5.5f, 180, 330, 0.01f, 0.06f, white, 40);
+        Arc(new Vector3(-2, 0, 4), 7.1f, 6.0f, 180, 330, 0.01f, 0.06f, white, 40);
+        Arc(new Vector3(2, 0, 2), 9.5f, 8.5f, 150, 250, 0.01f, 0.06f, purple, 40);
+        // Podium a etages, cercles de lumiere.
+        var dark = Mat("16161e", 0.8f, 0.3f);
+        foreach (var (r, y, h, glow) in new[] { (3.1f, 0.12f, 0.24f, green), (2.75f, 0.38f, 0.26f, blue), (2.45f, 0.66f, 0.3f, Glow("ff8a2b", 2.4f)) })
+        {
+            Prim(PrimitiveType.Cylinder, root, new Vector3(0, y, 0), new Vector3(r * 2, h / 2, r * 2), dark);
+            Prim(PrimitiveType.Cylinder, root, new Vector3(0, y + h / 2 - 0.06f, 0), new Vector3(r * 2 + 0.08f, 0.025f, r * 2 + 0.08f), glow, null, false);   // anneau : seul le bord depasse
+        }
+        // Comptoir blanc courbe sur l'arc du fond (les candidats sont derriere, sur une estrade).
+        var whiteMat = Mat("f6f6fa", 0.7f);
+        var stage = Mat("1a1a26", 0.8f, 0.3f);
+        for (int k = 0; k < 30; k++)
+        {
+            float a = Mathf.Lerp(-80, 80, k / 29f) * Mathf.Deg2Rad;
+            var d = new Vector3(Mathf.Sin(a), 0, Mathf.Cos(a));
+            Prim(PrimitiveType.Cube, root, d * 3.15f + Vector3.up * 0.275f, new Vector3(0.62f, 0.55f, 1.0f), stage, Quaternion.LookRotation(d));
+            Prim(PrimitiveType.Cube, root, d * 2.45f + Vector3.up * 1.35f, new Vector3(0.52f, 0.08f, 0.5f), whiteMat, Quaternion.LookRotation(d));
+            Prim(PrimitiveType.Cube, root, d * 2.28f + Vector3.up * 1.12f, new Vector3(0.52f, 0.42f, 0.05f), Mat("1d1d2a", 0.8f), Quaternion.LookRotation(d));
+        }
+        // Cabine vitree (a gauche du fond) et ampoules.
+        var glass = Glow("ffd6f0", 0.55f);
+        for (int k = 0; k < 14; k++)
+        {
+            float a = (k / 14f) * 360 * Mathf.Deg2Rad;
+            var d = new Vector3(Mathf.Sin(a), 0, Mathf.Cos(a));
+            Prim(PrimitiveType.Cube, root, new Vector3(1.2f, 2.2f, 10.5f) + d * 1.5f, new Vector3(0.66f, 4.4f, 0.04f), glass, Quaternion.LookRotation(d), false);
+            for (int b = 0; b < 3; b++) Prim(PrimitiveType.Sphere, root, new Vector3(1.2f, 1.1f + b * 1.2f, 10.5f) + d * 1.47f, Vector3.one * 0.1f, Glow("fff2c4", 4), null, false);
+        }
+        // Gradins et public a droite, bandes de neons, mur LED dore.
+        for (int s = 0; s < 4; s++)
+        {
+            Prim(PrimitiveType.Cube, root, new Vector3(8.5f, 1.2f + s * 0.55f, 11 + s * 0.8f), new Vector3(11, 0.5f, 0.8f), Mat("141420", 0.3f));
+            Prim(PrimitiveType.Cube, root, new Vector3(8.5f, 1.47f + s * 0.55f, 10.6f + s * 0.8f), new Vector3(11, 0.04f, 0.04f), s % 2 == 0 ? green : purple, null, false);
+            var rng = new System.Random(s * 7 + 3);
+            for (int p = 0; p < 16; p++)
+            {
+                var col = Mat(new[] { "c0392b", "2e86de", "f1c40f", "8e44ad", "ecf0f1", "27ae60", "e67e22" }[rng.Next(7)], 0.3f);
+                var at = new Vector3(3.6f + p * 0.62f + (float)rng.NextDouble() * 0.15f, 1.45f + s * 0.55f, 11.1f + s * 0.8f);
+                Prim(PrimitiveType.Capsule, root, at + Vector3.up * 0.3f, new Vector3(0.36f, 0.3f, 0.3f), col);
+                Prim(PrimitiveType.Sphere, root, at + Vector3.up * 0.72f, Vector3.one * 0.24f, Mat("e0b18f", 0.3f));
+            }
+        }
+        Prim(PrimitiveType.Cube, root, new Vector3(8.5f, 0.55f, 10.35f), new Vector3(11, 1.1f, 0.1f), Glow("f0a01e", 1.5f), null, false);
+        for (int k = 0; k < 3; k++) Prim(PrimitiveType.Cube, root, new Vector3(8.5f, 0.2f + k * 0.35f, 10.28f), new Vector3(11, 0.03f, 0.03f), Glow("ffe8a0", 3), null, false);
+        // Ovale d'ampoules au-dessus des gradins.
+        Arc(new Vector3(6.5f, 6.2f, 13.5f), 2.4f, 1.0f, 0, 360, 0, 0.18f, Mat("dfe3ea", 0.9f, 0.8f), 48, true);
+        for (int k = 0; k < 11; k++) Prim(PrimitiveType.Cube, root, new Vector3(6.5f + (k - 5) * 0.38f, 6.2f, 13.55f), new Vector3(0.06f, 1.5f - Mathf.Abs(k - 5) * 0.2f, 0.04f), Glow("ff7a1e", 3), null, false);
+        // Rampe courbe d'ampoules au plafond.
+        for (int k = 0; k < 26; k++)
+        {
+            float a = Mathf.Lerp(-60, 60, k / 25f) * Mathf.Deg2Rad;
+            Prim(PrimitiveType.Sphere, root, new Vector3(Mathf.Sin(a) * 11, 7.2f, 3 + Mathf.Cos(a) * 11), Vector3.one * 0.22f, Glow("ffd27a", 4), null, false);
+        }
+        Arc(new Vector3(0, 7.45f, 3), 11, 11, -62, 62, 0, 0.12f, white, 40);
+        Arc(new Vector3(0, 6.9f, 3), 11.2f, 11.2f, -62, 62, 0, 0.1f, blue, 40);
+        // Grand ecran courbe a droite (bandes de couleurs).
+        string[] led = { "ff5fb8", "8a5cff", "3dc9ff", "ffb04d", "5cff9a", "ff5fb8" };
+        for (int k = 0; k < 10; k++)
+        {
+            float a = Mathf.Lerp(40, 88, k / 9f) * Mathf.Deg2Rad;
+            var d = new Vector3(Mathf.Sin(a), 0, Mathf.Cos(a));
+            Prim(PrimitiveType.Cube, root, new Vector3(0, 2.8f, 3) + d * 12.5f, new Vector3(1.6f, 4.2f, 0.1f), Glow(led[k % led.Length], 1.3f), Quaternion.LookRotation(d), false);
+        }
+    }
+
+    // Couleurs du modele Blender (Tools/roue_plateau_blender.py) : les materiaux n'y sont que des noms.
+    void Paint(Transform t)
+    {
+        var floor = Mat("060609", 0.92f, 0.2f);
+        floor.SetFloat("_EnvironmentReflections", 0); floor.EnableKeyword("_ENVIRONMENTREFLECTIONS_OFF");
+        string[] crowd = { "c0392b", "2e86de", "f1c40f", "8e44ad", "ecf0f1", "27ae60", "e67e22", "1abc9c" };
+        string[] skin = { "f1c7a5", "e0b18f", "b98563", "7a4e33" }, hair = { "2b1d14", "5a3a22", "c9a15b", "1a1a1a" };
+        string[] screen = { "ff5fb8", "8a5cff", "3dc9ff", "ffb04d", "5cff9a" };
+        var cache = new Dictionary<string, Material>();
+        foreach (var r in t.GetComponentsInChildren<Renderer>())
+        {
+            var ms = r.sharedMaterials;
+            for (int i = 0; i < ms.Length; i++)
+            {
+                string n = ms[i] ? ms[i].name.Replace(" (Instance)", "") : "";
+                if (!cache.TryGetValue(n, out var m))
+                {
+                    m = n switch
+                    {
+                        "Floor" => floor,
+                        "PodiumSide" => Mat("15151f", 0.85f, 0.4f),
+                        "PodiumTop" => Mat("0d0d14", 0.9f, 0.3f),
+                        "Chrome" => Mat("e3e7ee", 0.95f, 0.95f),
+                        "StageSide" => Mat("171722", 0.8f, 0.3f),
+                        "StageTop" => Mat("22222f", 0.85f, 0.3f),
+                        "DeskFront" => Mat("12121b", 0.9f, 0.3f),
+                        "DeskWhite" => Mat("f7f7fb", 0.8f),
+                        "WallDark" => Mat("0b0b12", 0.5f),
+                        "Bulb" => Glow("ffd88a", 4),
+                        "LedWarm" => Glow("ffb347", 1.6f),
+                        "LedGold" => Glow("f0a01e", 1.3f),
+                        "LedOrange" => Glow("ff7a1e", 3),
+                        "Glass" => Glow("f6d8ff", 0.55f),
+                        "CabinInside" => Glow("ffe2b8", 0.7f),
+                        "SeatDark" => Mat("141420", 0.4f),
+                        "StepLight" => Glow("dfe9ff", 0.9f),
+                        "Truss" => Mat("3a3a44", 0.6f, 0.8f),
+                        "Can" => Mat("16161c", 0.5f, 0.6f),
+                        "Lens" => Glow("fff4d6", 3),
+                        "NeonPurple" => Glow("c04dff", 3), "NeonGreen" => Glow("4dff7a", 2.6f), "NeonYellow" => Glow("ffd84d", 2.6f),
+                        "NeonPink" => Glow("ff4fb0", 2.8f), "NeonCyan" => Glow("3de8ff", 2.6f), "NeonBlue" => Glow("3d8bff", 3),
+                        "NeonWhite" => Glow("eef4ff", 2.2f), "NeonOrange" => Glow("ff8a2b", 2.6f),
+                        _ when n.StartsWith("Crowd") => Mat(crowd[n[5] - '0'], 0.3f),
+                        _ when n.StartsWith("Skin") => Mat(skin[n[4] - '0'], 0.3f),
+                        _ when n.StartsWith("Hair") => Mat(hair[n[4] - '0'], 0.3f),
+                        _ when n.StartsWith("Screen") => Glow(screen[n[6] - '0'], 1.3f),
+                        _ => Mat("808080"),
+                    };
+                    cache[n] = m;
+                }
+                ms[i] = m;
+            }
+            r.sharedMaterials = ms;
+            r.shadowCastingMode = UnityEngine.Rendering.ShadowCastingMode.Off;
+        }
+    }
+
+    public void Hide() { gameObject.SetActive(false); }
+
+    // Place l'enigme sur les rangees du tableau (mots entiers), centree ; les autres cases restent dorees.
+    public void ShowBoard(string top, string answer, System.Func<int, bool> shown)
+    {
+        foreach (var (r, t) in cells) { r.sharedMaterial = cellGold; t.text = ""; }
+        if (string.IsNullOrEmpty(answer)) return;
+        var words = new List<(int start, int len)>();
+        for (int i = 0; i < answer.Length;)
+        {
+            while (i < answer.Length && answer[i] == ' ') i++;
+            int s = i; while (i < answer.Length && answer[i] != ' ') i++;
+            if (i > s) words.Add((s, i - s));
+        }
+        List<List<(int, int)>> Fill(int[] caps)
+        {
+            var lines = new List<List<(int, int)>>(); var cur = new List<(int, int)>(); int len = 0, row = 0;
+            foreach (var w in words)
+            {
+                int need = len == 0 ? w.len : len + 1 + w.len;
+                if (need > caps[Mathf.Min(row, caps.Length - 1)] && cur.Count > 0) { lines.Add(cur); cur = new List<(int, int)>(); row++; need = w.len; }
+                cur.Add(w); len = need;
+            }
+            if (cur.Count > 0) lines.Add(cur);
+            return lines;
+        }
+        var two = Fill(new[] { 14, 14 });
+        int firstRow; List<List<(int, int)>> layout;
+        if (two.Count <= 2) { layout = two; firstRow = two.Count == 1 ? 1 : 1; }
+        else { layout = Fill(RowCap); firstRow = layout.Count >= 4 ? 0 : 0; if (layout.Count == 3 && Fill(new[] { 14, 14, 12 }).Count == 3) { layout = Fill(new[] { 14, 14, 12 }); firstRow = 1; } }
+        for (int l = 0; l < layout.Count && firstRow + l < 4; l++)
+        {
+            int row = firstRow + l, cap = RowCap[row];
+            var line = layout[l];
+            int width = line[line.Count - 1].Item1 + line[line.Count - 1].Item2 - line[0].Item1;
+            int offset = (cap - width) / 2, rowStart = 0;
+            for (int k = 0; k < row; k++) rowStart += RowCap[k];
+            for (int idx = line[0].Item1; idx < line[0].Item1 + width; idx++)
+            {
+                var (r, t) = cells[rowStart + offset + idx - line[0].Item1];
+                char c = answer[idx];
+                if (c == ' ') { r.sharedMaterial = cellBlue; continue; }
+                r.sharedMaterial = cellWhite;
+                t.text = shown(idx) ? c.ToString() : "";
+            }
+        }
+    }
+
+    // Panneaux des candidats : cagnotte de la manche (ou banque en finale), celui qui a la main s'allume.
+    public void Plates(Roue r)
+    {
+        for (int i = 0; i < plateMoney.Count && i < r.players.Count; i++)
+        {
+            plateMoney[i].text = (r.InFinal ? r.players[i].score : r.roundMoney[i]) + " €";
+            plateBack[i].transform.localScale = new Vector3(1.15f, 0.56f, i == r.turn && r.phase != FPhase.Rapid ? 0.12f : 0.04f);
+        }
+    }
+
+    public void Anim(int seat, string state) { if (seat >= 0 && seat < anims.Count && anims[seat]) anims[seat].CrossFadeInFixedTime(state, 0.2f); }
+
+    public Vector3 HeadOf(int i) => i < heads.Count && heads[i] ? heads[i].position + Vector3.up * 0.3f : transform.position;
+
+    // --- Plans de camera (la realisation choisit lequel) -------------------------------------------
+    static Pose Look(Vector3 from, Vector3 at) => new Pose(from, Quaternion.LookRotation(at - from));
+    // Plateau rapproche : la roue et les candidats derriere le comptoir.
+    public Pose ClosePose => Look(transform.TransformPoint(new Vector3(0.4f, 3.1f, -4.4f)), transform.TransformPoint(new Vector3(0, 1.3f, 1.6f)));
+    // Plateau eloigne : tout le studio, gradins compris.
+    public Pose FarPose => Look(transform.TransformPoint(new Vector3(-1.5f, 6.5f, -13.5f)), transform.TransformPoint(new Vector3(1f, 2.2f, 5f)));
+    // Gros plan sur un candidat, depuis le cote de la roue.
+    public Pose PlayerPose(int i)
+    {
+        var head = HeadOf(i) - Vector3.up * 0.35f;
+        var toWheel = transform.TransformPoint(Vector3.up * head.y) - head; toWheel.y = 0;
+        var from = head + toWheel.normalized * 2.1f + Vector3.up * 0.15f + Vector3.Cross(Vector3.up, toWheel.normalized) * 0.4f;
+        return Look(from, head);
+    }
+    // Gros plan sur Tenna, a hauteur de son ecran-tete.
+    public bool HasHost => host;
+    public Pose HostPose => host ? QuizView.CloseUp(host) : ClosePose;
+
+    // Camera principale : du public, la roue au premier plan, le tableau et les candidats derriere.
+    public Pose CamPose
+    {
+        get
+        {
+            var from = transform.TransformPoint(new Vector3(1.2f, 4.6f, -7.6f));
+            return new Pose(from, Quaternion.LookRotation(transform.TransformPoint(new Vector3(-1.3f, 2.1f, 3.5f)) - from));
+        }
+    }
+    // Vue de face du tableau (enigme rapide, finale).
+    public Pose BoardPose
+    {
+        get
+        {
+            var at = transform.TransformPoint(BoardAt);
+            var from = at + board.rotation * new Vector3(0, 0.2f, -9.8f);
+            return new Pose(from, Quaternion.LookRotation(at - from));
+        }
+    }
+}

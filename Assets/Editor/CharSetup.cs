@@ -62,31 +62,7 @@ public static class CharSetup
             if (state == "Idle") sm.defaultState = st;
         }
 
-        // 3. Materiaux URP (une par variante d'atlas) et prefab par pack.
-        Directory.CreateDirectory(Res + "Chars");
-        Directory.CreateDirectory(Res + "CharMats");
-        var lit = Shader.Find("Universal Render Pipeline/Lit");
-        foreach (var (pack, fbx, tex) in Packs)
-        {
-            foreach (var t in Directory.GetFiles(Path.GetDirectoryName(tex), Path.GetFileName(tex) + "*.png"))
-            {
-                string v = Path.GetFileNameWithoutExtension(t).Substring(Path.GetFileName(tex).Length);   // "01_A"
-                var m = new Material(lit);
-                m.SetTexture("_BaseMap", AssetDatabase.LoadAssetAtPath<Texture2D>(t.Replace('\\', '/')));
-                m.SetFloat("_Smoothness", 0.1f);
-                string mp = Res + "CharMats/" + pack + "_" + v + ".mat";
-                AssetDatabase.DeleteAsset(mp);
-                AssetDatabase.CreateAsset(m, mp);
-            }
-            var mi = (ModelImporter)AssetImporter.GetAtPath(fbx);
-            if (!mi.isReadable) { mi.isReadable = true; mi.SaveAndReimport(); }   // decoupe des persos a la carte (Mix)
-            var go = (GameObject)PrefabUtility.InstantiatePrefab(AssetDatabase.LoadAssetAtPath<GameObject>(fbx));
-            PrefabUtility.UnpackPrefabInstance(go, PrefabUnpackMode.Completely, InteractionMode.AutomatedAction);
-            if (!go.GetComponent<Animator>()) go.AddComponent<Animator>().avatar = AssetDatabase.LoadAllAssetsAtPath(fbx).OfType<Avatar>().First();
-            PrefabUtility.SaveAsPrefabAsset(go, Res + "Chars/" + pack + ".prefab");
-            Object.DestroyImmediate(go);
-            Debug.Log($"DIAG pack {pack} : " + string.Join(",", AssetDatabase.LoadAssetAtPath<GameObject>(Res + "Chars/" + pack + ".prefab").GetComponentsInChildren<SkinnedMeshRenderer>(true).Select(s => s.name)));
-        }
+        // (Les personnages eux-memes viennent du pack Sidekick : SidekickSetup.)
         AssetDatabase.SaveAssets();
     }
 

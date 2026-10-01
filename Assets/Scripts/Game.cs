@@ -17,13 +17,13 @@ public partial class Game : MonoBehaviour
     public GameId gameId = GameId.Croque;
     public int option;                            // Croque : 0 classique / 1 ameliore ; Blackjack : nombre de manches
     public readonly List<string> names = new List<string> { "Joueur 1", "Joueur 2" };
-    public readonly List<string> avatars = new List<string> { Chars.All[0], Chars.All[5] };
+    public readonly List<string> avatars = new List<string>();   // rempli dans Awake (Resources interdit ici)
     public string myAvatar;
     public Rules rules;
     public Blackjack bj;
     public Roulette rt;
     public Quiz qz;
-    public IMatch Match => (IMatch)rules ?? (IMatch)bj ?? (IMatch)rt ?? (IMatch)qz ?? (IMatch)rh ?? (IMatch)uno ?? (IMatch)ch ?? (IMatch)bac ?? (IMatch)sp ?? (IMatch)bp ?? (IMatch)pq ?? qsj;
+    public IMatch Match => (IMatch)rules ?? (IMatch)bj ?? (IMatch)rt ?? (IMatch)qz ?? (IMatch)rh ?? (IMatch)uno ?? (IMatch)ch ?? (IMatch)bac ?? (IMatch)sp ?? (IMatch)bp ?? (IMatch)pq ?? (IMatch)qsj ?? roue;
     public bool busy;
 
     Board board;
@@ -42,14 +42,16 @@ public partial class Game : MonoBehaviour
     Func<Vector3> testCam;   // autotest : cadrage force
     Vector3 target = new Vector3(0, 2.5f, 0);
 
-    public static readonly string[] Characters = Chars.Friends.Keys.Concat(Chars.All).ToArray();
+    public static string[] Characters => Chars.Friends.Keys.Concat(Chars.All).ToArray();
 
     void Start()
     {
         Application.runInBackground = true;
         settings = Settings.Load();
+        if (avatars.Count == 0) avatars.AddRange(new[] { Chars.All[0], Chars.All[5] });
         myAvatar = PlayerPrefs.GetString("cc-avatar", Chars.Default);
         if (!Chars.Valid(myAvatar)) myAvatar = Chars.Default;   // anciens personnages Quaternius
+        pendingHero = true;
 
         cam = new GameObject("Camera").AddComponent<Camera>();
         cam.tag = "MainCamera";
@@ -108,6 +110,7 @@ public partial class Game : MonoBehaviour
         ui = uiGo.AddComponent<Ui>();
         net = Net.Create(this);
         ui.Init(this, doc);
+        if (Array.IndexOf(Environment.GetCommandLineArgs(), "-noui") >= 0) doc.rootVisualElement.style.display = DisplayStyle.None;   // test : photos des jeux sans interface
         net.Changed += ui.RefreshOnline;
         int ntest = Array.IndexOf(Environment.GetCommandLineArgs(), "-nettest");
         if (ntest < 0 || Environment.GetCommandLineArgs()[ntest + 1] == "host") DiscordLink.Create(this);   // test : seul l'hote parle a Discord
@@ -116,6 +119,7 @@ public partial class Game : MonoBehaviour
         StartCoroutine(TerrainReady());
         if (PlayerPrefs.GetInt("auto-quality-3", 0) == 0 && Array.IndexOf(Environment.GetCommandLineArgs(), "-autotest") < 0) StartCoroutine(AutoQuality());
         ui.ShowTitle();
+        if (Array.IndexOf(Environment.GetCommandLineArgs(), "-casting") >= 0) ui.OpenCasting();   // outil : les persos de l'illustration
         Sound.I.Music("music_menu");
         var args = Environment.GetCommandLineArgs();
         if (Array.IndexOf(args, "-autotest") < 0 && Array.IndexOf(args, "-nettest") < 0)
@@ -139,6 +143,28 @@ public partial class Game : MonoBehaviour
         if (gameId != g) option = DefaultOption(g);
         gameId = g;
     }
+
+    bool pendingHero;   // l'illustration des menus se fait une fois le paysage charge
+
+    // Illustration de fond de l'accueil : celle enregistree par l'outil de casting (UiCasting), sinon rendue ici
+    // avec les 5 personnages du casting (ou toi et la bande d'amis).
+    IEnumerator RenderMenuArt(string save = null)
+    {
+        var baked = save == null ? Resources.Load<Texture2D>("UI/MenuArt") : null;
+        if (baked) { ui.SetArt(baked); yield break; }
+        var cast = Ui.LoadCast(Resources.Load<TextAsset>("MenuCast")?.text).ConvertAll(c => c.code);
+        if (cast.Count < 5) { cast = new List<string> { myAvatar }; cast.AddRange(Chars.Friends.Keys); }
+        yield return RenderCast(cast, save);
+    }
+
+    IEnumerator RenderCast(List<string> cast, string save)
+    {
+        while (!FindFirstObjectByType<Terrain>()) yield return null;
+        for (int i = 0; i < 3; i++) yield return null;
+        yield return MenuArt.Render(hub, cast, dof, ui.SetArt, save);
+    }
+
+    public void RenderCastArt(string save) => StartCoroutine(RenderCast(ui.cast.ConvertAll(c => c.code), save));
 
     public void SetMyAvatar(string a)
     {
@@ -217,7 +243,7 @@ public partial class Game : MonoBehaviour
         }
         while (busy || (pending.Count > 0 && applied < 30)) yield return null;
         yield return Shot("fin");
-        var log = rules?.log ?? bj?.log ?? rt?.log ?? qz?.log ?? uno?.log ?? ch?.log ?? bp?.log ?? pq?.log ?? qsj?.log ?? bac?.log ?? sp?.log ?? new List<string>();
+        var log = rules?.log ?? bj?.log ?? rt?.log ?? qz?.log ?? uno?.log ?? ch?.log ?? bp?.log ?? pq?.log ?? qsj?.log ?? roue?.log ?? bac?.log ?? sp?.log ?? new List<string>();
         System.IO.File.WriteAllText(System.IO.Path.Combine(dir, role + ".txt"),
             $"status={net.Status}\nseat={mySeat}\nspectateur={Spectating}\napplied={applied}\noption={net.LobbyOption}\navatars={string.Join(" ; ", net.LobbyAvatars)}\n" + string.Join("\n", log));
         // Retour au salon : l'hote attend que le spectateur ait fini son rattrapage, puis ramene tout le monde.
@@ -331,6 +357,143 @@ public partial class Game : MonoBehaviour
             cview.Speed = 5;   // test : animations accelerees (sans toucher aux reglages enregistres)
             yield return new WaitForSeconds(1.5f); yield return Shot("c1-debut");
             yield return ChevauxTest(dir, Shot);
+            Application.Quit();
+            yield break;
+        }
+        if (Array.IndexOf(Environment.GetCommandLineArgs(), "-skpieces") >= 0)   // catalogue visuel : chaque haut, bas, chaussure
+        {
+            var studio = new GameObject("StudioPieces").transform;
+            studio.position = new Vector3(0, -300, 0);
+            var l0 = new GameObject("lampe").AddComponent<Light>(); l0.transform.SetParent(studio, false);
+            l0.type = LightType.Directional; l0.transform.rotation = Quaternion.Euler(30, 160, 0); l0.intensity = 1.6f;
+            foreach (var (key, also) in new[] { ("TO", "AU"), ("HI", "LE"), ("FO", ""), ("AU", ""), ("AL", ""), ("AH", "") })
+            {
+                var opts = Sidekick.SlotOf(key).options;
+                for (int page = 0; page * 10 < opts.Count; page++)
+                {
+                    foreach (Transform c in studio) if (c.name != "lampe") Destroy(c.gameObject);
+                    int n = Math.Min(10, opts.Count - page * 10);
+                    for (int i = 0; i < n; i++)
+                    {
+                        var l = Sidekick.Look.FromPreset(0); l.type = -100; l.size = -20; l.muscle = 0;
+                        l.parts[key] = opts[page * 10 + i];
+                        if (also != "") l.parts[also] = opts[page * 10 + i].Length > 0 && Sidekick.SlotOf(also).options.Contains(opts[page * 10 + i]) ? opts[page * 10 + i] : l.parts[also];
+                        Chars.Spawn(l.Code(), studio, new Vector3((i - (n - 1) / 2f) * 0.8f, 0, 0), 180, out _);
+                    }
+                    tour = new Pose(studio.position + new Vector3(0, 1.0f, -6.6f), Quaternion.Euler(3, 0, 0));
+                    yield return new WaitForSeconds(1.2f); yield return Shot($"p-{key}-{page}");
+                }
+            }
+            Application.Quit();
+            yield break;
+        }
+        if (Array.IndexOf(Environment.GetCommandLineArgs(), "-menuart") >= 0)   // l'illustration des menus, en grand
+        {
+            yield return RenderMenuArt(System.IO.Path.Combine(dir, "illustration.png"));
+            if (Array.IndexOf(Environment.GetCommandLineArgs(), "-bakeart") >= 0)   // refait l'illustration du casting dans le projet
+                System.IO.File.Copy(System.IO.Path.Combine(dir, "illustration.png"), System.IO.Path.GetFullPath(System.IO.Path.Combine(Application.dataPath, "..", "..", "Assets", "Synty", "MMRes", "Resources", "UI", "MenuArt.png")), true);
+            yield return RenderMenuArt();   // l'accueil avec l'illustration enregistree par le casting, s'il y en a une
+            yield return new WaitForSeconds(0.5f); yield return Shot("accueil");
+            ui.OpenCasting(); yield return new WaitForSeconds(1.5f); yield return Shot("casting");
+            Application.Quit();
+            yield break;
+        }
+        if (Array.IndexOf(Environment.GetCommandLineArgs(), "-skcolors") >= 0)   // test : couleur des levres et des meches
+        {
+            int lips = Array.FindIndex(Sidekick.Zones, z => z.label == "Lèvres"), streak = Array.FindIndex(Sidekick.Zones, z => z.label.StartsWith("Mèches"));
+            for (int k = 0; k < 3; k++)
+            {
+                var l = Sidekick.Look.FromPreset(new[] { 4, 9, 5 }[k]);
+                if (k == 1) l.parts["HR"] = "c06";
+                if (k == 2) l.parts["HR"] = "c02";
+                l.colors[lips] = new Color32(0, 255, 0, 255);
+                l.colors[streak] = new Color32(255, 0, 0, 255);
+                System.IO.File.AppendAllText(System.IO.Path.Combine(dir, "zones.txt"), $"{k}: levres {Sidekick.ZoneUsed(l, lips)} meches {Sidekick.ZoneUsed(l, streak)} sac {Sidekick.ZoneUsed(l, Array.FindIndex(Sidekick.Zones, z => z.label == "Sac"))}\n");
+                var tex = Chars.Bust(l.Code());
+                System.IO.File.WriteAllBytes(System.IO.Path.Combine(dir, $"colors-{k}.png"), tex.EncodeToPNG());
+            }
+            Application.Quit();
+            yield break;
+        }
+        if (Array.IndexOf(Environment.GetCommandLineArgs(), "-sksheet") >= 0)   // planche : chaque haut / bas / piece de bras du pack
+        {
+            FindAnyObjectByType<UIDocument>().rootVisualElement.style.display = DisplayStyle.None;
+            var studio = new GameObject("Planche").transform;
+            studio.position = new Vector3(0, -300, 0);
+            var sun2 = new GameObject("lampe").AddComponent<Light>(); sun2.transform.SetParent(studio, false);
+            sun2.type = LightType.Directional; sun2.transform.rotation = Quaternion.Euler(30, 160, 0); sun2.intensity = 1.6f;
+            Chars.Spawn(Chars.DealerMan, studio, new Vector3(-0.45f, 0, 0), 180, out _);   // les croupiers du casino, de pres
+            Chars.Spawn(Chars.DealerWoman, studio, new Vector3(0.45f, 0, 0), 180, out _);
+            tour = new Pose(studio.position + new Vector3(0, 1.0f, -2.6f), Quaternion.Euler(3, 0, 0));
+            yield return new WaitForSeconds(1.2f); yield return Shot("croupiers");
+            foreach (var key in new[] { "TO", "AU", "AL", "HI", "LE", "FO", "HR" })
+            {
+                var opts = Sidekick.SlotOf(key).options.ToList();
+                for (int page = 0; page * 6 < opts.Count; page++)
+                {
+                    foreach (Transform c in studio) if (c.name != "lampe") Destroy(c.gameObject);
+                    int n = Math.Min(6, opts.Count - page * 6);
+                    for (int i = 0; i < n; i++)
+                    {
+                        var l = Sidekick.Look.FromPreset(7);
+                        foreach (var a in new[] { "AH", "AF", "AB", "AS" }) l.parts[a] = "";
+                        l.colors[7] = new Color(0.1f, 0.1f, 0.12f); l.colors[8] = new Color(0.95f, 0.93f, 0.88f); l.colors[11] = new Color(0.3f, 0.3f, 0.35f);
+                        l.parts[key] = opts[page * 6 + i];
+                        Chars.Spawn(l.Code(), studio, new Vector3((i - (n - 1) / 2f) * 0.75f, 0, 0), 180, out _);
+                    }
+                    tour = new Pose(studio.position + new Vector3(0, 0.95f, -4.6f), Quaternion.Euler(3, 0, 0));
+                    yield return new WaitForSeconds(1.2f); yield return Shot($"planche-{key}-{page}");
+                    System.IO.File.AppendAllText(System.IO.Path.Combine(dir, "planche.txt"), $"{key} page {page} : {string.Join(" ", opts.Skip(page * 6).Take(n))}\n");
+                }
+            }
+            Application.Quit();
+            yield break;
+        }
+        if (Array.IndexOf(Environment.GetCommandLineArgs(), "-sidekick") >= 0)   // personnages sur mesure : ceux du pack puis des tirages
+        {
+            var studio = new GameObject("StudioSidekick").transform;
+            studio.position = new Vector3(0, -300, 0);
+            var sun2 = new GameObject("lampe").AddComponent<Light>(); sun2.transform.SetParent(studio, false);
+            sun2.type = LightType.Directional; sun2.transform.rotation = Quaternion.Euler(30, 160, 0); sun2.intensity = 1.6f;
+            var codes = new List<string>();
+            for (int i = 0; i < Sidekick.Presets.Length; i++) codes.Add(Sidekick.Look.FromPreset(i).Code());
+            var rng = new System.Random(3);
+            for (int i = 0; i < 6; i++) codes.Add(Sidekick.Random(rng).Code());
+            System.IO.File.WriteAllText(System.IO.Path.Combine(dir, "codes.txt"), string.Join("\n", codes));
+            for (int row = 0; row < 2; row++)
+            {
+                foreach (Transform c in studio) if (c.name != "lampe") Destroy(c.gameObject);
+                int from = row * 8, n = Math.Min(8, codes.Count - from);
+                for (int i = 0; i < n; i++) Chars.Spawn(codes[from + i], studio, new Vector3((i - (n - 1) / 2f) * 0.95f, 0, 0), 180, out _);
+                tour = new Pose(studio.position + new Vector3(0, 1.1f, -6.2f), Quaternion.Euler(4, 0, 0));
+                yield return new WaitForSeconds(1.5f); yield return Shot("sk" + row);
+            }
+            // Gros plan sur les visages (les 4 premiers)
+            foreach (Transform c in studio) if (c.name != "lampe") Destroy(c.gameObject);
+            for (int i = 0; i < 4; i++) Chars.Spawn(codes[i], studio, new Vector3((i - 1.5f) * 0.55f, 0, 0), 180, out _);
+            tour = new Pose(studio.position + new Vector3(0, 1.62f, -1.9f), Quaternion.Euler(2, 0, 0));
+            yield return new WaitForSeconds(1.5f); yield return Shot("sk-visages");
+            Destroy(studio.gameObject); tour = null;
+            // Le createur : chaque onglet.
+            ui.OpenForTest("creator"); yield return new WaitForSeconds(1.5f); yield return Shot("cr-modeles");
+            foreach (var t in new[] { "Corps", "Visage", "Cheveux", "Haut", "Bas", "Accessoires" })
+            { ui.OpenForTest("crtab:" + t); yield return new WaitForSeconds(1.2f); yield return Shot("cr-" + t); }
+            ui.OpenForTest("crtab:Haut"); ui.OpenForTest("crcolor"); ui.OpenForTest("crrandom"); yield return new WaitForSeconds(1.2f); yield return Shot("cr-hasard");
+            Application.Quit();
+            yield break;
+        }
+        if (Array.IndexOf(Environment.GetCommandLineArgs(), "-roue") >= 0)   // roue de la fortune : moi (auto) contre 3 bots, 2 manches + finale
+        {
+            SelectGame(GameId.Roue);
+            ui.OpenForTest("setup"); yield return new WaitForSeconds(1); yield return Shot("f0-setup");
+            quizBots = 3; option = 2;
+            StartQuizWithBots();
+            yield return new WaitForSeconds(2); introSkip = true;
+            for (float t0 = Time.time; !ui.DialogueShown && Time.time - t0 < 20;) yield return null;
+            yield return new WaitForSeconds(3); yield return Shot("f1b-regles");
+            while (ui.DialogueShown || ui.IntroShown || tvCloseUp) { introSkip = true; if (ui.DialogueShown) { ui.DialogueKey(true); ui.DialogueKey(false); } yield return null; }
+            yield return new WaitForSeconds(1); yield return Shot("f1-plateau");
+            yield return RoueTest(dir, Shot);
             Application.Quit();
             yield break;
         }
@@ -796,6 +959,9 @@ public partial class Game : MonoBehaviour
         bp = null;
         pq = null;
         qsj = null;
+        roue = null;
+        if (rset) rset.Hide();
+        cam.clearFlags = CameraClearFlags.Skybox;
         live.Hide();
         uview.Hide();
         cview.Hide();
@@ -810,6 +976,7 @@ public partial class Game : MonoBehaviour
         else if (g == GameId.BonnePaye) StartBonnePaye(n, opt, seed);
         else if (g == GameId.Pouilleux) StartPouilleux(n, opt, seed, av);
         else if (g == GameId.QuiSuisJe) StartQuiSuisJe(n, opt, seed, av);
+        else if (g == GameId.Roue) StartRoue(n, opt, seed, av);
         else if (g == GameId.Uno) StartUno(n, opt, seed, av);
         else if (Games.TvTime(g))
         {
@@ -898,7 +1065,7 @@ public partial class Game : MonoBehaviour
 
     public void PlayerLeft(int seat)
     {
-        string n = rules?.players[seat].name ?? bj?.players[seat].name ?? rt?.players[seat].name ?? qz?.players[seat].name ?? rh?.players[seat].name ?? uno?.players[seat].name ?? bac?.players[seat].name ?? sp?.players[seat].name ?? bp?.players[seat].name ?? pq?.players[seat].name ?? qsj?.players[seat].name ?? ch.players[seat].name;
+        string n = rules?.players[seat].name ?? bj?.players[seat].name ?? rt?.players[seat].name ?? qz?.players[seat].name ?? rh?.players[seat].name ?? uno?.players[seat].name ?? bac?.players[seat].name ?? sp?.players[seat].name ?? bp?.players[seat].name ?? pq?.players[seat].name ?? qsj?.players[seat].name ?? roue?.players[seat].name ?? ch.players[seat].name;
         ui.Say($"{n} est parti : l'hôte joue pour lui.", 3.5f);
     }
 
@@ -907,7 +1074,8 @@ public partial class Game : MonoBehaviour
     // et tente une ou deux mauvaises reponses avant. Seulement hors ligne.
     public int quizBots = 3;
     static readonly string[] BotNames = { "Robo-Léa", "Bip-Bop", "Tchou-Tchou", "Mr Zap", "Pixel", "Gigi-Bot", "Watt", "Nova", "Boulon" };
-    static readonly string[] BotAvatars = { "Ami_Caramel", "Ami_Brun", "Ami_Platine", "Ami_Brune", "Ami_Roux", Chars.All[12], Chars.All[33], Chars.All[20], Chars.All[43] };
+    static string[] botAvatars;
+    static string[] BotAvatars => botAvatars ??= new[] { "Ami_Caramel", "Ami_Brun", "Ami_Platine", "Ami_Brune", "Ami_Roux", Chars.All[12], Chars.All[33], Chars.All[20], Chars.All[43] };
     readonly List<(int seat, float at, string text)> botPlan = new List<(int, float, string)>();
 
     public void StartQuizWithBots()
@@ -988,6 +1156,7 @@ public partial class Game : MonoBehaviour
         busy = true;
         if (!tvIntroSeen) yield return TvIntro();
         if (!tvRulesSeen.Contains(gameId) && (rh != null ? live.HasTenna : qview.HasTenna)) yield return TennaRules(gameId);
+        ui.HideIntro();   // sans presentation de Tenna (roue), le generique se ferme ici
         Sound.I.PauseMusic(false);
         if (gameId == GameId.Rhythm) Sound.I.PauseMusic(true);   // place a la chanson
         else Sound.I.Music("music_quiz_game");   // musique de partie (TV_GAME)
@@ -1013,6 +1182,15 @@ public partial class Game : MonoBehaviour
             ("HmmmSketchfab", "Le premier qui a tout rempli peut crier STOP... et la manche s'arrête pour TOUT LE MONDE ! Sinon, le chrono s'en charge."),
             ("SmileSketchfab", "Ensuite, on vote ! Un mot douteux ? Refusez-le. Même mot qu'un autre : 5 points. Mot unique : 10 points. Seul à avoir trouvé : 20 POINTS !"),
             ("Pog", "Le meilleur score à la fin des manches remporte la partie ! À VOS STYLOS, PRÊTS, ÉCRIVEZ !"),
+        },
+        [GameId.Roue] = new[]
+        {
+            ("Pog", "BONSOIR, BONSOIR, BONSOIR ! Mesdames et messieurs, bienvenue dans... LA ROUE DE LA FORTUNE !"),
+            ("SmileSketchfab", "Chaque manche commence par une énigme rapide : les cases s'allument une à une sur le grand tableau. Le premier qui tape la bonne réponse gagne 500 euros et prend la main ! Une erreur, et on est éliminé de l'énigme rapide."),
+            ("HmmmSketchfab", "Ensuite, à votre tour : vous tournez la roue et vous proposez une consonne. Chaque lettre présente vous rapporte la somme de la case ! Absente ? La main passe."),
+            ("SmileSketchfab", "Vous pouvez aussi acheter une voyelle pour 200 euros, ou proposer la solution avant de tourner. Mais attention : une mauvaise solution et vous ne jouez plus de la manche !"),
+            ("HmmmSketchfab", "Et gare aux cases BANQUEROUTE, qui effacent vos gains de la manche, et PASSE, qui donne la main au suivant ! Seul celui qui trouve l'énigme garde son argent."),
+            ("Pog", "Après les manches... LA FINALE, avec son enveloppe mystère ! Allez, que la chance soit avec vous : À LA ROUE !"),
         },
         [GameId.Trivia] = new[]
         {
@@ -1046,7 +1224,7 @@ public partial class Game : MonoBehaviour
         foreach (var (face, line) in lines)
         {
             if (box.skip) break;
-            if (rh != null) live.TennaFace(face, 2.5f); else qview.TennaFace(face, 2.5f);
+            if (rh != null) live.TennaFace(face, 2.5f); else if (roue != null) { rset.HostFace(face, 2.5f); rset.HostReact(face == "Pog" ? "win" : "point"); } else qview.TennaFace(face, 2.5f);
             yield return box.Type(line);
             while (!box.next && !box.skip) yield return null;
             box.next = false;
@@ -1181,6 +1359,7 @@ public partial class Game : MonoBehaviour
         if (bp != null) { ApplyBonnePaye(p); return; }
         if (pq != null) { ApplyPouilleux(p); return; }
         if (qsj != null) { ApplyQuiSuisJe(p); return; }
+        if (roue != null) { ApplyRoue(p); return; }
         if (rules != null)
         {
             if (p[0] == "draw") DoDraw(); else DoMove(int.Parse(p[1]));
@@ -1320,6 +1499,9 @@ public partial class Game : MonoBehaviour
         pq = null;
         qsview.Hide();
         qsj = null;
+        roue = null;
+        if (rset) rset.Hide();
+        cam.clearFlags = CameraClearFlags.Skybox;
         snapCam = true;
         pitch = 14;
         dist = 6.5f;
@@ -1339,6 +1521,7 @@ public partial class Game : MonoBehaviour
         BonnePayeInput();
         PouilleuxUpdate();
         QuiSuisJeUpdate();
+        RoueUpdate();
         if (inGame && qz != null)
         {
             // L'image se devoile en 18 s ; seul (hors ligne), c'est ce PC qui pilote les phases.
@@ -1396,11 +1579,24 @@ public partial class Game : MonoBehaviour
     {
         float dt = Time.unscaledDeltaTime, sens = settings.camSens;
         if (!inGame) yaw += 3.5f * dt;
+        if (pendingHero && ui != null) { pendingHero = false; StartCoroutine(RenderMenuArt()); }
         // Fenetre sans le focus (autre jeu, autre ecran) : la souris et le clavier ne sont pas pour nous.
         bool focus = Focused;
         if (tour.HasValue) { cam.transform.SetPositionAndRotation(tour.Value.position, tour.Value.rotation); return; }
+
         cam.fieldOfView = 50;
         cam.nearClipPlane = 0.3f;
+        if (inGame && roue != null)
+        {
+            // Studio : fond noir ; vue du public, plongee sur la roue quand elle tourne, face au tableau pour l'enigme rapide et la finale.
+            cam.clearFlags = CameraClearFlags.SolidColor; cam.backgroundColor = Color.black;
+            if (dof) dof.active = paused;
+            var rp = RouePose();
+            cam.transform.SetPositionAndRotation(rp.position, rp.rotation);
+            if (dof) dof.active = paused;
+            ui.UpdateRoue();
+            return;
+        }
         if (inGame && (qz != null || bac != null))
         {
             var qp = tvCloseUp ? qview.TennaPose : qview.CamPose;

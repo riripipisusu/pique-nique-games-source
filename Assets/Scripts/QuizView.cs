@@ -59,6 +59,7 @@ public class QuizView : MonoBehaviour
         }
         if (q == null) { if (qRoot != null) qRoot.style.display = DisplayStyle.None; return; }
         if (qRoot == null) BuildQuestionPanel();
+        if (qBoard != null) HideBoard();
         qRoot.style.display = DisplayStyle.Flex;
         qTopic.text = Topic(q);
         qText.text = q.q;
@@ -106,6 +107,49 @@ public class QuizView : MonoBehaviour
             var e = new VisualElement(); e.AddToClassList("tq-img"); e.AddToClassList("tq-img-img");
             qMedia.Add(e); pendingMedia.Add((e, q.u));
         }
+    }
+
+    // --- Roue de la fortune : tableau de l'enigme sur l'ecran geant (cases facon jeu tele) --------------
+    VisualElement qBoard;
+    public void ShowBoard(string top, string answer, System.Func<int, bool> shown, string footer)
+    {
+        if (qRoot == null) BuildQuestionPanel();
+        showingQuestion = true;
+        qRoot.style.display = DisplayStyle.Flex;
+        foreach (var e in new VisualElement[] { qText, qAnswer, qFact, qMedia, qProps[0].parent }) e.style.display = DisplayStyle.None;
+        qTopic.text = top;
+        if (qBoard == null) { qBoard = new VisualElement(); qBoard.AddToClassList("rf-board"); qRoot.Add(qBoard); }
+        qBoard.style.display = DisplayStyle.Flex;
+        qBoard.Clear();
+        // Coupe en lignes de 14 cases au plus (4 lignes), en gardant les mots entiers.
+        var lines = new List<(int start, int len)>();
+        int i = 0;
+        while (i < answer.Length)
+        {
+            int end = Mathf.Min(answer.Length, i + 14);
+            if (end < answer.Length) { int sp = answer.LastIndexOf(' ', end, end - i); if (sp > i) end = sp; }
+            lines.Add((i, end - i));
+            i = end;
+            while (i < answer.Length && answer[i] == ' ') i++;
+        }
+        foreach (var (start, len) in lines)
+        {
+            var row = new VisualElement(); row.AddToClassList("rf-row"); qBoard.Add(row);
+            for (int k = 0; k < len; k++)
+            {
+                int idx = start + k; char c = answer[idx];
+                var cell = new Label(); cell.AddToClassList("rf-cell");
+                if (c == ' ') cell.AddToClassList("rf-space");
+                else { cell.AddToClassList("rf-tile"); cell.text = shown(idx) ? c.ToString() : ""; }
+                row.Add(cell);
+            }
+        }
+        var foot = new Label(footer ?? ""); foot.AddToClassList("rf-foot"); qBoard.Add(foot);
+    }
+    public void HideBoard()
+    {
+        if (qBoard != null) qBoard.style.display = DisplayStyle.None;
+        foreach (var e in new VisualElement[] { qText, qAnswer, qFact, qProps[0].parent }) e.style.display = DisplayStyle.Flex;
     }
 
     // --- Medias du grand quiz -------------------------------------------------------------

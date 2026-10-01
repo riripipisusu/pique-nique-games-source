@@ -71,7 +71,7 @@ public class QuiSuisJeView : MonoBehaviour
             s.text = new GameObject("nom").AddComponent<TextMesh>();
             s.text.transform.SetParent(s.postit, false);
             s.text.transform.localPosition = new Vector3(0, 0, -0.003f);
-            s.text.font = font; s.text.GetComponent<MeshRenderer>().sharedMaterial = font.material;
+            s.text.font = font; s.text.GetComponent<MeshRenderer>().sharedMaterial = RoueView.TextMat(font);
             s.text.fontSize = 96; s.text.anchor = TextAnchor.MiddleCenter; s.text.alignment = TextAlignment.Center;
             s.text.fontStyle = FontStyle.Bold; s.text.color = Board.Hex("2e1b10");
             if (i == me)

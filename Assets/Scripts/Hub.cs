@@ -111,6 +111,11 @@ public class Hub : MonoBehaviour
 
     // La bande discute : de temps en temps, quelqu'un parle, rit ou applaudit, puis se rassoit tranquillement.
     readonly List<Animator> friendAn = new List<Animator>();
+    public void ShowFriends(bool on)
+    {
+        foreach (var an in friendAn) if (an) an.gameObject.SetActive(on);
+        foreach (var s in seats) if (s) s.gameObject.SetActive(on);
+    }   // l'illustration des menus a sa propre bande
     static readonly string[] Moods = { "SitDown", "SitDown", "SitTalk", "SitTalk", "SitLaugh", "SitClap" };
     float nextMood = 3;
     readonly List<Transform> seats = new List<Transform>();
