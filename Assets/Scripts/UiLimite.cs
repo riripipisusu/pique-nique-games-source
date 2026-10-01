@@ -20,7 +20,7 @@ public partial class Ui
     void BuildLimiteHud()
     {
         llHud = Div(hud, "layer"); llHud.pickingMode = PickingMode.Ignore;
-        llStatus = Text(llHud, "", "qsj-status"); llStatus.pickingMode = PickingMode.Ignore;
+        llStatus = Text(llHud, "", "qsj-status", "ll-status"); llStatus.pickingMode = PickingMode.Ignore;
         var black = Div(llHud, "ll-black"); black.pickingMode = PickingMode.Ignore;
         llBlack = Text(black, "", "ll-black-text"); llBlack.pickingMode = PickingMode.Ignore;
         llScores = Div(llHud, "panel", "ll-scores"); llScores.pickingMode = PickingMode.Ignore;
@@ -75,8 +75,10 @@ public partial class Ui
             : l.phase == LPhase.Play ? (iAmBoss ? $"Tu es le Boss ! Attends les réponses ({l.played.Count}/{l.players.Count - 1})  ·  {Mathf.CeilToInt(game.LimiteLeft)} s"
                 : l.played.ContainsKey(me) ? $"Réponse posée ! On attend les autres ({l.played.Count}/{l.players.Count - 1})"
                 : $"{l.Boss.name} est le Boss. Clique {(l.Blanks > 1 ? $"{l.Blanks} cartes de ta main (dans l'ordre des trous)" : "une carte de ta main")}  ·  {Mathf.CeilToInt(game.LimiteLeft)} s")
-            : l.phase == LPhase.Judge ? (!LimiteRevealDone ? $"{l.Boss.name} découvre les réponses..." : iAmBoss ? "Clique la meilleure réponse !" : $"{l.Boss.name} choisit la meilleure réponse...")
-            : $"{l.players[l.lastWinner].name} remporte la manche !";
+            : l.phase == LPhase.Judge ? (!LimiteRevealDone ? $"{l.Boss.name} découvre les réponses..."
+                : iAmBoss ? (l.Blanks > 1 ? $"Clique la meilleure réponse pour le trou {l.PickStep + 1} !" : "Clique la meilleure réponse !")
+                : l.Blanks > 1 ? $"{l.Boss.name} choisit pour le trou {l.PickStep + 1}..." : $"{l.Boss.name} choisit la meilleure réponse...")
+            : string.Join(" et ", l.picks.Distinct().Select(s => l.players[s].name)) + (l.picks.Distinct().Count() > 1 ? " marquent un point !" : " remporte la manche !");
     }
 
     void RefreshLimite()
@@ -103,7 +105,13 @@ public partial class Ui
 
         // La question en clair, remplie avec la reponse gagnante (ou la derniere decouverte).
         string[] shown = null;
-        if (l.phase == LPhase.Result && l.played.TryGetValue(l.lastWinner, out var w)) shown = w;
+        // Trous deja choisis : la reponse choisie ; trou en cours : la derniere reponse decouverte.
+        if (l.phase == LPhase.Result || l.phase == LPhase.Judge && l.picks.Count > 0)
+        {
+            var list = l.picks.Select((s, i) => l.played[s][i]).ToList();
+            if (l.phase == LPhase.Judge && llRevealed > 0) list.Add(l.played[l.order[llRevealed - 1]][Mathf.Min(list.Count, l.Blanks - 1)]);
+            shown = list.ToArray();
+        }
         else if (l.phase == LPhase.Judge && llRevealed > 0) shown = l.played[l.order[llRevealed - 1]];
         if (shown != null) shown = shown.Select(x => x.StartsWith("*") ? x.Substring(1) : x).ToArray();
         llBlack.text = shown != null ? Limite.Fill(l.question, shown, "<color=#FF5A5A>", "</color>") : l.question.Replace("_", "______");
@@ -117,7 +125,7 @@ public partial class Ui
             Div(row, "rf-dot").style.backgroundColor = Board.Colors[p.seat % Board.Colors.Length];
             string tag = p.seat == l.boss ? "  ★ BOSS" : l.phase == LPhase.Play ? (l.played.ContainsKey(p.seat) ? "  ✔" : "  ...") : "";
             Text(row, $"{p.name} : {p.score} pt{(p.score > 1 ? "s" : "")}{tag}", "rf-money-line");
-            if (p.seat == l.lastWinner && l.phase == LPhase.Result) row.AddToClassList("rf-active");
+            if (l.picks.Contains(p.seat) && l.phase == LPhase.Result) row.AddToClassList("rf-active");
         }
         llStatus.text = LlStatus();
 
@@ -135,8 +143,26 @@ public partial class Ui
         llHint.text = (l.Blanks > 1 ? $"{l.Blanks} trous : clique {l.Blanks} cartes dans l'ordre." : "Clique une carte de ta main (survole pour la lire).")
             + (picked.Count > 0 ? "   Choix : " + string.Join("  puis  ", picked) : "");
         llSend.SetEnabled(llSel.Count == l.Blanks);
+        llHandBox.style.visibility = llSel.Count == l.Blanks ? Visibility.Visible : Visibility.Hidden;   // la bulle n'apparait qu'une fois le choix complet
     }
 
     // Chaque image : seulement le chrono de la consigne (reconstruire ferait perdre le texte en cours de frappe).
-    public void UpdateLimite() { if (game.ll != null && Time.frameCount % 20 == 0) llStatus.text = LlStatus(); }
+    public void UpdateLimite()
+    {
+        if (game.ll == null) return;
+        if (Time.frameCount % 20 == 0) llStatus.text = LlStatus();
+        // Bulle "Poser" au-dessus de la derniere carte choisie (elle suit la carte, qui se souleve).
+        if (llHandBox.style.display == DisplayStyle.Flex && llSel.Count > 0 && llHud.panel != null && Camera.main)
+        {
+            var c = game.lview.MineWith(llSel[llSel.Count - 1]);
+            if (c)
+            {
+                var sp = RuntimePanelUtils.CameraTransformWorldToPanel(llHud.panel, c.transform.position + Vector3.up * 0.02f, Camera.main);
+                float w = float.IsNaN(llHandBox.resolvedStyle.width) ? 200 : llHandBox.resolvedStyle.width;
+                float h = float.IsNaN(llHandBox.resolvedStyle.height) ? 80 : llHandBox.resolvedStyle.height;
+                llHandBox.style.left = sp.x - w / 2;
+                llHandBox.style.top = sp.y - h - 55;
+            }
+        }
+    }
 }

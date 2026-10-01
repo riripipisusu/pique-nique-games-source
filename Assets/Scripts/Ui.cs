@@ -608,6 +608,7 @@ public partial class Ui : MonoBehaviour
             S("Le but", "Le premier à atteindre le nombre de points choisi (5 par défaut) gagne. Il faut au moins 3 joueurs.");
             S("Une manche", "Chacun a 7 cartes rouges (des réponses). Le Boss retourne une carte noire, une question à trou. Les autres posent face cachée la carte de leur main qui la complète le mieux (ou le pire). Une question à deux trous : on pose deux cartes, dans l'ordre.");
             S("Le Boss choisit", "Quand tout le monde a joué, les réponses sont découvertes une à une, mélangées. Le Boss choisit sa préférée : un point pour son auteur, qui devient le Boss de la manche suivante. Chacun repioche pour avoir 7 cartes.");
+            S("Plusieurs trous", "Sur une question à deux trous, le Boss choisit trou par trou : la meilleure réponse au premier trou, puis au second. Chaque choix rapporte un point, donc deux joueurs peuvent marquer. Le gagnant du premier trou devient le Boss.");
             S("Le temps", "75 secondes pour poser, une minute pour choisir. Au-delà, le jeu joue au hasard pour les retardataires.");
         }
         else if (game.gameId == GameId.Pouilleux)

@@ -8,7 +8,7 @@ public partial class Game
 {
     public Limite ll;
     public LimiteView lview;
-    float llDist = 1.05f;
+    float llDist = 1.35f;
     float llPhaseAt, llBotAt;
     LPhase llLastPhase;
     public float LimiteLeft => Mathf.Max(0, (ll != null && ll.phase == LPhase.Play ? 75 : 60) - (Time.time - llPhaseAt));
@@ -32,13 +32,13 @@ public partial class Game
             {
                 case LEv.Round:
                     ui.LimiteNewRound();
-                    Sound.I.Play("bj_flip");
+                    Sound.I.Play("bj_shuffle", 0.6f);
                     break;
-                case LEv.Played: Sound.I.Play(Random.value < 0.5f ? "bj_place1" : "bj_place2", 0.7f); break;
+                case LEv.Played: break;   // le son vient des cartes qui se posent (LimiteView)
                 case LEv.Reveal: ui.Say($"{ll.Boss.name} découvre les réponses...", 2.2f); Sound.I.Play("open"); break;
                 case LEv.Win:
-                    ui.Say($"{ll.players[e.seat].name} remporte la manche !", 3);
-                    Sound.I.Play("win");
+                    ui.Say(ll.Blanks > 1 ? $"Trou {ll.picks.Count} : « {e.text} » de {ll.players[e.seat].name} ! +1" : $"{ll.players[e.seat].name} remporte la manche !", 3);
+                    Sound.I.Play("win"); Sound.I.Play("bj_chips", 0.6f);
                     break;
                 case LEv.Over: StartCoroutine(LimiteEnd()); break;
             }
@@ -102,6 +102,12 @@ public partial class Game
         yield return new WaitForSeconds(2); yield return shot("l1-main");
         var mine = lview.AnyMine();
         if (mine) { lview.hover = mine; ui.LimitePreview(mine); yield return new WaitForSeconds(0.6f); yield return shot("l1b-survol"); ui.LimitePreview(null); lview.hover = null; }
+        if (ll.boss != MySeatOr0)   // bulle "Poser" au-dessus de la carte choisie
+        {
+            foreach (var t in ll.players[MySeatOr0].hand.Take(ll.Blanks)) ui.LimiteToggle(t);
+            yield return new WaitForSeconds(0.8f); yield return shot("l1c-poser");
+            foreach (var t in ll.players[MySeatOr0].hand.Take(ll.Blanks)) ui.LimiteToggle(t);
+        }
         bool judgeShot = false, resultShot = false, bossShot = false;
         int n = 0;
         while (!ll.Finished && n < 400)

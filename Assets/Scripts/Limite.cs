@@ -4,6 +4,7 @@ using System.Linq;
 
 // Limite Limite (Blanc Manger Coco) : chacun a 7 cartes blanches (reponses). Le Boss retourne une carte noire
 // (question a trous "_") ; les autres posent face cachee autant de cartes de leur main qu'il y a de trous. Le Boss les decouvre et choisit sa preferee : un point pour son auteur, qui devient le Boss.
+// Question a plusieurs trous : le Boss choisit trou par trou (plusieurs gagnants possibles).
 // Tout le monde recomplete sa main a 7. Le premier a N points gagne.
 // Option : bit 0 = paquet "Streamer" (plus soft) ; bits 1-2 = points pour gagner (5, 7, 10).
 // Cartes : Resources/Limite/cartes.json (hors depot), meme ordre partout grace a la graine.
@@ -39,6 +40,8 @@ public class Limite : IMatch
     public readonly int target;
     public LPhase phase = LPhase.Play;
     public int boss, round, lastWinner = -1;
+    public readonly List<int> picks = new List<int>();   // gagnant de chaque trou deja choisi (jugement)
+    public int PickStep => picks.Count;
     public string question;
     public int Blanks => Math.Max(1, CountBlanks(question));
     public readonly Dictionary<int, string[]> played = new Dictionary<int, string[]>();
@@ -87,7 +90,7 @@ public class Limite : IMatch
         round++;
         if (qi >= qDeck.Count) qi = 0;
         question = qDeck[qi++];
-        played.Clear(); order.Clear();
+        played.Clear(); order.Clear(); picks.Clear();
         phase = LPhase.Play;
         events.Add(new LEvent { type = LEv.Round, seat = boss, text = question });
         log.Add($"Manche {round} : {Boss.name} est le Boss.");
@@ -121,22 +124,29 @@ public class Limite : IMatch
             case "pick":   // pick|siege : le Boss choisit la reponse de ce joueur
             {
                 if (phase != LPhase.Judge || a.Length < 2 || !int.TryParse(a[1], out int w) || !played.ContainsKey(w)) return false;
+                int step = picks.Count;
                 players[w].score++;
-                lastWinner = w;
-                phase = LPhase.Result;
-                var full = Fill(question, played[w], "« ", " »");
-                events.Add(new LEvent { type = LEv.Win, seat = w, text = full });
-                log.Add($"{Boss.name} choisit {players[w].name} : {full}");
+                picks.Add(w);
+                if (step == 0) lastWinner = w;   // le gagnant du 1er trou devient le Boss
+                string answer = played[w][Math.Min(step, played[w].Length - 1)];
+                events.Add(new LEvent { type = LEv.Win, seat = w, text = answer });
+                log.Add(Blanks > 1 ? $"Trou {step + 1} : {Boss.name} choisit « {answer} » de {players[w].name} (+1)" : $"{Boss.name} choisit {players[w].name} : {Fill(question, played[w], "« ", " »")}");
+                if (picks.Count >= Blanks)
+                {
+                    phase = LPhase.Result;
+                    if (Blanks > 1) log.Add("Résultat : " + Fill(question, picks.Select((s, i) => played[s][i]).ToList(), "« ", " »"));
+                }
                 return true;
             }
             case "next":   // l'hote, apres le resultat : la main passe au gagnant, tout le monde recomplete
             {
                 if (phase != LPhase.Result) return false;
-                if (players[lastWinner].score >= target)
+                var best = players.OrderByDescending(p => p.score).First();
+                if (best.score >= target)
                 {
                     phase = LPhase.Over;
-                    events.Add(new LEvent { type = LEv.Over, seat = lastWinner });
-                    log.Add($"{players[lastWinner].name} gagne la partie !");
+                    events.Add(new LEvent { type = LEv.Over, seat = best.seat });
+                    log.Add($"{best.name} gagne la partie !");
                     return true;
                 }
                 foreach (var p in players) Refill(p);

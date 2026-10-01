@@ -12,7 +12,7 @@ public class LimiteView : MonoBehaviour
 {
     public const float W = 0.08f, H = 0.112f, Th = 0.002f;       // carte reponse (rouge)
     const float QW = 0.1f, QH = 0.14f;                            // carte question (noire)
-    const float Rad = 0.5f;                                       // places des joueurs autour du centre
+    const float Rad = 0.44f;                                       // places des joueurs autour du centre
     static readonly Vector3 Mid = new Vector3(0, 0.03f, 0.5f);    // centre de la nappe
 
     public class Card : MonoBehaviour
@@ -21,11 +21,12 @@ public class LimiteView : MonoBehaviour
         public Vector3 pos; public Quaternion rot; public float scale = 1;
         public TextMesh front; public Renderer body;
         public bool gone;   // sortie : vole a la defausse puis disparait
+        public bool winner; public GameObject halo;   // reponse choisie par le Boss : dore et rebondit
     }
 
     Limite ll;
     int me;
-    Material lit, red, redSel, black, felt, rim;
+    Material lit, red, redSel, black, felt, rim, gold;
     Font font;
     Transform root, plates;
     readonly Dictionary<string, Card> cards = new Dictionary<string, Card>();
@@ -42,6 +43,8 @@ public class LimiteView : MonoBehaviour
         font = Resources.Load<Font>("Fonts/SairaCondensed-ExtraBold") ?? Resources.Load<Font>("Fonts/Fredoka-Bold");
         red = Mat("d7202a", 0.25f); redSel = Mat("f0333d", 0.35f); black = Mat("141317", 0.3f);
         felt = Mat("1d4d33", 0.05f); rim = Mat("5a3a22", 0.3f);
+        gold = new Material(Resources.Load<Material>("LitGlow") ?? lit) { color = Board.Hex("f7df2e") };
+        if (gold.HasProperty("_EmissionColor")) gold.SetColor("_EmissionColor", Board.Hex("f7c400") * 1.6f);
         gameObject.SetActive(false);
     }
 
@@ -61,10 +64,11 @@ public class LimiteView : MonoBehaviour
     int N => ll.players.Count;
     float AngleOf(int s) => ((s - me + N) % N) * 360f / N;                       // moi en bas (angle 0), les autres autour
     Quaternion Toward(int s) => Quaternion.Euler(0, AngleOf(s), 0);               // "haut" de la carte : vers le centre
-    Vector3 Spot(int s, float r) => Mid + Toward(s) * new Vector3(0, 0, -r);
+    // Le cote oppose est resserre vers le centre (la camera est penchee : sinon le joueur d'en face sort de l'ecran).
+    Vector3 Spot(int s, float r) => Mid + Toward(s) * new Vector3(0, 0, -r);   // meme cercle pour tous : table symetrique
     Quaternion FaceUp(Quaternion yawRot) => yawRot;                               // a plat, face visible
     Quaternion FaceDown(Quaternion yawRot) => yawRot * Quaternion.Euler(0, 0, 180);
-    static readonly Vector3 RedDeck = Mid + new Vector3(0.17f, 0, 0.1f), BlackDeck = Mid + new Vector3(-0.17f, 0, 0.1f), Discard = Mid + new Vector3(0, 0, 0.3f);
+    static readonly Vector3 RedDeck = Mid + new Vector3(0.13f, 0, 0.06f), BlackDeck = Mid + new Vector3(-0.13f, 0, 0.06f), Discard = Mid + new Vector3(0.24f, 0, 0.06f);
 
     public void Build(Limite l, int mySeat)
     {
@@ -87,7 +91,7 @@ public class LimiteView : MonoBehaviour
         for (int s = 0; s < N; s++)
         {
             // Plaque sombre sous le nom : lisible sur les carreaux de la nappe.
-            float pr = s == me ? Rad + 0.035f : Rad + 0.14f;   // la mienne juste sous ma main (sinon hors de l'ecran)
+            float pr = Rad + 0.11f;
             var plate = Prim(PrimitiveType.Cube, plates, Spot(s, pr) - Vector3.up * 0.001f, new Vector3(0.34f, 0.002f, 0.07f), black);
             plate.transform.localRotation = Toward(s);
             names.Add(Label(plates, Spot(s, pr) + Vector3.up * 0.001f, Toward(s), ll.players[s].name, 0.0042f, Color.Lerp(Board.Colors[s % Board.Colors.Length], Color.white, 0.35f)));
@@ -162,12 +166,15 @@ public class LimiteView : MonoBehaviour
         var keep = new HashSet<string>();
         void Place(string key, string text, bool isBlack, Vector3 pos, Quaternion rot, Vector3 from, Quaternion fromRot, int seat = -1, bool mine = false, float scale = 1)
         {
-            if (!cards.TryGetValue(key, out var c) || !c) c = Make(key, text, isBlack, from, fromRot);
+            bool fresh = !cards.TryGetValue(key, out var c) || !c;
+            if (fresh) { c = Make(key, text, isBlack, from, fromRot); if (!snap) Sfx(isBlack ? "bj_slide2" : Random.value < 0.5f ? "bj_slide1" : "bj_slide2", 0.5f); }
+            else if (!snap && Vector3.Dot(c.rot * Vector3.up, rot * Vector3.up) < 0) Sfx("bj_flip", 0.7f);   // la carte se retourne
+            else if (!snap && Vector3.Distance(c.pos, pos) > 0.15f) Sfx(Random.value < 0.5f ? "bj_place1" : "bj_place2", 0.45f);   // elle change de place
             c.pos = pos; c.rot = rot; c.seat = seat; c.mine = mine; c.scale = scale; c.gone = false;
             keep.Add(key);
         }
         // Question du tour : de la pioche noire au centre, face visible tournee vers moi.
-        Place("q" + ll.round, ll.question, true, Mid + new Vector3(0, 0.002f, 0.1f), FaceUp(Quaternion.identity), BlackDeck + Vector3.up * 0.01f, FaceDown(Quaternion.identity));
+        Place("q" + ll.round, ll.question, true, Mid + new Vector3(0, 0.002f, 0.06f), FaceUp(Quaternion.identity), BlackDeck + Vector3.up * 0.01f, FaceDown(Quaternion.identity));
         // Mains : la mienne en eventail devant moi (face visible), celles des autres de dos devant eux.
         for (int s = 0; s < N; s++)
         {
@@ -176,13 +183,13 @@ public class LimiteView : MonoBehaviour
             for (int i = 0; i < hand.Count; i++)
             {
                 float t = i - (hand.Count - 1) / 2f;
-                var yawRot = Toward(s) * Quaternion.Euler(0, t * (mineSeat ? 4 : 8), 0);
-                var p = Spot(s, mineSeat ? Rad - 0.1f : Rad) + Toward(s) * new Vector3(t * (mineSeat ? W * 1.04f : W * 0.35f), 0.001f + i * 0.0006f, -Mathf.Abs(t) * 0.004f);
+                var yawRot = Toward(s) * Quaternion.Euler(0, t * 4, 0);
+                var p = Spot(s, Rad) + Toward(s) * new Vector3(t * (mineSeat ? W * 1.04f : W * 0.55f), 0.001f + i * 0.0006f, -Mathf.Abs(t) * 0.004f);
                 string text = hand[i];
                 string key = mineSeat ? $"h{s}:{text}:{hand.Take(i).Count(x => x == text)}" : $"h{s}:{i}";
                 bool sel = mineSeat && selection.Contains(text);
                 if (sel) p += Toward(s) * new Vector3(0, 0.01f, 0.03f);
-                Place(key, mineSeat ? text : null, false, p, mineSeat ? FaceUp(yawRot) : FaceDown(yawRot), RedDeck + Vector3.up * 0.01f, FaceDown(Quaternion.identity), s, mineSeat, mineSeat ? 1.25f : 0.8f);
+                Place(key, mineSeat ? text : null, false, p, mineSeat ? FaceUp(yawRot) : FaceDown(yawRot), RedDeck + Vector3.up * 0.01f, FaceDown(Quaternion.identity), s, mineSeat, mineSeat ? 1.2f : 0.9f);
             }
         }
         // Cartes jouees : face cachee devant chaque joueur, puis au centre (melangees) pour le jugement.
@@ -201,14 +208,15 @@ public class LimiteView : MonoBehaviour
                     float gw = per * W + 0.012f;
                     float x = (slot - (n - 1) / 2f) * Mathf.Min(gw + 0.02f, 0.95f / Mathf.Max(1, n - 1)) + (j - (per - 1) / 2f) * W * 1.02f;
                     bool open = ll.phase == LPhase.Result || slot < revealed;
-                    bool win = ll.phase == LPhase.Result && s == ll.lastWinner;
-                    pos = Mid + new Vector3(x, win ? 0.03f : 0.002f, -0.08f);
+                    bool win = j < ll.picks.Count && ll.picks[j] == s;   // reponse choisie pour ce trou
+                    pos = Mid + new Vector3(x, win ? 0.03f : 0.004f, -0.1f);
                     rot = open ? FaceUp(Quaternion.identity) : FaceDown(Quaternion.identity);
                     Place($"p{ll.round}:{s}:{j}", kv.Value[j].StartsWith("*") ? kv.Value[j].Substring(1) : kv.Value[j], false, pos, rot, Spot(s, Rad), FaceDown(Toward(s)), s, false, win ? 1.35f : 1.15f);
+                    cards[$"p{ll.round}:{s}:{j}"].winner = win;
                 }
                 else
                 {
-                    pos = Spot(s, s == me ? Rad - 0.25f : Rad - 0.12f) + Toward(s) * new Vector3((j - (kv.Value.Length - 1) / 2f) * W * 0.7f, 0.002f + j * 0.001f, 0);
+                    pos = Spot(s, Rad - 0.15f) + Toward(s) * new Vector3((j - (kv.Value.Length - 1) / 2f) * W * 0.7f, 0.002f + j * 0.001f, 0);
                     Place($"p{ll.round}:{s}:{j}", kv.Value[j].StartsWith("*") ? kv.Value[j].Substring(1) : kv.Value[j], false, pos, FaceDown(Toward(s)), Spot(s, Rad), FaceDown(Toward(s)), s);
                 }
             }
@@ -234,8 +242,13 @@ public class LimiteView : MonoBehaviour
             }
         for (int s = 0; s < names.Count; s++)
             if (names[s]) names[s].text = ll.players[s].name + (s == ll.boss ? "  ★ BOSS" : "") + $"  ({ll.players[s].score})";
+        foreach (var c in cards.Values) if (c && !keep.Contains(c.key)) c.winner = false;
         if (snap) foreach (var c in cards.Values) if (c) { c.transform.localPosition = c.pos; c.transform.localRotation = c.rot; }
     }
+
+    // Sons des cartes : un a la fois au plus toutes les 60 ms (une distribution ne fait pas un vacarme).
+    float sfxAt;
+    void Sfx(string n, float vol) { if (Time.time < sfxAt) return; sfxAt = Time.time + 0.06f; Sound.I.Play(n, vol, 0.12f); }
 
     void Update()
     {
@@ -251,11 +264,25 @@ public class LimiteView : MonoBehaviour
             t.localPosition = Vector3.Lerp(t.localPosition, d < 0.01f ? c.pos : target, k);
             t.localRotation = Quaternion.Slerp(t.localRotation, c.rot, k);
             float sc = (c == hover && !c.gone ? 1.08f : 1) * c.scale;
+            if (c.winner) sc *= 1 + 0.05f * Mathf.Abs(Mathf.Sin(Time.time * 4));   // la gagnante rebondit
             t.localScale = Vector3.Lerp(t.localScale, Vector3.one * sc, k);
+            // Halo dore autour de la reponse choisie.
+            if (c.winner && !c.halo)
+            {
+                c.halo = GameObject.CreatePrimitive(PrimitiveType.Cube);
+                Destroy(c.halo.GetComponent<Collider>());
+                c.halo.transform.SetParent(c.transform, false);
+                c.halo.transform.localPosition = new Vector3(0, -Th, 0);
+                c.halo.transform.localScale = new Vector3(W * 1.18f, Th * 0.5f, H * 1.14f);
+                c.halo.GetComponent<Renderer>().sharedMaterial = gold;
+            }
+            if (c.halo) c.halo.SetActive(c.winner);
             if (c.gone && d < 0.01f) { cards.Remove(c.key); Destroy(c.gameObject); }
         }
     }
 
+    // Ma carte (dans la main) qui porte ce texte : pour placer la bulle "Poser" au-dessus.
+    public Card MineWith(string text) => cards.Values.FirstOrDefault(c => c && c.mine && c.text == text);
     public Card AnyMine() => cards.Values.FirstOrDefault(c => c && c.mine);   // autotest : apercu d'une carte de ma main
 
     // --- Souris ---------------------------------------------------------------------------------------------------------
@@ -275,8 +302,8 @@ public class LimiteView : MonoBehaviour
     // --- Camera : depuis ma place, en hauteur, tournee vers le centre --------------------------------------------------------
     public Pose CamPose(float dist)
     {
-        var center = transform.TransformPoint(Mid + Quaternion.Euler(0, yaw, 0) * new Vector3(0, 0, -0.17f));
-        var from = center + Quaternion.Euler(62, yaw, 0) * Vector3.back * dist;
+        var center = transform.TransformPoint(Mid + Quaternion.Euler(0, yaw, 0) * new Vector3(0, 0, -0.04f));
+        var from = center + Quaternion.Euler(72, yaw, 0) * Vector3.back * dist;
         return new Pose(from, Quaternion.LookRotation(center - from));
     }
     public void Turn(float dx) => yaw = Mathf.Clamp(yaw + dx, -60, 60);
