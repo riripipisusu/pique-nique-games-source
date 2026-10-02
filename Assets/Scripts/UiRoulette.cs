@@ -154,6 +154,13 @@ public partial class Ui
         return root.panel.Pick(p) != null;
     }
 
+    public string PickName(Vector2 screen)   // diagnostic : l'element d'interface sous ce point
+    {
+        if (root.panel == null) return "";
+        var e = root.panel.Pick(RuntimePanelUtils.ScreenToPanel(root.panel, new Vector2(screen.x, UnityEngine.Screen.height - screen.y)));
+        return e == null ? "" : e.GetType().Name + "." + string.Join(".", e.GetClasses());
+    }
+
     void ResetRouletteBets() { rtBets.Clear(); rtFor = rtRound = -1; }
 
     void RefreshRoulette()

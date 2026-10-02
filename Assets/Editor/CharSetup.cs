@@ -62,6 +62,7 @@ public static class CharSetup
             if (state == "Idle") sm.defaultState = st;
         }
 
+        LoupSetup.AgrouLayer(ctrl);   // gestes d'Agrou (si les animations ont ete importees)
         // (Les personnages eux-memes viennent du pack Sidekick : SidekickSetup.)
         AssetDatabase.SaveAssets();
     }

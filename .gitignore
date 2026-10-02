@@ -92,3 +92,13 @@
 # Limite Limite : texte des cartes du jeu commercial (fourni) : dans les builds, pas dans le depot
 /Assets/Resources/Limite/
 /Assets/Resources/Limite.meta
+
+# Loup-garou : cartes illustrees fournies (ancien projet) : dans les builds, pas dans le depot
+/Assets/Resources/LoupGarou/
+/Assets/Resources/LoupGarou.meta
+/loup garou/
+/Assets/Resources/Audio/wg/
+/Assets/Resources/Audio/wg.meta
+/AgrouCache/
+/Assets/Resources/Agrou/
+/Assets/Resources/Agrou.meta

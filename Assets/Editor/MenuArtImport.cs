@@ -6,7 +6,7 @@ public class MenuArtImport : AssetPostprocessor
 {
     void OnPreprocessTexture()
     {
-        if (!assetPath.Contains("/MMRes/Resources/UI/")) return;
+        if (!assetPath.Contains("/MMRes/Resources/UI/") && !assetPath.Contains("/Resources/LoupGarou/")) return;   // + cartes du loup-garou
         var t = (TextureImporter)assetImporter;
         t.npotScale = TextureImporterNPOTScale.None;
         t.mipmapEnabled = false;

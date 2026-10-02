@@ -247,6 +247,7 @@ public partial class Ui : MonoBehaviour
         [GameId.Serpents] = ("serpents", 0, "2 à 4 joueurs · Plateau", "Grimpe aux échelles, évite les serpents : vise la case 100 !"),
         [GameId.Roue] = ("roue", 2, "1 à 6 joueurs · Lettres", "Tourne la roue, trouve les lettres... et gare à la banqueroute !"),
         [GameId.QuiSuisJe] = ("quisuisje", 0, "1 à 8 joueurs · Devinettes", "Un post-it sur le front : devine qui tu es ! Contre des bots ou en ligne."),
+        [GameId.LoupGarou] = ("loupgarou", 0, "4 à 12 joueurs · Rôles cachés", "La nuit, les loups dévorent. Le jour, le village vote. 23 rôles : qui ment ?"),
         [GameId.Limite] = ("limite", 0, "3 à 10 joueurs · Cartes", "Une question à trou, vos pires réponses : le Boss choisit sa préférée. Humour noir !"),
         [GameId.Pouilleux] = ("pouilleux", 0, "2 à 6 joueurs · Cartes", "Pioche chez ton voisin, jette tes paires... et ne finis pas avec le valet de pique !"),
         [GameId.Uno] = ("uno", 0, "2 à 10 joueurs · Cartes", "Même couleur ou même symbole, et n'oublie pas de crier UNO !"),
@@ -275,7 +276,34 @@ public partial class Ui : MonoBehaviour
     void ThemeChips(VisualElement parent, GameId g, int option, Action<int> pick, string text = null, Action<string> setText = null)
     {
         parent.Clear();
-        parent.style.display = g == GameId.Trivia || g == GameId.Uno || g == GameId.Bac || g == GameId.QuiSuisJe || g == GameId.Limite ? DisplayStyle.Flex : DisplayStyle.None;
+        parent.style.display = g == GameId.Trivia || g == GameId.Uno || g == GameId.Bac || g == GameId.QuiSuisJe || g == GameId.Limite || g == GameId.LoupGarou ? DisplayStyle.Flex : DisplayStyle.None;
+        if (g == GameId.LoupGarou)
+        {
+            Text(parent, "Rôles spéciaux (les loups s'ajoutent tout seuls : 1 pour 4 joueurs)", "h2");
+            var wrow = Div(parent, "row", "theme-row");
+            foreach (var r in LoupGarou.Specials)
+            {
+                int bit = LoupGarou.Bit(r);
+                var chip = new Button(() => { Sound.I.UI("tick"); pick(option ^ bit); }) { text = LoupGarou.Name(r) };
+                chip.AddToClassList("theme-chip");
+                chip.AddToClassList(LoupGarou.TeamOf(r) == Team.Loups ? "wg-chip-loup" : LoupGarou.TeamOf(r) == Team.Seul ? "wg-chip-seul" : "wg-chip-village");
+                chip.EnableInClassList("selected", (option & bit) != 0);
+                wrow.Add(chip);
+            }
+            Text(parent, "Lieu", "h2");
+            var mrow = Div(parent, "row", "theme-row");
+            int cur = LoupGarou.MapOf(option);
+            for (int k = 0; k <= AgrouMap.All.Length; k++)
+            {
+                int m = k == AgrouMap.All.Length ? AgrouMap.Random : k;
+                if (m != AgrouMap.Random && !AgrouMap.Available(m)) continue;
+                var chip = new Button(() => { Sound.I.UI("tick"); pick(LoupGarou.WithMap(option, m)); }) { text = m == AgrouMap.Random ? "Au hasard" : AgrouMap.All[m].name };
+                chip.AddToClassList("theme-chip");
+                chip.EnableInClassList("selected", cur == m);
+                mrow.Add(chip);
+            }
+            return;
+        }
         if (g == GameId.Limite)
         {
             Text(parent, "Points pour gagner", "h2");
@@ -379,6 +407,7 @@ public partial class Ui : MonoBehaviour
     {
         // Grand quiz : les cartes ne changent que le mode (bit 0), les themes sont gardes.
         if (game.gameId == GameId.Trivia) { int keep = current & ~1; var raw = pick; pick = v => raw(v | keep); current &= 1; }
+        if (game.gameId == GameId.LoupGarou) { parent.Clear(); return; }   // tout est dans les roles (ThemeChips)
         if (game.gameId == GameId.Limite) { int keep = current & ~1; var raw = pick; pick = v => raw(v | keep); current &= 1; }
         if (game.gameId == GameId.QuiSuisJe) { int keep = current & ~1; var raw = pick; pick = v => raw(v | keep); current &= 1; }
         if (game.gameId == GameId.Uno || game.gameId == GameId.Bac) { int keep = current & ~3; var raw = pick; pick = v => raw(v | keep); current &= 3; }   // les regles maison sont gardees
@@ -603,6 +632,14 @@ public partial class Ui : MonoBehaviour
             S("Les points", "Trouver en peu de questions rapporte plus : 12 points moins le nombre de questions (2 au minimum), et 3 de bonus pour le premier. Les points s'additionnent d'une manche à l'autre.");
             S("La vue", "Tu es assis autour de la nappe : clic droit pour tourner la tête, molette pour zoomer, clic sur un joueur pour lire son post-it de près.");
         }
+        else if (game.gameId == GameId.LoupGarou)
+        {
+            S("Le but", "Chaque joueur reçoit une carte en secret. Les loups-garous doivent dévorer les villageois, le village doit démasquer les loups, et certains rôles jouent seuls. Il faut au moins 4 joueurs.");
+            S("La nuit", "L'écran s'assombrit. Chaque rôle qui a un pouvoir se réveille et agit en même temps : clique sur un joueur (sa tête) pour le cibler. Les loups votent ensemble leur victime et discutent dans leur chat. Puis la Sorcière se réveille.");
+            S("Le jour", "Les morts de la nuit sont annoncés (et leur carte révélée). Le premier jour, on élit un maire, qui tranche les égalités. Puis le village débat (sur Discord ou dans le chat) et vote : le joueur qui a le plus de voix est éliminé.");
+            S("Les morts", "Un mort voit toutes les cartes et parle avec les autres morts (le Nécromancien les entend la nuit). Le Chasseur tire en mourant, le maire désigne son successeur.");
+            S("Les camps", "Vert : tu gagnes avec le village. Rouge : avec les loups-garous. Bleu : tu gagnes seul. Lis bien ta carte (clique-la en haut à gauche pour la revoir) !");
+        }
         else if (game.gameId == GameId.Limite)
         {
             S("Le but", "Le premier à atteindre le nombre de points choisi (5 par défaut) gagne. Il faut au moins 3 joueurs.");
@@ -732,6 +769,7 @@ public partial class Ui : MonoBehaviour
         BuildQuiSuisJeHud();
         BuildRoueHud();
         BuildLimiteHud();
+        BuildLoupHud();
 
         var bannerRow = Div(hud, "banner-row");
         bannerRow.pickingMode = PickingMode.Ignore;
@@ -756,6 +794,7 @@ public partial class Ui : MonoBehaviour
         rfHud.style.display = game.roue != null ? DisplayStyle.Flex : DisplayStyle.None;
         qsHud.style.display = game.qsj != null ? DisplayStyle.Flex : DisplayStyle.None;
         llHud.style.display = game.ll != null ? DisplayStyle.Flex : DisplayStyle.None;
+        wgHud.style.display = game.wg != null ? DisplayStyle.Flex : DisplayStyle.None;
         if (game.ll != null) LimiteNewRound();
         qsTags.Clear(); qsTagEls.Clear(); qsBubbles.Clear(); qsBubbleUntil.Clear();
         pqHud.style.display = game.pq != null ? DisplayStyle.Flex : DisplayStyle.None;
@@ -770,7 +809,8 @@ public partial class Ui : MonoBehaviour
         hud.EnableInClassList("chx", game.ch != null || game.sp != null);
         hud.EnableInClassList("bacx", game.bac != null);
         hud.EnableInClassList("bpx", game.bp != null);
-        hud.EnableInClassList("pqx", game.pq != null || game.qsj != null || game.ll != null);
+        hud.EnableInClassList("wgx", game.wg != null);
+        hud.EnableInClassList("pqx", game.pq != null || game.qsj != null || game.ll != null || game.wg != null);
         bjHud.style.display = bj ? DisplayStyle.Flex : DisplayStyle.None;
         rtHud.style.display = rt ? DisplayStyle.Flex : DisplayStyle.None;
         qzHud.style.display = qz ? DisplayStyle.Flex : DisplayStyle.None;
@@ -832,6 +872,7 @@ public partial class Ui : MonoBehaviour
         else if (game.pq != null) RefreshPouilleux();
         else if (game.qsj != null) RefreshQuiSuisJe();
         else if (game.ll != null) RefreshLimite();
+        else if (game.wg != null) RefreshLoup();
         else if (game.roue != null) RefreshRoue();
     }
 
@@ -1053,6 +1094,13 @@ public partial class Ui : MonoBehaviour
             winTitle.text = $"{best.name} remporte {best.score} € !";
             winTitle.style.color = Board.Colors[best.seat % Board.Colors.Length];
             winSub.text = string.Join("\n", f.players.OrderByDescending(p => p.score).Select((p, i) => $"{i + 1}.  {p.name} : {p.score} €"));
+        }
+        else if (game.wg != null)
+        {
+            var g = game.wg;
+            winTitle.text = g.winner == "Personne" ? "Personne ne gagne !" : $"{g.winner} gagne{(g.winner.StartsWith("Les") ? "nt" : "")} !";
+            winTitle.style.color = g.winner.Contains("loups") ? new Color(0.9f, 0.25f, 0.2f) : new Color(0.5f, 0.9f, 0.35f);
+            winSub.text = string.Join("\n", g.players.Select(p => $"{(g.winners.Contains(p.seat) ? "★ " : "")}{p.name} : {LoupGarou.Name(p.role)}{(p.alive ? "" : " (mort)")}"));
         }
         else if (game.ll != null)
         {

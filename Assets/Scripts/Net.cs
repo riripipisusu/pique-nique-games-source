@@ -319,7 +319,7 @@ public class Net : MonoBehaviour
 
     // Au quiz, tout le monde repond en meme temps ; ailleurs, seul le joueur dont c'est le tour agit.
     bool CanPlay(int seat, string action = null) => seat < Players && !gone.Contains(seat)
-        && (shadow.Actor == seat || shadow.Actor == Quiz.Everyone || (shadow is Uno && (action == "uno" || action == "catch" || action == "jump")));   // Uno : a tout moment
+        && (shadow.Actor == seat || shadow.Actor == Quiz.Everyone || (shadow is Uno && (action == "uno" || action == "catch" || action == "jump")) || shadow is LoupGarou);   // Uno : a tout moment
 
     public void SetGame(GameId g)
     {
@@ -330,7 +330,7 @@ public class Net : MonoBehaviour
         SendLobby();
     }
 
-    public int MinPlayers => Games.TvTime(LobbyGame) ? 1 : LobbyGame == GameId.Limite ? Limite.MinPlayers : 2;
+    public int MinPlayers => Games.TvTime(LobbyGame) ? 1 : LobbyGame == GameId.Limite ? Limite.MinPlayers : LobbyGame == GameId.LoupGarou ? LoupGarou.MinPlayers : 2;
 
     // Nouvelle partie avec les membres du salon (au-dela du maximum du jeu, les derniers arrives regardent).
     public void StartMatch()
@@ -395,6 +395,13 @@ public class Net : MonoBehaviour
         if (shadow is QuiSuisJe && p.Length > 2 && p[1] == "vote") { if (seat < 0) return; p = new[] { "act", "vote", seat.ToString(), p[2] }; }   // on ne vote que pour soi
         if (shadow is QuiSuisJe && p.Length > 1 && p[1] == "voteend" && seat >= 0) return;                                               // reserve a l'hote
         if (shadow is QuiSuisJe && p.Length > 2 && (p[1] == "askfree" || p[1] == "guess")) p[2] = Clean(p[2]);
+        if (shadow is LoupGarou && p.Length > 2 && (p[1] == "night" || p[1] == "witch" || p[1] == "vote" || p[1] == "shuriken" || p[1] == "hunt" || p[1] == "heir" || p[1] == "dict" || p[1] == "chat"))
+        {
+            if (seat < 0) return;
+            p[2] = seat.ToString();   // on n'agit que pour soi
+            if (p[1] == "chat" && p.Length > 4) p[4] = Clean(p[4]);
+        }
+        if (shadow is LoupGarou && p.Length > 1 && (p[1] == "next" || p[1] == "timeout" || p[1] == "quit") && seat >= 0) return;   // reserve a l'hote
         if (shadow is Limite && p.Length > 2 && p[1] == "play") { if (seat < 0) return; p = new[] { "act", "play", seat.ToString(), p[2] }; }   // on ne joue que pour soi
         if (shadow is Limite && p.Length > 1 && (p[1] == "next" || p[1] == "timeout") && seat >= 0) return;   // reserve a l'hote
         if (shadow is QuiSuisJe && p.Length > 2 && p[1] == "pick") { if (seat < 0) return; p = new[] { "act", "pick", seat.ToString(), Clean(p[2]) }; }   // on ne choisit que pour son voisin
@@ -412,6 +419,13 @@ public class Net : MonoBehaviour
         {
             var tick = shadow is QuiSuisJe w ? game.QsjTick(w) : shadow is Rhythm r ? game.RhythmTick(r) : shadow is Uno u ? game.UnoTick(u) : shadow is PetitBac b ? game.BacTick(b) : game.QuizTick((Quiz)shadow);
             if (tick != null) HostAct(new[] { "act", tick });
+            return;
+        }
+        if (IsHost && InGame && shadow is LoupGarou wg0 && game.Idle)
+        {
+            var wt = game.LoupTick(wg0);
+            if (wt != null) { HostAct(new[] { "act", wt }); return; }
+            foreach (int g in gone) if (g < wg0.players.Count && !wg0.players[g].left) { HostAct(new[] { "act", "quit", g.ToString() }); return; }   // joueur parti : retire de la partie (Agrou)
             return;
         }
         if (IsHost && InGame && shadow is Limite ll0 && game.Idle) { var lt = game.LimiteTick(ll0); if (lt != null) { HostAct(new[] { "act", lt }); return; } }

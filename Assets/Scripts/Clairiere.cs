@@ -12,17 +12,64 @@ public class Clairiere : MonoBehaviour
         if (!instance) { if (!on) return; instance = new GameObject("Clairiere").AddComponent<Clairiere>(); Fog(true); return; }
         if (instance.gameObject.activeSelf != on) Fog(on);
         instance.gameObject.SetActive(on);
+        instance.SetCamp(false);
+        Nature(true);
+        AgrouMap.Hide();
+    }
+
+    // Loup-garou dans une map d'Agrou : la prairie (sol, herbes, arbres) et le decor du camp s'effacent, le feu reste.
+    static Vector2 fogDay = new Vector2(14, 50);
+    public static void Nature(bool on)
+    {
+        if (!instance) return;
+        fogDay = on ? new Vector2(14, 50) : new Vector2(60, 260);   // map d'Agrou : on voit le village, pas un mur de brume
+        foreach (Transform t in instance.transform) if (t.gameObject != instance.picnic && t.gameObject != instance.camp) t.gameObject.SetActive(on);
+        instance.campDecor.SetActive(on);
+    }
+
+    // Loup-garou : pas de nappe (enroulee dans un coin), un feu de camp au milieu.
+    public static void Camp(bool on) { if (instance) instance.SetCamp(on); }
+    public static void HideFire(bool hidden) { if (instance && instance.camp) instance.camp.SetActive(!hidden); }
+    GameObject picnic, camp, campDecor;
+    Light fire;
+    void SetCamp(bool on) { picnic.SetActive(!on); camp.SetActive(on); }
+    AudioSource crackle;
+    // Nuit du Loup-garou : 0 = jour, 1 = nuit noire ou seul le feu eclaire. Le jeu donne la cible, on y glisse en ~2 s.
+    public static float Darkness;
+    static float dark;
+    void Update()
+    {
+        if (!camp.activeSelf) return;
+        dark = Mathf.MoveTowards(dark, Darkness, Time.deltaTime * 0.33f);   // ~3 s de crepuscule
+        fire.intensity = Mathf.Lerp(3f, 7f, dark) + Mathf.PerlinNoise(Time.time * 6, 0) * Mathf.Lerp(1.6f, 3f, dark);
+        fire.range = Mathf.Lerp(7, 12, dark);
+        crackle.volume = Mathf.Lerp(0.35f, 0.6f, dark) * Sound.I.SfxVolume;
+        ApplyNight();
+        AgrouMap.Night(dark);
+    }
+
+    static void ApplyNight()
+    {
+        var f = savedFog;
+        if (RenderSettings.sun) { RenderSettings.sun.intensity = Mathf.Lerp(f.sunI, 0.06f, dark); RenderSettings.sun.color = Color.Lerp(f.sunC, Board.Hex("8fa6ff"), dark); }
+        RenderSettings.ambientSkyColor = Color.Lerp(f.amb0, Board.Hex("1c2547"), dark);
+        RenderSettings.ambientEquatorColor = Color.Lerp(f.amb1, Board.Hex("121830"), dark);
+        RenderSettings.ambientGroundColor = Color.Lerp(f.amb2, Board.Hex("07080e"), dark);
+        var c = Color.Lerp(Board.Hex("c9dde0"), Board.Hex("070b18"), dark);
+        RenderSettings.fogColor = c; RenderSettings.fogStartDistance = Mathf.Lerp(fogDay.x, 6, dark); RenderSettings.fogEndDistance = Mathf.Lerp(fogDay.y, 28, dark);
+        if (Camera.main) Camera.main.backgroundColor = c;
     }
 
     Material lit;
 
     Material Mat(string hex, float smooth = 0.15f) { var m = new Material(lit) { color = Board.Hex(hex) }; m.SetFloat("_Smoothness", smooth); return m; }
 
+    Transform parent;
     GameObject Prim(PrimitiveType t, Vector3 pos, Vector3 scale, Material m)
     {
         var g = GameObject.CreatePrimitive(t);
         Destroy(g.GetComponent<Collider>());
-        g.transform.SetParent(transform, false);
+        g.transform.SetParent(parent ? parent : transform, false);
         g.transform.localPosition = pos;
         g.transform.localScale = scale;
         g.GetComponent<Renderer>().sharedMaterial = m;
@@ -33,7 +80,7 @@ public class Clairiere : MonoBehaviour
     {
         var prefab = Synty.Get(name) ?? Resources.Load<GameObject>("Models/" + name);
         if (!prefab) return;
-        var g = Instantiate(prefab, transform);
+        var g = Instantiate(prefab, parent ? parent : transform);
         g.transform.localPosition = pos;
         g.transform.localRotation = Quaternion.Euler(0, rot, 0);
         g.transform.localScale = Vector3.one * scale;
@@ -64,13 +111,33 @@ public class Clairiere : MonoBehaviour
         var cloth = Mat("ffffff", 0.05f);
         cloth.SetTexture("_BaseMap", Gingham());
         cloth.SetTextureScale("_BaseMap", new Vector2(9, 9));
+        picnic = new GameObject("nappe"); picnic.transform.SetParent(transform, false); parent = picnic.transform;
         Prim(PrimitiveType.Cylinder, new Vector3(0, 0.01f, 0.5f), new Vector3(6.6f, 0.01f, 6.6f), Mat("9e2a24"));     // ourlet
         Prim(PrimitiveType.Cylinder, new Vector3(0, 0.015f, 0.5f), new Vector3(6.4f, 0.012f, 6.4f), cloth);
         // Lumiere chaude au milieu de la nappe (le halo du jeu Uno, en version gouter au soleil).
         var glow = new GameObject("halo").AddComponent<Light>();
-        glow.transform.SetParent(transform, false);
+        glow.transform.SetParent(picnic.transform, false);
         glow.transform.localPosition = new Vector3(0, 1.6f, 0.6f);
         glow.type = LightType.Point; glow.range = 4.5f; glow.intensity = 2.2f; glow.color = Board.Hex("ffd9a0");
+        // Feu de camp (Loup-garou) : pierres, buches, flammes, lumiere qui vacille ; la nappe roulee pres d'un rocher.
+        camp = new GameObject("feu de camp"); camp.transform.SetParent(transform, false); parent = camp.transform;
+        Model("SM_Prop_Camp_Fireplace_Stones_01", new Vector3(0, 0, 0.5f), 1.3f, 0);
+        Model("SM_Prop_Camp_Fireplace_01", new Vector3(0, 0, 0.5f), 1.3f, 30);
+        Model("FX_Fire_01", new Vector3(0, 0.1f, 0.5f), 1f, 0);
+        fire = new GameObject("flammes").AddComponent<Light>();
+        fire.transform.SetParent(camp.transform, false);
+        fire.transform.localPosition = new Vector3(0, 0.7f, 0.5f);
+        fire.type = LightType.Point; fire.range = 7f; fire.color = Board.Hex("ff9a3c"); fire.shadows = LightShadows.Soft;
+        campDecor = new GameObject("decor"); campDecor.transform.SetParent(camp.transform, false); parent = campDecor.transform;
+        var roll = Prim(PrimitiveType.Cylinder, new Vector3(3.3f, 0.13f, 3.4f), new Vector3(0.26f, 0.55f, 0.26f), cloth);
+        roll.transform.localRotation = Quaternion.Euler(0, -40, 90);
+        cloth.SetTextureScale("_BaseMap", new Vector2(9, 9));
+        Model("SM_Env_Rock_02", new Vector3(3.9f, 0, 3.9f), 0.8f, 120);
+        Model("log", new Vector3(-3.4f, 0, 3.2f), 1.4f, 70);
+        crackle = camp.AddComponent<AudioSource>();
+        crackle.clip = Resources.Load<AudioClip>("Audio/wg/wg_feudecamp"); crackle.loop = true; crackle.playOnAwake = true;
+        camp.SetActive(false);
+        parent = null;
         // Herbe et fleurs autour de la nappe, buissons et rochers, arbres en couronne.
         var rng = new System.Random(11);
         float R(float a, float b) => a + (float)rng.NextDouble() * (b - a);
@@ -89,7 +156,7 @@ public class Clairiere : MonoBehaviour
 
     // Brume de la clairiere, seulement pendant qu'elle est affichee (les autres decors gardent la leur).
     // Le bas du ciel (cache ailleurs par les collines) passe a la couleur de la brume : la foret s'y fond.
-    static (bool on, FogMode mode, Color color, float start, float end, Color skyLow, Color skyTop) savedFog;
+    static (bool on, FogMode mode, Color color, float start, float end, Color skyLow, Color skyTop, float sunI, Color sunC, Color amb0, Color amb1, Color amb2) savedFog;
     static void Fog(bool on)
     {
         var sky = RenderSettings.skybox;
@@ -97,7 +164,9 @@ public class Clairiere : MonoBehaviour
         if (on)
         {
             savedFog = (RenderSettings.fog, RenderSettings.fogMode, RenderSettings.fogColor, RenderSettings.fogStartDistance, RenderSettings.fogEndDistance,
-                        hasSky ? sky.GetColor("_ColorBottom") : Color.white, hasSky ? sky.GetColor("_ColorTop") : Color.white);
+                        hasSky ? sky.GetColor("_ColorBottom") : Color.white, hasSky ? sky.GetColor("_ColorTop") : Color.white,
+                        RenderSettings.sun ? RenderSettings.sun.intensity : 1, RenderSettings.sun ? RenderSettings.sun.color : Color.white,
+                        RenderSettings.ambientSkyColor, RenderSettings.ambientEquatorColor, RenderSettings.ambientGroundColor);
             var haze = Board.Hex("c9dde0");
             RenderSettings.fog = true; RenderSettings.fogMode = FogMode.Linear;
             RenderSettings.fogColor = haze; RenderSettings.fogStartDistance = 14; RenderSettings.fogEndDistance = 50;   // fondu total avant le bord du sol (60 m)
@@ -108,7 +177,8 @@ public class Clairiere : MonoBehaviour
         }
         else
         {
-            (RenderSettings.fog, RenderSettings.fogMode, RenderSettings.fogColor, RenderSettings.fogStartDistance, RenderSettings.fogEndDistance, _, _) = savedFog;
+            Darkness = dark = 0; ApplyNight();   // remet soleil et ambiance du jour
+            (RenderSettings.fog, RenderSettings.fogMode, RenderSettings.fogColor, RenderSettings.fogStartDistance, RenderSettings.fogEndDistance, _, _, _, _, _, _, _) = savedFog;
             if (hasSky) { sky.SetColor("_ColorBottom", savedFog.skyLow); sky.SetColor("_ColorTop", savedFog.skyTop); }
             if (Camera.main) Camera.main.clearFlags = CameraClearFlags.Skybox;
         }

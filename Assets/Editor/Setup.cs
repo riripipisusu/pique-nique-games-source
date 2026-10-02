@@ -176,6 +176,9 @@ public static class Setup
         PlayerSettings.companyName = "Pique-Nique";
         var icon = AssetDatabase.LoadAssetAtPath<Texture2D>("Assets/Icon/icon.png");
         if (icon) PlayerSettings.SetIcons(UnityEditor.Build.NamedBuildTarget.Unknown, new[] { icon }, IconKind.Any);   // icone du .exe et de la fenetre
+        // Direct3D 11 d'abord : en D3D12, le pilote NVIDIA plante a la fermeture apres avoir affiche une map d'Agrou.
+        PlayerSettings.SetUseDefaultGraphicsAPIs(BuildTarget.StandaloneWindows64, false);
+        PlayerSettings.SetGraphicsAPIs(BuildTarget.StandaloneWindows64, new[] { UnityEngine.Rendering.GraphicsDeviceType.Direct3D11, UnityEngine.Rendering.GraphicsDeviceType.Direct3D12 });
         if (File.Exists("VERSION")) PlayerSettings.bundleVersion = File.ReadAllText("VERSION").Trim();
         BakeWorld();
         var r = BuildPipeline.BuildPlayer(new[] { "Assets/Scenes/Main.unity", "Assets/Synty/Monde.unity" }, "Build/PiqueNiqueGames.exe", BuildTarget.StandaloneWindows64, BuildOptions.None);

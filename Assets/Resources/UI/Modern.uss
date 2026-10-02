@@ -864,7 +864,7 @@ Slider.m-slider .unity-base-slider__dragger { background-color: #2A0C3E; border-
 
 /* --- pause, victoire, regles : bandeau violet, entrees de menu en texte a crochets --- */
 .m-band { -unity-background-image-tint-color: rgba(70, 14, 104, 0.92); }
-.m-band.win { -unity-background-image-tint-color: rgba(84, 18, 124, 0.94); }
+.m-band.win { -unity-background-image-tint-color: rgba(84, 18, 124, 0.94); flex-grow: 1; justify-content: center; }   /* victoire : voile plein ecran, pas de bandes vides */
 .m-band-title, .m-big-title { color: #F7DF2E; text-shadow: 0 6px 0 rgba(30, 0, 44, 0.85); }
 .m-ranking { color: #FFFFFF; }
 Button.gl.m-item, Button.gl.m-item:hover, Button.gl.m-item:active {
@@ -1155,3 +1155,111 @@ Button.bac-word:hover { background-color: rgba(60, 120, 40, 0.8); }
 .bac-score-total { color: #EDE4F7; }
 .bac-score-words { color: #C9B4E4; }
 .bac-score-gain { color: #CDE52C; }
+
+/* =====================================================================================
+   Loup-garou : la nuit, ma carte, le carnet, le panneau d'action, le chat
+   ===================================================================================== */
+.wg-night { position: absolute; left: 0; top: 0; right: 0; bottom: 0; background-color: rgba(0, 0, 0, 0); align-items: center; justify-content: center; }
+.wg-night-text { font-size: 64px; color: #FFFFFF; -unity-font: url("../Fonts/Bungee-Regular.ttf"); -unity-font-definition: initial; text-shadow: 0 4px 0 rgba(0, 0, 0, 0.8); }
+.wg-left { position: absolute; left: 24px; top: 84px; width: 380px; }
+Button.wg-card-small {
+    width: 130px; height: 177px; margin: 0 0 10px 0; padding: 0; border-width: 3px; border-color: #F2EDE6; border-radius: 10px;
+    background-color: #222; -unity-background-scale-mode: scale-and-crop;
+}
+Button.wg-card-small:hover { scale: 1.05 1.05; border-color: #F7DF2E; }
+.wg-notes { padding: 10px 14px; }
+.wg-note { font-size: 17px; color: #FFFFFF; white-space: normal; margin: 2px 0; }
+.wg-note.pub { color: #C9B4E4; }
+.wg-actions { position: absolute; bottom: 20px; left: 50%; translate: -50% 0; max-width: 1100px; padding: 10px 20px 14px 20px; align-items: center; }
+.wg-hint { font-size: 22px; color: #FFFFFF; white-space: normal; -unity-text-align: middle-center; margin-bottom: 6px; }
+.wg-buttons { justify-content: center; flex-wrap: wrap; }
+.wg-buttons > Button { margin: 4px 6px; }
+.wg-chat { position: absolute; right: 24px; bottom: 20px; width: 420px; padding: 10px 14px; }
+.wg-chat-list { min-height: 60px; margin-bottom: 6px; }
+.wg-chat-line { font-size: 17px; color: #FFFFFF; white-space: normal; margin: 1px 0; }
+.wg-chat-line.loups { color: #FF8A80; }
+.wg-chat-line.morts { color: #B0BEC5; }
+.wg-big { position: absolute; left: 0; top: 0; right: 0; bottom: 0; background-color: rgba(0, 0, 0, 0.82); align-items: center; justify-content: center; }
+.wg-big-title { font-size: 52px; color: #F7DF2E; -unity-font: url("../Fonts/Bungee-Regular.ttf"); -unity-font-definition: initial; margin-bottom: 20px; }
+.wg-big-card { width: 380px; height: 517px; margin: 0 16px; border-radius: 16px; -unity-background-scale-mode: scale-and-crop; }
+.wg-big-hint { font-size: 20px; color: #C9B4E4; margin-top: 16px; }
+.wg-tag.dead { opacity: 0.55; }
+.m-page Button.theme-chip.wg-chip-loup.selected { -unity-background-image-tint-color: #B8322A; color: #FFFFFF; }
+.m-page Button.theme-chip.wg-chip-seul.selected { -unity-background-image-tint-color: #1F6FD0; color: #FFFFFF; }
+.m-page Button.theme-chip.wg-chip-village.selected { -unity-background-image-tint-color: #2E8B3E; color: #FFFFFF; }
+
+/* Loup-garou : annonces en blanc, sans bandeau (meme DA que "Le village dort...") */
+.hud.wgx .banner {
+    background-color: rgba(0, 0, 0, 0); border-width: 0; color: #FFFFFF; font-size: 56px;
+    -unity-text-outline-width: 1.5px; -unity-text-outline-color: rgba(0, 0, 0, 0.9); text-shadow: 0 5px 2px rgba(0, 0, 0, 0.85); -unity-font: url("../Fonts/Bungee-Regular.ttf"); -unity-font-definition: initial;
+}
+
+/* HUD d'Agrou (HUDPartie) : polices Londrina Solid / Swallow Falls, logo du role, votes, roles en jeu */
+.wgx .qsj-status, .wgx .wg-hint, .wgx .wg-note, .wgx .wg-chat-line, .wgx .qsj-tag Label, .wgx .wg-big-title, .wgx .wg-night-text, .wgx .banner {
+    -unity-font: url("/Assets/Resources/LoupGarou/Hud/LondrinaSolid-Regular.ttf"); -unity-font-definition: initial;
+}
+.wgx .qsj-status { font-size: 34px; }
+.wgx .wg-night-text { font-size: 86px; }
+.wgx .wg-note, .wgx .wg-chat-line { font-size: 20px; }
+.wg-peek { position: absolute; left: 0; top: 0; right: 0; bottom: 0; display: none; }
+.wg-peek-top, .wg-peek-bottom { position: absolute; left: 0; right: 0; height: 38%; background-color: rgb(0, 0, 0); }
+.wg-peek-top { top: 0; border-bottom-left-radius: 50% 40px; border-bottom-right-radius: 50% 40px; }
+.wg-peek-bottom { bottom: 0; border-top-left-radius: 50% 40px; border-top-right-radius: 50% 40px; }
+.wg-votes {
+    position: absolute; left: 0; top: 10px; width: 520px; height: 54px; flex-direction: row; align-items: center; padding-left: 24px;
+    -unity-background-scale-mode: stretch-to-fill;
+}
+.wg-votes-label, .wg-votes-n { -unity-font: url("/Assets/Resources/LoupGarou/Hud/Swallow_Falls.ttf"); -unity-font-definition: initial; color: #FFFFFF; font-size: 30px; }
+.wg-votes-n { font-size: 40px; color: #FAF549; margin-left: 14px; }
+Button.wg-logo {
+    position: absolute; right: 12px; top: 118px; width: 144px; height: 144px; margin: 0; padding: 0; border-width: 0;   /* sous les boutons son / pause */
+    background-color: rgba(0, 0, 0, 0); -unity-background-scale-mode: scale-to-fit;
+}
+Button.wg-logo:hover { scale: 1.06 1.06; }
+.wg-logo-over { position: absolute; left: 0; top: 0; right: 0; bottom: 0; -unity-background-scale-mode: scale-to-fit; display: none; }
+.wg-logo-love { position: absolute; left: -26px; bottom: -14px; width: 56px; height: 56px; -unity-background-scale-mode: scale-to-fit; display: none; }
+.wg-roles { position: absolute; left: 0; right: 0; bottom: 8px; flex-direction: row; justify-content: center; }
+.wg-role { width: 92px; height: 92px; margin: 0 3px; -unity-background-scale-mode: scale-to-fit; align-items: flex-end; justify-content: flex-start; padding: 2px 8px; }
+.wg-role.out { -unity-background-image-tint-color: rgba(120, 120, 120, 0.55); }
+.wg-role-n { font-size: 20px; color: #FFFFFF; text-shadow: 0 2px 0 rgba(0, 0, 0, 0.9); -unity-font: url("/Assets/Resources/LoupGarou/Hud/LondrinaSolid-Regular.ttf"); -unity-font-definition: initial; }
+.wgx .wg-actions { bottom: 96px; }
+.wgx .wg-chat { bottom: 96px; }
+
+/* Loup-garou facon Agrou : plus de violet (noms en blanc, panneaux noirs translucides), minuteur en barre verte */
+.wgx .wg-tag { background-color: rgba(0, 0, 0, 0); border-width: 0; padding: 0; }
+.wgx .wg-tag.active { background-color: rgba(0, 0, 0, 0); }
+.wgx .wg-tag .qsj-tag-name { font-size: 24px; color: #FFFFFF; text-shadow: 0 2px 1px rgba(0, 0, 0, 0.9); -unity-font: url("/Assets/Resources/LoupGarou/Hud/LondrinaSolid-Regular.ttf"); -unity-font-definition: initial; -unity-font-style: normal; }
+.wgx .wg-tag.active .qsj-tag-name { color: #FAF549; }
+.wgx .wg-tag .qsj-tag-score { font-size: 17px; color: #E8E8E8; text-shadow: 0 2px 1px rgba(0, 0, 0, 0.9); -unity-font: url("/Assets/Resources/LoupGarou/Hud/LondrinaSolid-Regular.ttf"); -unity-font-definition: initial; }
+.wgx .wg-notes, .wgx .wg-chat, .wgx .wg-actions {
+    background-image: none; background-color: rgba(0, 0, 0, 0.55); border-width: 0; border-radius: 8px;
+}
+.wgx .wg-notes .panel-title, .wgx .wg-note { color: #FFFFFF; }
+.wgx .qsj-status { top: 58px; background-color: rgba(0, 0, 0, 0); border-width: 0; text-shadow: 0 3px 1px rgba(0, 0, 0, 0.9); }
+.wg-timer {
+    position: absolute; top: 12px; left: 50%; translate: -50% 0; width: 250px; height: 30px; border-radius: 15px;
+    background-color: rgba(10, 10, 10, 0.8); border-width: 3px; border-color: #F2F2F2; overflow: hidden; justify-content: center;
+}
+.wg-timer-fill { position: absolute; left: 0; top: 0; bottom: 0; background-color: #4CC94A; border-radius: 12px; }
+.wg-timer-text { -unity-text-align: middle-center; color: #FFFFFF; font-size: 20px; text-shadow: 0 2px 0 rgba(0, 0, 0, 0.8); -unity-font: url("/Assets/Resources/LoupGarou/Hud/LondrinaSolid-Regular.ttf"); -unity-font-definition: initial; }
+
+.wg-notes-scroll { max-height: 400px; }
+
+/* Loup-garou : boutons d'action facon Agrou (noir translucide, texte blanc, liseré de couleur) */
+.wgx .wg-buttons > Button, .wgx .wg-buttons > Button:hover, .wgx .wg-buttons > Button:active {
+    background-image: none; background-color: rgba(0, 0, 0, 0.62); border-width: 2px; border-radius: 6px;
+    border-color: #4CC94A; padding: 4px 18px; min-height: 46px; scale: 1 1;
+}
+.wgx .wg-buttons > Button:hover { background-color: rgba(40, 40, 40, 0.8); scale: 1.04 1.04; }
+.wgx .wg-buttons > Button.red { border-color: #E0483E; }
+.wgx .wg-buttons > Button.blue { border-color: #3FA9F5; }
+.wgx .wg-buttons > Button.ghost { border-color: #9A9A9A; }
+.wgx .wg-buttons .gl-face { background-image: none; background-color: rgba(0, 0, 0, 0); border-width: 0; }
+.wgx .wg-buttons .gl-shine { display: none; }
+.wgx .wg-buttons .gl-label {
+    color: #FFFFFF; font-size: 26px; text-shadow: 0 2px 1px rgba(0, 0, 0, 0.9); -unity-text-outline-width: 0;
+    -unity-font: url("/Assets/Resources/LoupGarou/Hud/LondrinaSolid-Regular.ttf"); -unity-font-definition: initial;
+}
+.wgx .wg-hint { text-shadow: 0 2px 1px rgba(0, 0, 0, 0.9); }
+
+.wgx .qsj-status { left: 330px; right: 330px; translate: 0 0; max-width: none; white-space: normal; -unity-text-align: upper-center; }   /* ne passe pas sous les boutons son / pause */

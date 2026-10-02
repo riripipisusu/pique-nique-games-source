@@ -207,6 +207,7 @@ public class De : MonoBehaviour
         Physics.SyncTransforms();
         int still = 0;
         var prevV = rb.linearVelocity;
+        Physics.simulationMode = SimulationMode.Script;   // le loup-garou a pu la repasser en automatique (ragdolls)
         for (int i = 0; i < 700 && still < 25; i++)
         {
             Physics.Simulate(Step);

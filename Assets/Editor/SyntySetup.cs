@@ -25,7 +25,7 @@ public static class SyntySetup
     public static void Run()
     {
         var reg = ScriptableObject.CreateInstance<Synty>();
-        reg.prefabs = AssetDatabase.FindAssets("t:Prefab", new[] { Meadow + "Prefabs", "Assets/PolygonNatureBiomes/PNB_Core/Prefabs" })
+        reg.prefabs = AssetDatabase.FindAssets("t:Prefab", new[] { Meadow + "Prefabs", Meadow + "FX/FX_Prefabs", "Assets/PolygonNatureBiomes/PNB_Core/Prefabs" })
             .Select(g => AssetDatabase.LoadAssetAtPath<GameObject>(AssetDatabase.GUIDToAssetPath(g)))
             .Concat(AssetDatabase.FindAssets("t:Prefab", new[] { "Assets/PolygonCasino/Prefabs" }).Select(AssetDatabase.GUIDToAssetPath)
                 .Where(p => CasinoProps.Any(n => Path.GetFileNameWithoutExtension(p).StartsWith(n)))
