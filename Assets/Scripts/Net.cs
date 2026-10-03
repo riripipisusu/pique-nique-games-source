@@ -79,6 +79,7 @@ public class Net : MonoBehaviour
             go.SetActive(false);
             nm = go.AddComponent<NetworkManager>();
             var transport = go.AddComponent<UnityTransport>();
+            transport.MaxPayloadSize = 64000;   // salon complet (10 codes de perso) ou depart de partie en un seul message
             nm.NetworkConfig = new NetworkConfig { NetworkTransport = transport, ConnectionApproval = false };
             go.SetActive(true);
             DontDestroyOnLoad(go);
@@ -223,9 +224,10 @@ public class Net : MonoBehaviour
     // --- Messages -----------------------------------------------------------------
     void SendTo(ulong id, string s)
     {
-        using var w = new FastBufferWriter(1100, Allocator.Temp);
+        // Taille selon le message (le salon porte le code de perso de chacun : plusieurs Ko a 3 joueurs et plus).
+        using var w = new FastBufferWriter(16 + s.Length * 2, Allocator.Temp);
         w.WriteValueSafe(s);
-        nm.CustomMessagingManager.SendNamedMessage(Channel, id, w, NetworkDelivery.ReliableSequenced);
+        nm.CustomMessagingManager.SendNamedMessage(Channel, id, w, NetworkDelivery.ReliableFragmentedSequenced);
     }
 
     void Send(string s) => SendTo(NetworkManager.ServerClientId, s);

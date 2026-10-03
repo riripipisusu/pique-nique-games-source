@@ -207,14 +207,15 @@ public partial class Game : MonoBehaviour
         IEnumerator Shot(string n) { yield return new WaitForEndOfFrame(); var t = ScreenCapture.CaptureScreenshotAsTexture(); System.IO.File.WriteAllBytes(System.IO.Path.Combine(dir, role + "-" + n + ".png"), t.EncodeToPNG()); Destroy(t); }
         yield return new WaitForSeconds(3);
         tvIntroSeen = true; tvRulesSeen.Add(g);          // pas de generique ni de regles pendant le test
-        SetMyAvatar(host ? Chars.All[7] : role == "join" ? "Ami_Roux" : "Ami_Brune");
+        SetMyAvatar(host ? Chars.All[7] : role == "join" ? "Ami_Roux" : role == "join2" ? Chars.All[3] : "Ami_Brune");   // codes complets : salon de plusieurs Ko
         if (host)
         {
             net.Host("Hôte", GameId.Croque, 0);
             while (net.Code == "") { if (net.Status.StartsWith("Impossible")) break; yield return null; }
             System.IO.File.WriteAllText(codeFile, net.Code);
             ui.ShowLobby();
-            while (net.Lobby.Count < 2) yield return null;
+            int want = Array.IndexOf(Environment.GetCommandLineArgs(), "-trois") >= 0 ? 3 : 2;
+            while (net.Lobby.Count < want) yield return null;
             foreach (var lg in new[] { GameId.Croque, GameId.Rhythm, GameId.Uno, GameId.Trivia, GameId.Chevaux })   // mise en page du salon selon le jeu
             {
                 net.SetGame(lg); yield return new WaitForSeconds(1); yield return Shot("salon-" + lg);
@@ -230,7 +231,7 @@ public partial class Game : MonoBehaviour
             while (!System.IO.File.Exists(codeFile)) yield return new WaitForSeconds(0.5f);
             if (role == "watch") yield return new WaitForSeconds(Games.TvTime(g) ? 6 : 12);   // arrive en pleine partie
             // L'invite colle le message d'invitation entier, pas seulement le code.
-            net.Join("Rejoins-moi sur Pique-Nique's Games ! ... (ou tape le code) : " + System.IO.File.ReadAllText(codeFile), role == "join" ? "Invité" : "Spectateur");
+            net.Join("Rejoins-moi sur Pique-Nique's Games ! ... (ou tape le code) : " + System.IO.File.ReadAllText(codeFile), role == "join" ? "Invité" : role == "join2" ? "Invité 2" : "Spectateur");
         }
         while (!inGame) yield return null;
         yield return new WaitForSeconds(2);
