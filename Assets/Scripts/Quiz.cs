@@ -155,7 +155,7 @@ public class Quiz : IMatch
                 if (Rank) return RankGuess(pl, ms, text);
                 // QCM : une seule reponse, forcement l'une des 4 propositions ; comparaison exacte.
                 if (Mcq && Array.IndexOf(Current.p, text) < 0) return false;
-                if (Mcq ? text == Current.d : Matches(text, Current.a))
+                if (Mcq ? text == Current.d : Matches(text, Current.a.Append(Current.d)))   // le titre affiche en entier ("Artiste — Album") compte aussi
                 {
                     bool first = players.All(p => !p.found);
                     pl.found = true;
