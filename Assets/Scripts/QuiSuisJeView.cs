@@ -11,7 +11,7 @@ public class QuiSuisJeView : MonoBehaviour
     const float Radius = 2.7f, SeatBack = 0.35f;
     static readonly Vector3 Middle = new Vector3(0, 0, 0.5f);   // centre de la nappe
 
-    class Seat { public Transform root, crate, postit, wolf; public Animator an, wan; public TextMesh text; public Renderer paper; public Texture skin; public GameObject prop; public string propId; public bool dead; public Transform tomb; public int point = -1, pointLast = -1; public float pointW; public bool propAlong; public Quaternion propQ; public string gesture; public float gestW; public HumanPoseHandler pose; public Dictionary<string, Transform> fingers; public int outline; public bool outlineWolf; }
+    class Seat { public Transform root, crate, postit, wolf; public Animator an, wan; public TextMesh text; public Renderer paper; public Texture skin; public GameObject prop; public string propId; public bool dead; public Transform tomb; public int point = -1, pointLast = -1; public float pointW; public bool propAlong; public Quaternion propQ; public string gesture; public float gestW; public HumanPoseHandler pose; public Dictionary<string, Transform> fingers; public int outline; public bool outlineWolf; public float lookY, lookP, lookAt = -99, curY, curP, idleUntil, eyesClosed; }
     readonly List<Seat> seats = new List<Seat>();
     QuiSuisJe qs;
     int n, me, fitFrames, eyeFrames;
@@ -139,6 +139,7 @@ public class QuiSuisJeView : MonoBehaviour
     public void SetEyes(int seat, float closed)
     {
         if (seat < 0 || seat >= seats.Count || !seats[seat].root) return;
+        seats[seat].eyesClosed = closed;
         foreach (var smr in seats[seat].root.GetComponentsInChildren<SkinnedMeshRenderer>())
         {
             var m = smr.sharedMesh;
@@ -450,7 +451,8 @@ public class QuiSuisJeView : MonoBehaviour
     }
 
     // Contour d'un perso (et de son loup) : 0 = aucun, 1 = survole, 2 = choisi.
-    static Material[] outlineMats;
+    static Material[] outlineMats;   // 0 = masque, 1 = survole, 2 = choisi
+    static readonly Dictionary<Mesh, Mesh> smoothed = new Dictionary<Mesh, Mesh>();
     public void Outline(int seat, int level)
     {
         if (seat < 0 || seat >= seats.Count) return;
@@ -462,16 +464,45 @@ public class QuiSuisJeView : MonoBehaviour
         if (outlineMats == null)
         {
             var sh = Resources.Load<Shader>("WgOutline");
-            outlineMats = new[] { null, new Material(sh) { color = new Color(1, 1, 1, 1) }, new Material(sh) { color = new Color(1f, 0.8f, 0.2f, 1) } };
-            outlineMats[2].SetFloat("_Width", 0.008f);
+            var mask = new Material(sh) { renderQueue = 2010 };
+            mask.SetFloat("_Width", 0); mask.SetFloat("_ColorMask", 0); mask.SetFloat("_Cull", 2);
+            mask.SetFloat("_StencilComp", 8); mask.SetFloat("_StencilPass", 2);   // toujours, remplace
+            outlineMats = new[] { mask, new Material(sh) { color = Color.white }, new Material(sh) { color = new Color(1f, 0.8f, 0.2f, 1) } };
+            outlineMats[2].SetFloat("_Width", 0.005f);
+            outlineMats[1].SetFloat("_Width", 0.0035f);
         }
         foreach (var t in new[] { st.root, st.wolf })
             if (t) foreach (var r in t.GetComponentsInChildren<SkinnedMeshRenderer>(true))
             {
-                var ms = r.sharedMaterials.Where(m => m != outlineMats[1] && m != outlineMats[2]).ToList();
-                if (level > 0) ms.Add(outlineMats[level]);
+                if (level > 0 && r.sharedMesh && Smoothed(r.sharedMesh) != r.sharedMesh)
+                {
+                    var bw = Enumerable.Range(0, r.sharedMesh.blendShapeCount).Select(r.GetBlendShapeWeight).ToArray();   // morphologie du perso
+                    r.sharedMesh = Smoothed(r.sharedMesh);
+                    for (int k = 0; k < bw.Length; k++) r.SetBlendShapeWeight(k, bw[k]);
+                }
+                var ms = r.sharedMaterials.Where(m => !outlineMats.Contains(m)).ToList();
+                if (level > 0) { ms.Add(outlineMats[0]); ms.Add(outlineMats[level]); }
                 r.sharedMaterials = ms.ToArray();
             }
+    }
+
+    // Copie du maillage dont les tangentes portent la normale lissee (moyenne des sommets confondus) : la coque du
+    // contour reste d'un seul tenant sur les maillages a facettes. Les persos n'ont pas de normal map.
+    static Mesh Smoothed(Mesh m)
+    {
+        if (smoothed.ContainsValue(m)) return m;
+        if (smoothed.TryGetValue(m, out var done)) return done;
+        var copy = Object.Instantiate(m);
+        copy.name = m.name;
+        var v = copy.vertices; var nr = copy.normals;
+        if (nr.Length != v.Length) return smoothed[m] = m;
+        var sum = new Dictionary<Vector3Int, Vector3>();
+        Vector3Int K(Vector3 p) => Vector3Int.RoundToInt(p * 10000);
+        for (int i = 0; i < v.Length; i++) { var k = K(v[i]); sum[k] = (sum.TryGetValue(k, out var a) ? a : Vector3.zero) + nr[i]; }
+        var tg = new Vector4[v.Length];
+        for (int i = 0; i < v.Length; i++) { var n = sum[K(v[i])].normalized; tg[i] = new Vector4(n.x, n.y, n.z, 1); }
+        copy.tangents = tg;
+        return smoothed[m] = copy;
     }
 
     // Doigt pointe (vote) : -1 = rien, -2 = droit devant (le chasseur epaule), sinon un siege.
@@ -614,6 +645,7 @@ public class QuiSuisJeView : MonoBehaviour
             if (st.dead) continue;
             st.gestW = Mathf.MoveTowards(st.gestW, st.gesture != null ? 1 : 0, Time.deltaTime * 3);
             foreach (var an in new[] { st.an, st.wan }) if (an && an.layerCount > 1) an.SetLayerWeight(1, st.gestW);
+            if (i != me) ApplyLook(st, i);
             ApplyPoint(st, i);
             if (st.prop && st.propAlong)
             {
@@ -688,6 +720,42 @@ public class QuiSuisJeView : MonoBehaviour
         // La souris tourne la tete directement (pas de lissage : sinon ca tire en arriere).
         yaw = tYaw = Mathf.Clamp(tYaw + dx, -130, 130); pitch = tPitch = Mathf.Clamp(tPitch - dy, -35, 78);
     }
+    // Regard : (lacet, tangage) en degres par rapport au siege, comme ma camera. Recu du reseau pour les joueurs ;
+    // sans nouvelles depuis 3 s (bots), le perso regarde un autre joueur de temps en temps.
+    public bool Live => live;
+    public (float yaw, float pitch) MyLook => (yaw, pitch);
+    public void SetLook(int seat, float y, float p)
+    {
+        if (seat < 0 || seat >= seats.Count || seat == me) return;
+        var st = seats[seat]; st.lookY = y; st.lookP = p; st.lookAt = Time.time;
+    }
+    void ApplyLook(Seat st, int i)
+    {
+        var an = st.skin && st.wan ? st.wan : st.an;
+        var head = an ? an.GetBoneTransform(HumanBodyBones.Head) : null;
+        if (!head || hanged.Any(h => h.st == st)) return;
+        if (Time.time - st.lookAt > 3 && Time.time > st.idleUntil)
+        {
+            var others = Enumerable.Range(0, seats.Count).Where(j => j != i && !seats[j].dead && seats[j].root && seats[j].root.gameObject.activeSelf).ToList();
+            if (others.Count > 0 && Random.value < 0.75f)
+            {
+                var d = HeadOf(others[Random.Range(0, others.Count)]) - Vector3.up * 0.3f - head.position;
+                var flat = new Vector3(d.x, 0, d.z);
+                st.lookY = Vector3.SignedAngle(st.root.forward, flat, Vector3.up);
+                st.lookP = -Mathf.Atan2(d.y, flat.magnitude) * Mathf.Rad2Deg;
+            }
+            else { st.lookY = 0; st.lookP = 0; }   // droit devant, vers le feu
+            st.idleUntil = Time.time + Random.Range(2f, 5f);
+        }
+        float on = 1 - st.eyesClosed;   // endormi : la tete reste dans la pose de l'animation
+        float k = 1 - Mathf.Exp(-Time.deltaTime * 6);
+        st.curY = Mathf.Lerp(st.curY, Mathf.Clamp(st.lookY, -75, 75) * on, k);
+        st.curP = Mathf.Lerp(st.curP, Mathf.Clamp(st.lookP, -30, 40) * on, k);
+        var neck = an.GetBoneTransform(HumanBodyBones.Neck);
+        foreach (var (t, f) in new[] { (neck, 0.4f), (head, neck ? 0.6f : 1f) })
+            if (t) t.rotation = Quaternion.AngleAxis(st.curY * f, Vector3.up) * Quaternion.AngleAxis(st.curP * f, st.root.right) * t.rotation;
+    }
+
     public void Zoom(float d) { tFov = Mathf.Clamp(tFov - d * 12, 12, 60); }
 
     // Clic : la tete la plus proche du rayon (a l'ecran) ; on se tourne vers elle et on zoome pour lire le post-it.

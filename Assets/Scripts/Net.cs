@@ -261,6 +261,7 @@ public class Net : MonoBehaviour
             // Partie en cours : le nouveau venu la regarde (depart + actions deja jouees, rejouees en accelere).
             if (InGame) { SendTo(sender, "watch|" + startBody); foreach (var a in actions) SendTo(sender, a); }
         }
+        else if (p[0] == "look" && InGame && p.Length > 3 && seats.TryGetValue(sender, out int looker)) Broadcast($"look|{looker}|{p[2]}|{p[3]}");
         else if (p[0] == "act" && InGame && seats.TryGetValue(sender, out int seat) && CanPlay(seat, p.Length > 1 ? p[1] : null))
             HostAct(p, seat);
         else if (p[0] == "skip" && InGame) Broadcast("skip");
@@ -303,6 +304,9 @@ public class Net : MonoBehaviour
                 break;
             case "act":
                 game.Enqueue(s);
+                break;
+            case "look":   // ou regarde un joueur (sa tete bouge chez les autres)
+                if (p.Length > 3 && int.TryParse(p[1], out int ls) && int.TryParse(p[2], out int ly) && int.TryParse(p[3], out int lp)) game.qsview.SetLook(ls, ly, lp);
                 break;
             case "left":
                 game.PlayerLeft(int.Parse(p[1]));
@@ -367,6 +371,12 @@ public class Net : MonoBehaviour
         if (IsHost) { ReturnToLobby(); return; }
         if (InGame && !Watching) Send("quit");
         game.BackToLobby();
+    }
+
+    public void SendLook(float yaw, float pitch)
+    {
+        var m = $"look|{game.mySeat}|{Mathf.RoundToInt(yaw)}|{Mathf.RoundToInt(pitch)}";
+        if (IsHost) Broadcast(m); else Send(m);
     }
 
     public void Act(string action)

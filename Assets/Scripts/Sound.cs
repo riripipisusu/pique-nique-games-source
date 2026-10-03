@@ -60,9 +60,18 @@ public class Sound : MonoBehaviour
     public void Play(string n, float vol = 1, float pitchVar = 0.08f)
     {
         if (!clips.TryGetValue(n, out var c)) return;
+        if (c.length > 8)   // son long (battement de coeur d'une minute) : sur sa propre source, coupee par StopLong
+        {
+            if (!longSfx) longSfx = gameObject.AddComponent<AudioSource>();
+            longSfx.volume = s.sfx * vol; longSfx.pitch = 1; longSfx.clip = c; longSfx.Play();
+            return;
+        }
         sfx.pitch = 1 + Random.Range(-pitchVar, pitchVar);
         sfx.PlayOneShot(c, vol);
     }
+
+    AudioSource longSfx;
+    public void StopLong() { if (longSfx) longSfx.Stop(); }
 
     // Son en boucle pilote par l'appelant (volume, hauteur), au volume des effets.
     public AudioSource Loop(string n)

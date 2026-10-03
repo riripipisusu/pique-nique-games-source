@@ -67,7 +67,7 @@ public partial class Game
                 case WGEv.Over: Sound.I.Play(wg.winner == "L'Ange" ? "wg_angegagne" : wg.winners.Contains(me) ? "wg_victoire" : "wg_defaite", 0.9f, 0); StartCoroutine(LoupEnd()); break;
             }
         }
-        if (wgLastPhase == WPh.Tie && wg.phase != WPh.Tie && wg.eliminated < 0) { foreach (var x in wgTiedSeats) qsview.Release(x); qsview.EndCinematic(); qsview.EndGallows(); wgTiedSeats.Clear(); }
+        if (wgLastPhase == WPh.Tie && wg.phase != WPh.Tie && wg.eliminated < 0) { Sound.I.StopLong(); foreach (var x in wgTiedSeats) qsview.Release(x); qsview.EndCinematic(); qsview.EndGallows(); wgTiedSeats.Clear(); }
         if (wg.phase != wgLastPhase || wg.stepSerial != wgLastStep) { wgLastPhase = wg.phase; wgLastStep = wg.stepSerial; wgPhaseAt = Time.time; wgBotAt = Time.time + Random.Range(2f, 4f); ui.LoupPhase(); }
         ui.Refresh();
     }
@@ -241,6 +241,7 @@ public partial class Game
                     yield return new WaitForSeconds(3.2f);   // suspense sur l'echafaud
                     if (wg == null) break;
                     qsview.Drop();
+                    Sound.I.StopLong();
                     Sound.I.Play("wg_pendu", 0.9f, 0);
                     yield return new WaitForSeconds(1.6f);
                     foreach (var c in condemned) { wgRevealed.Add(c); ui.LoupReveal(c); ui.Refresh(); yield return new WaitForSeconds(3.4f); }
@@ -281,6 +282,7 @@ public partial class Game
             yield return new WaitForSeconds(3.2f);
         }
         qsview.EndCinematic();
+        Sound.I.StopLong();
         wgSeqBusy = false;
     }
 
@@ -292,7 +294,7 @@ public partial class Game
         yield return new WaitForSeconds(1.2f);
         wgRevealed.Add(s); ui.LoupReveal(s); ui.Refresh();
         yield return new WaitForSeconds(2.5f);
-        if (!wgSeqBusy) qsview.EndCinematic();   // sinon la sequence en cours reprend la main
+        if (!wgSeqBusy) { qsview.EndCinematic(); Sound.I.StopLong(); }   // sinon la sequence en cours reprend la main
     }
 
     IEnumerator LoupEnd() { yield return new WaitForSeconds(4); ui.ShowVictory(); }

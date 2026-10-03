@@ -1510,6 +1510,7 @@ public partial class Game : MonoBehaviour
     void LeaveGame(bool lobby)
     {
         StopAllCoroutines();
+        Sound.I.StopLong();
         Resume();
         catchingUp = false;
         Sound.I.Refresh();   // volume general des reglages (pas 100 %)
@@ -1554,8 +1555,17 @@ public partial class Game : MonoBehaviour
     }
 
     // --- Boucle ---------------------------------------------------------------------------
+    float lookSendAt, lookSentY, lookSentP, lookSentT;
     void Update()
     {
+        // En ligne : j'envoie ou je regarde (4 fois par seconde au plus, et toutes les 2 s pour rester "vivant").
+        if (Online && !Spectating && qsview.Live && Time.time > lookSendAt)
+        {
+            lookSendAt = Time.time + 0.25f;
+            var (ly, lp) = qsview.MyLook;
+            if (Mathf.Abs(ly - lookSentY) + Mathf.Abs(lp - lookSentP) > 2 || Time.time - lookSentT > 2)
+            { lookSentY = ly; lookSentP = lp; lookSentT = Time.time; net.SendLook(ly, lp); }
+        }
         RhythmUpdate();
         UnoBots();
         UnoClick();
