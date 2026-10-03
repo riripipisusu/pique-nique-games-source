@@ -186,6 +186,29 @@ public partial class Ui
     }
     // Les loups a pouvoir choisissent d'abord la cible de leur pouvoir s'ils ont un vote deja pose.
     bool SelectingSpecial(LoupGarou.Player p) => game.wg.wolfVotes.ContainsKey(p.seat) && (p.role == Role.Anesthesiste && game.wg.CanAnesth || p.role == Role.LoupBlanc && game.wg.WhiteNight);
+    // Contour des persos : ceux que j'ai choisis (selection, mon vote) et ceux qu'un clic choisirait.
+    public int WgFirstSel => wgSel.Count > 0 ? wgSel[0] : -1;
+    public bool WgChosen(int i)
+    {
+        var l = game.wg; int me = WgMe;
+        return wgSel.Contains(i) || l.votes.TryGetValue(me, out int mv) && mv == i && (l.phase == WPh.Vote || l.phase == WPh.Election || l.phase == WPh.Tie)
+            || l.wolfVotes.TryGetValue(me, out int wm) && wm == i && l.phase == WPh.Night;
+    }
+    public bool WgClickable(int seat)
+    {
+        var l = game.wg;
+        if (l == null || !WgCanAct || !game.WgShownAlive(seat)) return false;
+        int me = WgMe; var p = WgMeP;
+        return l.phase switch
+        {
+            WPh.Night => l.NightRole(p),
+            WPh.Witch => p.role == Role.Sorciere,
+            WPh.Tie => l.CanVote(me) && l.tied.Contains(seat),
+            WPh.Vote or WPh.Election => l.CanVote(me) || wgShuriken && p.role == Role.Ninja,
+            WPh.Hunter or WPh.Heir or WPh.Dictator => l.pending.Count > 0 && l.pending[0].seat == me,
+            _ => false,
+        };
+    }
     void Toggle(int seat, int max) { if (wgSel.Contains(seat)) wgSel.Remove(seat); else { if (wgSel.Count >= max) wgSel.RemoveAt(0); wgSel.Add(seat); } }
 
     // Journal visible : jusqu'a la premiere mort pas encore montree a l'ecran (et la ligne d'explosion qui l'annonce).
@@ -429,7 +452,7 @@ public partial class Ui
             }
             ((Label)t[0]).text = name;
             ((Label)t[1]).text = string.Join(" · ", extra);
-            t.EnableInClassList("active", wgSel.Contains(i) || (l.votes.TryGetValue(me, out int mv) && mv == i && (l.phase == WPh.Vote || l.phase == WPh.Election)) || (l.wolfVotes.TryGetValue(me, out int wm) && wm == i && l.phase == WPh.Night));
+            t.EnableInClassList("active", WgChosen(i));
             t.EnableInClassList("dead", !game.WgShownAlive(o.seat));
         }
         RefreshLoupStatusOnly();   // a chaque image : le minuteur ne clignote plus

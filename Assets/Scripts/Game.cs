@@ -130,7 +130,7 @@ public partial class Game : MonoBehaviour
                 if (Array.IndexOf(args, "-autoupdate") >= 0) ui.StartCoroutine(Updater.Install(_ => { }, Debug.LogError));
             }));
         int at = Array.IndexOf(args, "-autotest");
-        if (at >= 0) ui.StartCoroutine(AutoTest(args[at + 1]));
+        if (at >= 0) { System.IO.Directory.CreateDirectory(args[at + 1]); ui.StartCoroutine(AutoTest(args[at + 1])); }
         int dj = Array.IndexOf(args, "-discordjoin");   // test : invitation Discord simulee (code lu dans <dir>/code.txt)
         if (dj >= 0) ui.StartCoroutine(DiscordJoinTest(args[dj + 1]));
         int nt = Array.IndexOf(args, "-nettest");

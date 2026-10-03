@@ -11,7 +11,7 @@ public class QuiSuisJeView : MonoBehaviour
     const float Radius = 2.7f, SeatBack = 0.35f;
     static readonly Vector3 Middle = new Vector3(0, 0, 0.5f);   // centre de la nappe
 
-    class Seat { public Transform root, crate, postit, wolf; public Animator an, wan; public TextMesh text; public Renderer paper; public Texture skin; public GameObject prop; public string propId; public bool dead; public Transform tomb; public int point = -1, pointLast = -1; public float pointW; public bool propAlong; public Quaternion propQ; public string gesture; public float gestW; public HumanPoseHandler pose; public Dictionary<string, Transform> fingers; }
+    class Seat { public Transform root, crate, postit, wolf; public Animator an, wan; public TextMesh text; public Renderer paper; public Texture skin; public GameObject prop; public string propId; public bool dead; public Transform tomb; public int point = -1, pointLast = -1; public float pointW; public bool propAlong; public Quaternion propQ; public string gesture; public float gestW; public HumanPoseHandler pose; public Dictionary<string, Transform> fingers; public int outline; public bool outlineWolf; }
     readonly List<Seat> seats = new List<Seat>();
     QuiSuisJe qs;
     int n, me, fitFrames, eyeFrames;
@@ -20,7 +20,8 @@ public class QuiSuisJeView : MonoBehaviour
     Transform cast;
     Material lit, paperMat, foundMat;
     Font font;
-    Vector3 eye;
+    Vector3 eye, wolfEye;
+    float wolfK;
     float yaw, pitch, fov = 60, tYaw, tPitch, tFov = 60;
 
     void Awake()
@@ -165,7 +166,6 @@ public class QuiSuisJeView : MonoBehaviour
             st.wan.runtimeAnimatorController = Resources.Load<RuntimeAnimatorController>("CharAnim");
             st.wan.applyRootMotion = false;
             st.wan.Play("SitDown", 0, seat * 0.19f);
-            if (seat == me) { var h = st.wan.GetBoneTransform(HumanBodyBones.Head); if (h) h.localScale = Vector3.one * 0.001f; }
         }
         if (st.wolf)
         {
@@ -441,7 +441,6 @@ public class QuiSuisJeView : MonoBehaviour
     public void Gesture(int seat, string clip)
     {
         if (seat < 0 || seat >= seats.Count) return;
-        if (seat == me && clip == "Pointe") clip = null;   // mon bras ne passe pas devant ma vue
         var st = seats[seat];
         if (st.gesture == clip || st.dead) return;
         st.gesture = clip;
@@ -450,9 +449,33 @@ public class QuiSuisJeView : MonoBehaviour
             if (an && an.layerCount > 1 && an.HasState(1, Animator.StringToHash("wg_" + clip))) an.CrossFadeInFixedTime("wg_" + clip, 0.35f, 1);
     }
 
+    // Contour d'un perso (et de son loup) : 0 = aucun, 1 = survole, 2 = choisi.
+    static Material[] outlineMats;
+    public void Outline(int seat, int level)
+    {
+        if (seat < 0 || seat >= seats.Count) return;
+        var st = seats[seat];
+        if (st.dead) level = 0;
+        bool w = st.wolf;
+        if (st.outline == level && st.outlineWolf == w) return;
+        st.outline = level; st.outlineWolf = w;
+        if (outlineMats == null)
+        {
+            var sh = Resources.Load<Shader>("WgOutline");
+            outlineMats = new[] { null, new Material(sh) { color = new Color(1, 1, 1, 1) }, new Material(sh) { color = new Color(1f, 0.8f, 0.2f, 1) } };
+            outlineMats[2].SetFloat("_Width", 0.008f);
+        }
+        foreach (var t in new[] { st.root, st.wolf })
+            if (t) foreach (var r in t.GetComponentsInChildren<SkinnedMeshRenderer>(true))
+            {
+                var ms = r.sharedMaterials.Where(m => m != outlineMats[1] && m != outlineMats[2]).ToList();
+                if (level > 0) ms.Add(outlineMats[level]);
+                r.sharedMaterials = ms.ToArray();
+            }
+    }
+
     // Doigt pointe (vote) : -1 = rien, -2 = droit devant (le chasseur epaule), sinon un siege.
-    public void Point(int seat, int target) { if (seat >= 0 && seat < seats.Count) seats[seat].point = seat == me && !st0Cine ? -1 : target; }   // pas mon bras en travers de ma vue
-    bool st0Cine => Cine > 0.05f;
+    public void Point(int seat, int target) { if (seat >= 0 && seat < seats.Count) seats[seat].point = target; }
 
     void ApplyPoint(Seat st, int idx)
     {
@@ -569,6 +592,17 @@ public class QuiSuisJeView : MonoBehaviour
         }
         // Ma tete (et mes cheveux) ne bouchent pas la vue... sauf quand la camera vient me filmer (ma mort, ma pendaison).
         if (myHead) myHead.localScale = Vector3.one * (Cine > 0.05f && (cineSeat == me || cineFixed) || me < seats.Count && seats[me].dead ? 1 : 0.001f);
+        bool wolfMe = me < seats.Count && seats[me].wolf && seats[me].skin;
+        wolfK = Mathf.MoveTowards(wolfK, wolfMe ? 1 : 0, Time.deltaTime * 2);
+        if (wolfMe)
+        {
+            var wh = seats[me].wan.GetBoneTransform(HumanBodyBones.Head);
+            var want = wh ? wh.position + seats[me].root.forward * 0.15f + Vector3.up * 0.05f : eye;
+            wolfEye = wolfEye == Vector3.zero ? want : Vector3.Lerp(wolfEye, want, 1 - Mathf.Exp(-Time.deltaTime * 2));   // amortit le balancement de l'animation
+        }
+        if (me < seats.Count && seats[me].wan)   // pareil pour mon loup-garou (ses animations remettent l'echelle de la tete)
+            foreach (var b in new[] { HumanBodyBones.Head, HumanBodyBones.Neck })
+            { var t = seats[me].wan.GetBoneTransform(b); if (t) t.localScale = myHead ? myHead.localScale : Vector3.one * 0.001f; }
         foreach (var (hs, rope, top) in hanged)
         {
             var h = hs.an ? hs.an.GetBoneTransform(HumanBodyBones.Head) : null;
@@ -618,6 +652,7 @@ public class QuiSuisJeView : MonoBehaviour
         {
             var basis = Facing(me);
             var pos = eye == Vector3.zero ? transform.TransformPoint(SeatPos(me) + Vector3.up * 1.25f) : eye;
+            if (wolfK > 0) pos = Vector3.Lerp(pos, wolfEye, Mathf.SmoothStep(0, 1, wolfK));   // transforme : je vois par les yeux du loup (plus grand, penche en avant)
             var p = new Pose(pos, basis * Quaternion.Euler(pitch, yaw, 0));
             if (Cine > 0 && cineFixed)
             {

@@ -131,6 +131,7 @@ public partial class Game
             if (p.alive && !wg.fog && (wg.phase == WPh.Vote || wg.phase == WPh.Election || wg.phase == WPh.Tie) && wg.votes.TryGetValue(s, out var vt)) pt = vt;
             if (p.alive && wg.phase == WPh.Night && wg.step == LoupGarou.WolfStep && awake && LoupGarou.IsWolf(p.role) && visible && wg.wolfVotes.TryGetValue(s, out var wv)) pt = wv;
             if (s == wgHunter) pt = wgHuntAim;
+            if (s == me && pt < 0 && p.alive && !Spectating) pt = ui.WgFirstSel;   // je pointe celui que je choisis
             if (s == wgTestPoint.Item1) pt = wgTestPoint.Item2;
             qsview.Point(s, pt);
             // Gestes d'Agrou : pointer, viser/tirer, dormir, sortir l'arc, la bombe, le sort de soin.
@@ -328,6 +329,8 @@ public partial class Game
                 }
             }
         }
+        int hov = Focused && !paused && !ui.OverUi(Input.mousePosition) ? qsview.HeadUnder(cam.ScreenPointToRay(Input.mousePosition)) : -1;
+        for (int s = 0; s < wg.players.Count; s++) qsview.Outline(s, ui.WgChosen(s) ? 2 : s == hov && ui.WgClickable(s) ? 1 : 0);
         if (!Focused || paused) return;
         if (Input.GetMouseButton(1)) qsview.Look(Input.GetAxis("Mouse X") * 3 * settings.camSens, Input.GetAxis("Mouse Y") * 3 * settings.camSens);
         if (Mathf.Abs(Input.mouseScrollDelta.y) > 0.01f && !ui.OverUi(Input.mousePosition)) qsview.Zoom(Input.mouseScrollDelta.y);
@@ -351,7 +354,7 @@ public partial class Game
         string Who() => string.Join(", ", wg.players.Select(p => $"{p.name}={LoupGarou.Name(p.role)}{(p.alive ? "" : "+")}"));
         log.AppendLine(Who());
         wgBotAt = Time.time + 1000;   // les adversaires attendent que le journal du test demarre
-        string last = null; int shots = 0, n = 0;
+        string last = null; int shots = 0, n = 0, votedShots = 0;
         while (!wg.Finished && wg.night <= 3 && n < 4000)
         {
             n++;
@@ -371,7 +374,7 @@ public partial class Game
                 if (n == 1) wgBotAt = Time.time;
                 if (wg.phase == WPh.Hunter && shots < 8) { yield return new WaitForSeconds(2.5f); shots++; yield return shot($"r{shots}-chasseur-vise"); }
             }
-            if (Idle && !WgHold) { var a = wg.BotFor(me); if (a != null) Apply(string.Join("|", a)); }
+            if (Idle && !WgHold) { var a = wg.BotFor(me); if (a != null) { Apply(string.Join("|", a)); if (votedShots < 3 && (a[0] == "vote" || a.Length > 2 && a[2] == "wolf")) { votedShots++; yield return new WaitForSeconds(1.5f); yield return shot($"v{votedShots}-{last.Replace('/', '-')}"); } } }
             wgPhaseAt -= 0.4f;
             yield return new WaitForSeconds(0.1f);
         }
