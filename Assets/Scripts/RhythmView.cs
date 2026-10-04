@@ -132,7 +132,21 @@ public class RhythmView : MonoBehaviour
     }
 
     public bool HasTenna => tenna;
-    public Pose TennaPose => QuizView.CloseUp(tenna);
+    // Gros plan des regles : cadre sur la silhouette reelle de Tenna (son modele en smoking n'a pas l'echelle de celui du quiz).
+    public Pose TennaPose
+    {
+        get
+        {
+            var rs = tenna.GetComponentsInChildren<SkinnedMeshRenderer>();
+            if (rs.Length == 0) return QuizView.CloseUp(tenna);
+            var b = rs[0].bounds; foreach (var r in rs) if (!r.name.Contains("Cane")) b.Encapsulate(r.bounds);
+            float h = b.size.y;
+            var look = new Vector3(tenna.position.x, b.min.y + h * 0.72f, tenna.position.z);   // haut du torse et tete-ecran
+            var front = tenna.forward; front.y = 0; front.Normalize();
+            var from = look + front * h * 1.25f + tenna.right * h * 0.15f - Vector3.up * h * 0.05f;
+            return new Pose(from, Quaternion.LookRotation(look - from));
+        }
+    }
 
     public void TennaDance(string state)
     {

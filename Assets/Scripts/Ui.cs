@@ -823,7 +823,7 @@ public partial class Ui : MonoBehaviour
         }
         bubbles.Clear();
         seatTags.Clear();
-        playersBar.style.display = feed.style.display = bj || rt || qz || rh || un || bc || bpg || pqg ? DisplayStyle.None : DisplayStyle.Flex;
+        playersBar.style.display = feed.style.display = bj || rt || qz || rh || un || bc || bpg || pqg || game.ll != null || game.wg != null ? DisplayStyle.None : DisplayStyle.Flex;   // Limite et Loup-garou ont leur propre interface
         hint.text = bpg || pqg ? "" : bj || rt || qz || rh || un || bc ? "" : game.ch != null || game.sp != null ? "Maintiens le clic pour prendre le dé, lâche-le d'un geste pour le lancer  ·  Molette : zoom  ·  Échap : pause" : "Clic droit : tourner  ·  Molette : zoom  ·  Échap : pause";
         if (rt) ResetRouletteBets();
         if (bj) betAmount = Blackjack.MinBet * 5;
