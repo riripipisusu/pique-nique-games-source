@@ -212,8 +212,9 @@ Button.m-card:hover .m-card-desc { display: flex; }
 .update-card { position: absolute; top: 150px; right: 50px; width: 440px; padding: 28px 34px; align-items: center; }
 
 /* ---------- Choix du jeu ---------- */
-.games-grid { flex-direction: row; flex-wrap: wrap; justify-content: center; flex-grow: 1; align-content: center; }
-.game-tile { width: 336px; height: 226px; margin: 6px; }
+.games-scroll { flex-grow: 1; flex-shrink: 1; }
+.games-grid { flex-direction: row; flex-wrap: wrap; justify-content: center; align-content: center; padding: 8px 0; }
+.game-tile { width: 262px; height: 186px; margin: 5px; }   /* 6 par rangee */
 .game-tile .m-card-shade { height: 40%; background-image: none; background-color: #1C5FC8; }
 .game-tile .m-card-art { bottom: 40%; }
 .game-tile .m-card-stripes { display: none; }
@@ -1263,3 +1264,8 @@ Button.wg-logo:hover { scale: 1.06 1.06; }
 .wgx .wg-hint { text-shadow: 0 2px 1px rgba(0, 0, 0, 0.9); }
 
 .wgx .qsj-status { left: 330px; right: 330px; translate: 0 0; max-width: none; white-space: normal; -unity-text-align: upper-center; }   /* ne passe pas sous les boutons son / pause */
+
+/* --- liste des jeux : 6 tuiles par rangee, textes a l'echelle --- */
+.m-page .game-tile .m-card-title { font-size: 21px; }
+.m-page .game-tile .m-card-sub { font-size: 17px; }
+.m-page .game-tile .m-card-txt { padding: 0 14px 16px 14px; }

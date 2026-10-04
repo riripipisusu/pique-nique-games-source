@@ -350,7 +350,9 @@ public partial class Ui
         Div(bar, "grow");
         gameCount = Text(bar, "", "m-count");
         Rule(body);
-        gameRow = Div(body, "games-grid");
+        // Grille dans une zone qui defile : elle ne deborde plus sur les onglets ni sur le pied de page.
+        var scroll = Add(body, new ScrollView(ScrollViewMode.Vertical), "games-scroll");
+        gameRow = Div(scroll.contentContainer, "games-grid");
         foreach (var g in GameInfo.Keys) GameCard(gameRow, g);
         Rule(body);
         Ico(Btn(foot, "Retour", Back, "m-dark", "small"), "back");
