@@ -78,7 +78,7 @@ public partial class Ui
     static readonly Dictionary<GameId, (string icon, string color)> GameIcon = new Dictionary<GameId, (string, string)>
     {
         [GameId.Chevaux] = ("Flag_01", "#2E8B3E"), [GameId.BonnePaye] = ("Currency_Notes_01", "#12876A"),
-        [GameId.Serpents] = ("Star_01", "#6A3FB5"), [GameId.Roue] = ("Currency_Coin_01", "#C8327A"),
+        [GameId.Paintball] = ("Lightning_01", "#FF7A1A"), [GameId.Serpents] = ("Star_01", "#6A3FB5"), [GameId.Roue] = ("Currency_Coin_01", "#C8327A"),
         [GameId.QuiSuisJe] = ("ExclamationMark_01", "#E08A00"), [GameId.Pouilleux] = ("Death_01", "#3D4A63"),
         [GameId.Uno] = ("Lightning_01", "#D8322E"), [GameId.Limite] = ("Chat_01", "#B5121B"), [GameId.LoupGarou] = ("Death_01", "#2B1B4A"), [GameId.Bac] = ("Book_01", "#1C6FC4"), [GameId.Rhythm] = ("Headphones_01", "#8E24AA"),
     };

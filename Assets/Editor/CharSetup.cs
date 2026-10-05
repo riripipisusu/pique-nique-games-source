@@ -63,6 +63,7 @@ public static class CharSetup
         }
 
         LoupSetup.AgrouLayer(ctrl);   // gestes d'Agrou (si les animations ont ete importees)
+        LocoSetup.AddStates(ctrl);    // marche, course, saut (mannequin d'Agrou)
         // (Les personnages eux-memes viennent du pack Sidekick : SidekickSetup.)
         AssetDatabase.SaveAssets();
     }

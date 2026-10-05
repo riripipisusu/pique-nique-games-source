@@ -241,6 +241,7 @@ public partial class Ui : MonoBehaviour
     // Fiche de chaque jeu : illustration (Resources/UI/Games), famille (0 societe, 1 casino, 2 TV Time), textes.
     static readonly Dictionary<GameId, (string art, int cat, string meta, string desc)> GameInfo = new Dictionary<GameId, (string, int, string, string)>
     {
+        [GameId.Paintball] = ("paintball", 0, "2 à 10 joueurs · FPS en ligne", "Deux équipes, des billes de peinture fluo et la place du village : une bille, et tu es éliminé !"),
         [GameId.Croque] = ("croque", 0, "2 à 4 joueurs · Plateau", "Grimpe la montagne jusqu'au potager... mais gare aux trous quand la carotte tourne !"),
         [GameId.Chevaux] = ("chevaux", 0, "2 à 4 joueurs · Plateau", "Un 6 pour sortir, fais le tour du plateau et grimpe l'escalier jusqu'au centre !"),
         [GameId.BonnePaye] = ("bonnepaye", 0, "2 à 6 joueurs · Plateau", "Factures, affaires, loterie et Jour de paye : le plus riche à la fin du mois gagne !"),
@@ -433,6 +434,8 @@ public partial class Ui : MonoBehaviour
             ? new[] { (0, "Paquet complet", "Le vrai Limite Limite : humour très noir, pour adultes."), (1, "Paquet Streamer", "Plus soft, pour jouer en stream ou en famille (enfin presque).") }
             : game.gameId == GameId.Pouilleux
             ? new[] { (0, "Classique", "Le valet de pique est le pouilleux : ne le garde pas !") }
+            : game.gameId == GameId.Paintball
+            ? new[] { (0, "Partie courte", "Première équipe à 10 points (5 minutes au plus)."), (1, "Partie normale", "Première équipe à 20 points."), (2, "Longue partie", "Première équipe à 30 points.") }
             : game.gameId == GameId.Serpents
             ? new[] { (0, "Classique", "10 échelles, 10 serpents, il faut tomber pile sur 100.") }
             : game.gameId == GameId.Bac
@@ -667,6 +670,13 @@ public partial class Ui : MonoBehaviour
             S("Épargne et prêts", "À votre tour, avant de lancer, placez de l'argent sur votre livret (jusqu'au 22 du mois) : il rapporte 50 € par tranche de 500 € au Jour de paye. Retirer coûte 150 € de frais. Il vous manque de l'argent ? La banque vous prête automatiquement par tranches de 1500 € : jamais de solde négatif.");
             S("Changement d'heure", "Sur le 26, tout le monde recule d'une case et suit la case où il arrive. Revenir au départ envoie directement au Jour de paye !");
         }
+        else if (game.gameId == GameId.Paintball)
+        {
+            S("Le but", "Deux équipes, Orange contre Bleu, sur la place du village. Chaque bille qui touche un adversaire rapporte un point à ton équipe. La première équipe au score choisi gagne ; sinon, la meilleure au bout de 5 minutes.");
+            S("Commandes", "Souris : viser. Clic gauche : tirer. ZQSD (ou WASD, ou les flèches) : se déplacer. Maj : courir. Espace : sauter. Échap : pause.");
+            S("Touché !", "Une seule bille suffit : tu es éliminé et tu reviens à ta base au bout de 3 secondes et demie. Les billes volent un peu en cloche : vise légèrement au-dessus de loin, et devant une cible qui court.");
+            S("Les équipes", "En ligne, les joueurs sont répartis à tour de rôle entre Orange et Bleu. Hors ligne, des bots complètent les deux équipes.");
+        }
         else if (game.gameId == GameId.Serpents)
         {
             S("Le but", "Être le premier à amener son pion sur la case 100, en haut du plateau. On part hors du plateau, à côté de la case 1.");
@@ -765,6 +775,7 @@ public partial class Ui : MonoBehaviour
         BuildUnoHud();
         BuildBacHud();
         BuildBonnePayeHud();
+        BuildPaintballHud();
         BuildPouilleuxHud();
         BuildQuiSuisJeHud();
         BuildRoueHud();
@@ -800,6 +811,7 @@ public partial class Ui : MonoBehaviour
         pqHud.style.display = game.pq != null ? DisplayStyle.Flex : DisplayStyle.None;
         pqTags.Clear(); pqTagEls.Clear();
         bpHud.style.display = game.bp != null ? DisplayStyle.Flex : DisplayStyle.None;
+        pbHud.style.display = game.pb != null ? DisplayStyle.Flex : DisplayStyle.None;
         if (bc) BacRound();
         unoHud.style.display = un ? DisplayStyle.Flex : DisplayStyle.None;
         if (un) ShowUnoHud();
@@ -823,8 +835,8 @@ public partial class Ui : MonoBehaviour
         }
         bubbles.Clear();
         seatTags.Clear();
-        playersBar.style.display = feed.style.display = bj || rt || qz || rh || un || bc || bpg || pqg || game.ll != null || game.wg != null ? DisplayStyle.None : DisplayStyle.Flex;   // Limite et Loup-garou ont leur propre interface
-        hint.text = bpg || pqg ? "" : bj || rt || qz || rh || un || bc ? "" : game.ch != null || game.sp != null ? "Maintiens le clic pour prendre le dé, lâche-le d'un geste pour le lancer  ·  Molette : zoom  ·  Échap : pause" : "Clic droit : tourner  ·  Molette : zoom  ·  Échap : pause";
+        playersBar.style.display = feed.style.display = bj || rt || qz || rh || un || bc || bpg || pqg || game.ll != null || game.wg != null || game.pb != null ? DisplayStyle.None : DisplayStyle.Flex;   // Limite et Loup-garou ont leur propre interface
+        hint.text = bpg || pqg || game.pb != null ? "" : bj || rt || qz || rh || un || bc ? "" : game.ch != null || game.sp != null ? "Maintiens le clic pour prendre le dé, lâche-le d'un geste pour le lancer  ·  Molette : zoom  ·  Échap : pause" : "Clic droit : tourner  ·  Molette : zoom  ·  Échap : pause";
         if (rt) ResetRouletteBets();
         if (bj) betAmount = Blackjack.MinBet * 5;
         Refresh();
@@ -874,6 +886,7 @@ public partial class Ui : MonoBehaviour
         else if (game.ll != null) RefreshLimite();
         else if (game.wg != null) RefreshLoup();
         else if (game.roue != null) RefreshRoue();
+        else if (game.pb != null) RefreshPaintball();
     }
 
     void PlayerCard(int i, string name, string avatar, bool active)
@@ -1133,6 +1146,7 @@ public partial class Ui : MonoBehaviour
             winTitle.style.color = BonnePayeView.ColorOf(b.winner);
             winSub.text = string.Join("\n", b.players.OrderByDescending(p => p.Capital).Select((p, i) => $"{i + 1}.  {p.name}  —  {p.Capital} €"));
         }
+        else if (game.pb != null) PaintballVictory();
         else if (game.sp != null)
         {
             var w = game.sp.players[game.sp.winner];

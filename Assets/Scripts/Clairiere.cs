@@ -48,6 +48,9 @@ public class Clairiere : MonoBehaviour
         AgrouMap.Night(dark);
     }
 
+    // Plein jour sans feu de camp (Paintball) : l'eclairage de jour, que l'Update (lie au feu) n'applique pas.
+    public static void Day() { dark = 0; Darkness = 0; ApplyNight(); AgrouMap.Night(0); }
+
     static void ApplyNight()
     {
         var f = savedFog;

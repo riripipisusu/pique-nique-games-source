@@ -23,7 +23,7 @@ public partial class Game : MonoBehaviour
     public Blackjack bj;
     public Roulette rt;
     public Quiz qz;
-    public IMatch Match => (IMatch)rules ?? (IMatch)bj ?? (IMatch)rt ?? (IMatch)qz ?? (IMatch)rh ?? (IMatch)uno ?? (IMatch)ch ?? (IMatch)bac ?? (IMatch)sp ?? (IMatch)bp ?? (IMatch)pq ?? (IMatch)qsj ?? (IMatch)ll ?? (IMatch)wg ?? roue;
+    public IMatch Match => (IMatch)rules ?? (IMatch)bj ?? (IMatch)rt ?? (IMatch)qz ?? (IMatch)rh ?? (IMatch)uno ?? (IMatch)ch ?? (IMatch)bac ?? (IMatch)sp ?? (IMatch)bp ?? (IMatch)pq ?? (IMatch)qsj ?? (IMatch)ll ?? (IMatch)wg ?? (IMatch)roue ?? pb;
     public bool busy;
 
     Board board;
@@ -100,6 +100,7 @@ public partial class Game : MonoBehaviour
         pview = new GameObject("NappePouilleux").AddComponent<PouilleuxView>();
         qsview = new GameObject("QuiSuisJe").AddComponent<QuiSuisJeView>();
         lview = new GameObject("LimiteLimite").AddComponent<LimiteView>();
+        pbview = new GameObject("Paintball").AddComponent<PaintballView>();
         rview.Init(table);
         MenuBackdrop();
 
@@ -207,6 +208,7 @@ public partial class Game : MonoBehaviour
         IEnumerator Shot(string n) { yield return new WaitForEndOfFrame(); var t = ScreenCapture.CaptureScreenshotAsTexture(); System.IO.File.WriteAllBytes(System.IO.Path.Combine(dir, role + "-" + n + ".png"), t.EncodeToPNG()); Destroy(t); }
         yield return new WaitForSeconds(3);
         tvIntroSeen = true; tvRulesSeen.Add(g);          // pas de generique ni de regles pendant le test
+        if (g == GameId.Paintball) pbAuto = true;        // paintball : chaque instance joue toute seule
         SetMyAvatar(host ? Chars.All[7] : role == "join" ? "Ami_Roux" : role == "join2" ? Chars.All[3] : "Ami_Brune");   // codes complets : salon de plusieurs Ko
         if (host)
         {
@@ -245,7 +247,7 @@ public partial class Game : MonoBehaviour
         }
         while (busy || (pending.Count > 0 && applied < 30)) yield return null;
         yield return Shot("fin");
-        var log = rules?.log ?? bj?.log ?? rt?.log ?? qz?.log ?? uno?.log ?? ch?.log ?? bp?.log ?? pq?.log ?? qsj?.log ?? ll?.log ?? wg?.log ?? roue?.log ?? bac?.log ?? sp?.log ?? new List<string>();
+        var log = rules?.log ?? bj?.log ?? rt?.log ?? qz?.log ?? uno?.log ?? ch?.log ?? bp?.log ?? pq?.log ?? qsj?.log ?? ll?.log ?? wg?.log ?? roue?.log ?? bac?.log ?? sp?.log ?? pb?.log ?? new List<string>();
         System.IO.File.WriteAllText(System.IO.Path.Combine(dir, role + ".txt"),
             $"status={net.Status}\nseat={mySeat}\nspectateur={Spectating}\napplied={applied}\noption={net.LobbyOption}\navatars={string.Join(" ; ", net.LobbyAvatars)}\n" + string.Join("\n", log));
         // Retour au salon : l'hote attend que le spectateur ait fini son rattrapage, puis ramene tout le monde.
@@ -499,6 +501,8 @@ public partial class Game : MonoBehaviour
             Application.Quit();
             yield break;
         }
+        int probe = Array.IndexOf(Environment.GetCommandLineArgs(), "-mapprobe");   // outil : releve d'une map d'Agrou
+        if (probe >= 0) { yield return MapProbe(dir, Shot, int.Parse(Environment.GetCommandLineArgs()[probe + 1])); yield break; }
         if (Array.IndexOf(Environment.GetCommandLineArgs(), "-loup") >= 0)   // loup-garou : moi (auto) contre 7 bots, tous les roles
         {
             SelectGame(GameId.LoupGarou);
@@ -561,6 +565,18 @@ public partial class Game : MonoBehaviour
             bpview.Speed = 3;
             yield return new WaitForSeconds(1.5f); yield return Shot("p1-debut");
             yield return BonnePayeTest(dir, Shot);
+            Application.Quit();
+            yield break;
+        }
+        if (Array.IndexOf(Environment.GetCommandLineArgs(), "-paintball") >= 0)   // paintball : moi (pilote auto) + 5 bots, 3 contre 3
+        {
+            SelectGame(GameId.Paintball);
+            option = 0;
+            ui.OpenForTest("setup"); yield return new WaitForSeconds(1); yield return Shot("b0-setup");
+            quizBots = 5;
+            pbAuto = true;   // mon siege est joue par un bot
+            StartQuizWithBots();
+            yield return PaintballTest(dir, Shot);
             Application.Quit();
             yield break;
         }
@@ -993,6 +1009,8 @@ public partial class Game : MonoBehaviour
         ll = null;
         wg = null;
         roue = null;
+        pb = null;
+        pbview.Hide();
         if (rset) rset.Hide();
         cam.clearFlags = CameraClearFlags.Skybox;
         live.Hide();
@@ -1012,6 +1030,7 @@ public partial class Game : MonoBehaviour
         else if (g == GameId.QuiSuisJe) StartQuiSuisJe(n, opt, seed, av);
         else if (g == GameId.Limite) StartLimite(n, opt, seed, av);
         else if (g == GameId.LoupGarou) StartLoup(n, opt, seed, av);
+        else if (g == GameId.Paintball) StartPaintball(n, opt, seed, av);
         else if (g == GameId.Roue) StartRoue(n, opt, seed, av);
         else if (g == GameId.Uno) StartUno(n, opt, seed, av);
         else if (Games.TvTime(g))
@@ -1071,7 +1090,7 @@ public partial class Game : MonoBehaviour
         quizLight.enabled = Games.TvTime(g) && g != GameId.Rhythm;
         snapCam = true;
         if (!Games.TvTime(g))   // TV Time : la musique demarre apres le generique et les regles
-            Sound.I.Music(g == GameId.Croque || g == GameId.Uno || g == GameId.Chevaux || g == GameId.Serpents || g == GameId.BonnePaye || g == GameId.Pouilleux || g == GameId.QuiSuisJe || g == GameId.Limite || g == GameId.LoupGarou ? "music_game" : g == GameId.Quiz ? "music_quiz" : "music_blackjack");
+            Sound.I.Music(g == GameId.Croque || g == GameId.Uno || g == GameId.Chevaux || g == GameId.Serpents || g == GameId.BonnePaye || g == GameId.Pouilleux || g == GameId.QuiSuisJe || g == GameId.Limite || g == GameId.LoupGarou || g == GameId.Paintball ? "music_game" : g == GameId.Quiz ? "music_quiz" : "music_blackjack");
         catchingUp = watch;
         if (watch) { Time.timeScale = 12; AudioListener.volume = 0; catchSince = Time.realtimeSinceStartup; }
         if (Spectating) ui.Say("Tu regardes la partie en cours", 4);
@@ -1101,7 +1120,7 @@ public partial class Game : MonoBehaviour
 
     public void PlayerLeft(int seat)
     {
-        string n = rules?.players[seat].name ?? bj?.players[seat].name ?? rt?.players[seat].name ?? qz?.players[seat].name ?? rh?.players[seat].name ?? uno?.players[seat].name ?? bac?.players[seat].name ?? sp?.players[seat].name ?? bp?.players[seat].name ?? pq?.players[seat].name ?? qsj?.players[seat].name ?? ll?.players[seat].name ?? wg?.players[seat].name ?? roue?.players[seat].name ?? ch.players[seat].name;
+        string n = rules?.players[seat].name ?? bj?.players[seat].name ?? rt?.players[seat].name ?? qz?.players[seat].name ?? rh?.players[seat].name ?? uno?.players[seat].name ?? bac?.players[seat].name ?? sp?.players[seat].name ?? bp?.players[seat].name ?? pq?.players[seat].name ?? qsj?.players[seat].name ?? ll?.players[seat].name ?? wg?.players[seat].name ?? roue?.players[seat].name ?? pb?.players[seat].name ?? ch.players[seat].name;
         ui.Say($"{n} est parti : l'hôte joue pour lui.", 3.5f);
     }
 
@@ -1401,6 +1420,7 @@ public partial class Game : MonoBehaviour
         if (ll != null) { ApplyLimite(p); return; }
         if (wg != null) { ApplyLoup(p); return; }
         if (roue != null) { ApplyRoue(p); return; }
+        if (pb != null) { ApplyPaintball(p); return; }
         if (rules != null)
         {
             if (p[0] == "draw") DoDraw(); else DoMove(int.Parse(p[1]));
@@ -1545,6 +1565,8 @@ public partial class Game : MonoBehaviour
         ll = null;
         wg = null;
         roue = null;
+        pb = null;
+        pbview.Hide();
         if (rset) rset.Hide();
         cam.clearFlags = CameraClearFlags.Skybox;
         snapCam = true;
@@ -1572,6 +1594,7 @@ public partial class Game : MonoBehaviour
         ChevauxInput();
         BacUpdate();
         SerpentsInput();
+        PaintballUpdate();
         BonnePayeInput();
         PouilleuxUpdate();
         QuiSuisJeUpdate();
@@ -1701,6 +1724,12 @@ public partial class Game : MonoBehaviour
         {
             BonnePayeCamera(focus);
             ui.UpdateBonnePaye(cam);
+            if (dof) dof.active = paused;
+            return;
+        }
+        if (inGame && pb != null)
+        {
+            PaintballCamera();
             if (dof) dof.active = paused;
             return;
         }

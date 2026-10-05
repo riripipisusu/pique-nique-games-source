@@ -222,6 +222,25 @@ public class Net : MonoBehaviour
     }
 
     // --- Messages -----------------------------------------------------------------
+    // Temps reel (Paintball) : positions et billes, non fiables, jamais enregistrees ni rejouees.
+    // "fp|siege|..." / "fs|siege|..." ; l'hote remplace le siege par celui de l'expediteur et relaie aux autres.
+    public void HostEnd() { if (IsHost && InGame) HostAct(new[] { "act", "end" }); }
+
+    public void SendRT(string s)
+    {
+        if (session == null || !nm || !nm.IsListening) return;
+        if (IsHost) { foreach (var id in nm.ConnectedClientsIds) if (id != nm.LocalClientId) SendTo(id, s, NetworkDelivery.UnreliableSequenced); }
+        else SendTo(NetworkManager.ServerClientId, s, NetworkDelivery.UnreliableSequenced);
+    }
+    static bool RT(string s) => s.StartsWith("fp|") || s.StartsWith("fs|");
+
+    void SendTo(ulong id, string s, NetworkDelivery delivery)
+    {
+        using var w = new FastBufferWriter(16 + s.Length * 2, Allocator.Temp);
+        w.WriteValueSafe(s);
+        nm.CustomMessagingManager.SendNamedMessage(Channel, id, w, delivery);
+    }
+
     void SendTo(ulong id, string s)
     {
         // Taille selon le message (le salon porte le code de perso de chacun : plusieurs Ko a 3 joueurs et plus).
@@ -249,6 +268,17 @@ public class Net : MonoBehaviour
     void OnMessage(ulong sender, FastBufferReader r)
     {
         r.ReadValueSafe(out string s);
+        if (RT(s))
+        {
+            if (!IsHost) { game.OnRealtime(s); return; }
+            if (!seats.TryGetValue(sender, out int rs) || !InGame) return;
+            int bar = s.IndexOf('|', 3);
+            if (bar < 0) return;
+            s = s.Substring(0, 3) + rs + s.Substring(bar);   // on ne parle que pour soi
+            foreach (var id in nm.ConnectedClientsIds) if (id != nm.LocalClientId && id != sender) SendTo(id, s, NetworkDelivery.UnreliableSequenced);
+            game.OnRealtime(s);
+            return;
+        }
         if (!IsHost) { Apply(s); return; }
         var p = s.Split('|');
         if (p[0] == "hello")
@@ -414,6 +444,8 @@ public class Net : MonoBehaviour
             if (p[1] == "chat" && p.Length > 4) p[4] = Clean(p[4]);
         }
         if (shadow is LoupGarou && p.Length > 1 && (p[1] == "next" || p[1] == "timeout" || p[1] == "quit") && seat >= 0) return;   // reserve a l'hote
+        if (shadow is Paintball && p.Length > 2 && (p[1] == "hit" || p[1] == "spawn") && seat >= 0 && p[2] != seat.ToString()) return;   // on ne tire et ne revient que pour soi
+        if (shadow is Paintball && p.Length > 1 && p[1] == "end" && seat >= 0) return;   // reserve a l'hote
         if (shadow is Limite && p.Length > 2 && p[1] == "play") { if (seat < 0) return; p = new[] { "act", "play", seat.ToString(), p[2] }; }   // on ne joue que pour soi
         if (shadow is Limite && p.Length > 1 && (p[1] == "next" || p[1] == "timeout") && seat >= 0) return;   // reserve a l'hote
         if (shadow is QuiSuisJe && p.Length > 2 && p[1] == "pick") { if (seat < 0) return; p = new[] { "act", "pick", seat.ToString(), Clean(p[2]) }; }   // on ne choisit que pour son voisin

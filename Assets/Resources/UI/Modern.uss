@@ -1269,3 +1269,14 @@ Button.wg-logo:hover { scale: 1.06 1.06; }
 .m-page .game-tile .m-card-title { font-size: 21px; }
 .m-page .game-tile .m-card-sub { font-size: 17px; }
 .m-page .game-tile .m-card-txt { padding: 0 14px 16px 14px; }
+
+/* --- Paintball --- */
+.pb-splat { position: absolute; left: -10%; right: -10%; top: -20%; bottom: -20%; opacity: 0; -unity-background-scale-mode: scale-and-crop; }
+.pb-cross { position: absolute; left: 50%; top: 50%; width: 26px; height: 26px; margin-left: -13px; margin-top: -13px; border-width: 2px; border-radius: 13px; border-color: rgba(255, 255, 255, 0.85); align-items: center; justify-content: center; }
+.pb-cross-dot { width: 4px; height: 4px; border-radius: 2px; background-color: #FFFFFF; }
+.pb-top { position: absolute; top: 16px; left: 0; right: 0; align-items: center; }
+.pb-team { font-size: 34px; color: #FFFFFF; padding: 4px 22px; border-radius: 10px; margin: 0; -unity-font: url("../Fonts/Bungee-Regular.ttf"); -unity-font-definition: initial; text-shadow: 0 2px 0 rgba(0, 0, 0, 0.5); }
+.pb-time { font-size: 32px; color: #FFFFFF; margin: 0 18px; -unity-font: url("../Fonts/Bungee-Regular.ttf"); -unity-font-definition: initial; text-shadow: 0 2px 0 rgba(0, 0, 0, 0.7); }
+.pb-feed { position: absolute; top: 90px; right: 30px; align-items: flex-end; }
+.pb-feed-line { font-size: 24px; color: #FFFFFF; margin: 2px 0; padding: 2px 12px; background-color: rgba(10, 6, 24, 0.6); border-radius: 6px; -unity-font: url("../Fonts/SairaCondensed-ExtraBold.ttf"); -unity-font-definition: initial; }
+.pb-down { position: absolute; top: 58%; left: 0; right: 0; -unity-text-align: middle-center; font-size: 46px; color: #FFFFFF; white-space: normal; -unity-font: url("../Fonts/Bungee-Regular.ttf"); -unity-font-definition: initial; text-shadow: 0 3px 0 rgba(0, 0, 0, 0.8); }
