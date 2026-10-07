@@ -26,7 +26,7 @@ public class PaintballView : MonoBehaviour
     class Av
     {
         public int seat, team;
-        public Transform t, gun, head;
+        public Transform t, gun, head, hand;
         public Animator an;
         public TextMesh tag;
         public Vector3 pos, from, to, vel;
@@ -81,6 +81,17 @@ public class PaintballView : MonoBehaviour
 
     // --- Mise en place ------------------------------------------------------------------------------------------
     bool MeBot => bots.ContainsKey(me);
+    Transform vm; Animator vmAn;
+    static readonly string[] ArmSlots = { "AUPL", "AUPR", "ALWL", "ALWR", "HNDL", "HNDR", "ASHL", "ASHR" };
+    static bool ArmPart(Transform t) { for (; t; t = t.parent) if (System.Array.IndexOf(ArmSlots, t.name) >= 0) return true; return false; }
+    // Bras de vue : la copie est posee pour que ses yeux soient sur la camera, tournee avec elle (visee comprise).
+    void PlaceArms(Pose cam)
+    {
+        if (!vm) return;
+        vm.gameObject.SetActive(!pb.players[me].down);
+        vm.rotation = cam.rotation;
+        vm.position = cam.position - cam.rotation * new Vector3(0, 1.6f, -0.06f);
+    }
     public void Build(Paintball p, int mySeat, IList<string> avatars, bool[] isBot, Action<string> onAct, Action<string> onSend)
     {
         Clear();
@@ -118,15 +129,14 @@ public class PaintballView : MonoBehaviour
             a.an.cullingMode = AnimatorCullingMode.AlwaysAnimate;
             if (a.an.layerCount > 1) { a.an.SetLayerWeight(1, 1); a.an.Play("wg_Idle_Aiming_Anim_mixamo_com", 1, 0); }
             a.head = a.an.GetBoneTransform(HumanBodyBones.Head);
-            var hand = a.an.GetBoneTransform(HumanBodyBones.RightHand);
-            a.gun = Gun(hand ? hand : a.t, a.team, 0.75f).transform;
-            a.gun.localPosition = new Vector3(0, 0.05f, 0.12f) / a.t.localScale.x;
-            a.gun.localRotation = Quaternion.Euler(0, 90, 0);
+            a.hand = a.an.GetBoneTransform(HumanBodyBones.RightHand);
+            a.gun = Gun(root, a.team, GunLen).transform;   // devant le buste, dans l'axe de visee ; les mains s'y posent
+            Hold(a);
             a.pos = a.from = a.to = SpawnPoint(s);
             a.t.position = a.pos;
             a.yaw = a.tYaw = Quaternion.LookRotation(fire - a.pos).eulerAngles.y;
             a.tag = Label(a.t, p.players[s].name, TeamColor[a.team]);
-            if (s == me) a.t.gameObject.SetActive(false);
+            if (s == me) a.tag.gameObject.SetActive(false);   // mon corps reste visible (sans la tete) ; mon lanceur est celui de la vue
             avs.Add(a);
             if (isBot[s]) bots[s] = new BotBrain { aimErr = 0.9f + (s % 3) * 0.35f };
         }
@@ -137,7 +147,19 @@ public class PaintballView : MonoBehaviour
         cc.height = 1.75f; cc.radius = 0.35f; cc.center = Vector3.up * 0.875f; cc.stepOffset = 0.45f; cc.slopeLimit = 50;
         cc.enabled = false; mine.transform.position = avs[me].pos; cc.enabled = true;
         yaw = avs[me].yaw; pitch = 0;
-        viewGun = Gun(root, avs[me].team, 0.55f).transform;
+        viewGun = avs[me].gun;
+        // Bras de vue : une copie de mon perso dont on ne garde que les bras, dans une pose fixe, mains sur le lanceur ;
+        // elle suit la camera sans le balancement de la course. Mon corps dans le monde, lui, n'a plus de bras.
+        vm = Chars.Spawn(me < avatars.Count ? avatars[me] : Chars.Default, root, Vector3.zero, 0, out vmAn, 1.75f);
+        vmAn.cullingMode = AnimatorCullingMode.AlwaysAnimate;
+        vmAn.Play("Idle", 0, 0); vmAn.speed = 0;   // pose figee : seuls les mains (IK) suivent le lanceur
+        if (vmAn.layerCount > 1) vmAn.SetLayerWeight(1, 0);
+        foreach (var r in vm.GetComponentsInChildren<Renderer>(true)) { r.enabled = ArmPart(r.transform); r.shadowCastingMode = UnityEngine.Rendering.ShadowCastingMode.Off; }
+        // Comme dans CS:GO : mon corps n'est pas dessine (seuls les bras de vue et le lanceur) ; les autres le voient.
+        foreach (var r in avs[me].t.GetComponentsInChildren<Renderer>(true)) r.enabled = false;
+        Destroy(avs[me].an.GetComponent<FpsHands>());
+        var vh = vmAn.gameObject.AddComponent<FpsHands>();
+        vh.right = viewGun.Find("main droite"); vh.left = viewGun.Find("main gauche"); vh.lookWeight = 0;
         Ready = true;
     }
 
@@ -163,7 +185,60 @@ public class PaintballView : MonoBehaviour
     }
 
     // Lanceur de paintball en formes simples : corps a la couleur de l'equipe, reservoir de billes, canon.
-    GameObject Gun(Transform parent, int team, float k)
+    // Lanceur : le pistolet a billets du pack Casino, recolore a la couleur de l'equipe, dans un repere ou le canon
+    // pointe vers +z et le dessus vers +y ; longueur len (m). Sinon, un lanceur en formes simples.
+    public static Vector3 GunFlip = new Vector3(1, 1, 1);   // signes des axes (verifie : le prefab a deja le canon vers +z)
+    GameObject Gun(Transform parent, int team, float len)
+    {
+        var prefab = Synty.Get("SM_Wep_Paintball_Gun_01") ?? Synty.Get("SM_Prop_Cash_Gun_01");
+        if (!prefab) return BoxGun(parent, team, len / 0.45f);
+        var holder = new GameObject("lanceur");
+        var g = Instantiate(prefab, Vector3.zero, Quaternion.identity);
+        foreach (var c in g.GetComponentsInChildren<Collider>()) Destroy(c);
+        var rs = g.GetComponentsInChildren<Renderer>();
+        Bounds Box() { var bb = rs[0].bounds; foreach (var r in rs) bb.Encapsulate(r.bounds); return bb; }
+        var sz = Box().size;
+        int[] ax = { 0, 1, 2 };
+        System.Array.Sort(ax, (x, y) => sz[x].CompareTo(sz[y]));   // ax[0] le plus fin (largeur), ax[1] hauteur, ax[2] longueur (canon)
+        Vector3 A(int k) => k == 0 ? Vector3.right : k == 1 ? Vector3.up : Vector3.forward;
+        // On tourne le modele pour que son axe long aille vers +z et sa hauteur vers +y (signes : GunFlip).
+        g.transform.rotation = Quaternion.Inverse(Quaternion.LookRotation(A(ax[2]) * GunFlip.z, A(ax[1]) * GunFlip.y)) * g.transform.rotation;   // compose avec la rotation propre du prefab
+        g.transform.position -= Box().center;
+        g.transform.SetParent(holder.transform, true);
+        holder.transform.localScale = Vector3.one * (len / sz[ax[2]]);
+        // Pack Kids en shader Standard (rose en URP) : materiau Lit avec sa texture, legerement teinte aux couleurs de l'equipe.
+        var tint = Color.Lerp(TeamColor[team], Color.white, 0.55f);
+        foreach (var r in rs)
+        {
+            r.materials = r.sharedMaterials.Select(m => { var c = new Material(lit) { color = tint }; c.SetTexture("_BaseMap", m ? m.mainTexture : null); c.SetFloat("_Smoothness", 0.45f); return c; }).ToArray();
+            r.shadowCastingMode = UnityEngine.Rendering.ShadowCastingMode.Off;
+        }
+        // Reperes des mains (mesures sur le modele de profil) : poignee pistolet, et devant du corps sous le canon.
+        foreach (var (n, p) in new[] { ("main droite", new Vector3(0, -0.07f, 0.08f)), ("main gauche", new Vector3(0, -0.02f, 0.25f)) })
+        {
+            var t = new GameObject(n).transform; t.SetParent(holder.transform, false); t.localPosition = p;
+        }
+        holder.transform.SetParent(parent, false);
+        return holder;
+    }
+
+    // Le perso tient son lanceur : mains sur les poignees, buste vers la cible.
+    const float GunLen = 0.62f;
+    static readonly Vector3 GunAt = new Vector3(0.13f, -0.22f, 0.4f);   // place du lanceur par rapport aux yeux
+    void Aim(Av a, Pose eye)
+    {
+        var h = a.an ? a.an.GetComponent<FpsHands>() : null;
+        if (!h) return;
+        h.look = eye.position + eye.rotation * Vector3.forward * 10;
+        h.weight = pb.players[a.seat].down ? 0 : 1;
+    }
+    void Hold(Av a)
+    {
+        var h = a.an.gameObject.GetComponent<FpsHands>() ?? a.an.gameObject.AddComponent<FpsHands>();
+        h.right = a.gun.Find("main droite"); h.left = a.gun.Find("main gauche");
+    }
+
+    GameObject BoxGun(Transform parent, int team, float k)
     {
         var g = new GameObject("lanceur");
         g.transform.SetParent(parent, false);
@@ -317,7 +392,7 @@ public class PaintballView : MonoBehaviour
         get
         {
             if (!Ready) return new Pose(fire + Vector3.up * 3, Quaternion.identity);
-            var basePos = cc.transform.position + Vector3.up * Eye;
+            var basePos = eyeAt;
             var rot = Quaternion.Euler(pitch - recoil, yaw, 0);
             if (Down)
             {
@@ -349,6 +424,29 @@ public class PaintballView : MonoBehaviour
         }
     }
 
+    // Ma tete (et mes cheveux) cachee : je vois mon corps en baissant les yeux, pas l'interieur de mon crane.
+    // L'oeil suit la tete a l'horizontale (le corps se penche en courant), a hauteur fixe (pas de balancement).
+    Vector3 eyeAt;
+    void LateUpdate()
+    {
+        if (!Ready || avs.Count <= me) return;
+        var a = avs[me];
+        // Tete et bras caches (les bras du perso ne tiennent pas le lanceur affiche a l'ecran) ; torse et jambes visibles.
+        foreach (var bone in new[] { HumanBodyBones.Head })
+        { var t = a.an.GetBoneTransform(bone); if (t) t.localScale = Vector3.one * 0.001f; }
+    }
+
+    // Oeil fixe par rapport au joueur (pas de balancement) : calcule avant de placer le lanceur et les bras de vue,
+    // pour qu'ils restent immobiles a l'ecran.
+    void UpdateEye()
+    {
+        var body = MeBot ? avs[me].pos : cc.transform.position;
+        eyeAt = body + Vector3.up * Eye + Quaternion.Euler(0, yaw, 0) * Vector3.forward * 0.15f;
+    }
+
+    // Autotest : force le regard vers le bas (voir son corps).
+    public float? LookDown;
+
     void Send(int seat, Vector3 p, float y, float pi) =>
         send?.Invoke(string.Format(System.Globalization.CultureInfo.InvariantCulture, "fp|{0}|{1:0.00}|{2:0.00}|{3:0.00}|{4:0}|{5:0}", seat, p.x - fire.x, p.y - fire.y, p.z - fire.z, y, pi));
 
@@ -359,11 +457,13 @@ public class PaintballView : MonoBehaviour
         {
             // Autotest : je suis un bot ; la camera suit mon perso.
             cc.enabled = false; cc.transform.position = a.pos; cc.enabled = true;
-            yaw = a.tYaw; pitch = a.tPitch;
+            yaw = a.tYaw; pitch = LookDown ?? a.tPitch;
+            UpdateEye();
             var cp0 = CamPose;
             viewGun.gameObject.SetActive(!pb.players[me].down);
-            viewGun.position = cp0.position + cp0.rotation * new Vector3(0.17f, -0.15f, 0.34f);
-            viewGun.rotation = cp0.rotation;
+            viewGun.position = cp0.position + cp0.rotation * GunAt;
+            viewGun.rotation = cp0.rotation * Quaternion.Euler(0, -3, 0);
+            PlaceArms(cp0);
             return;
         }
         bool down = pb.players[me].down;
@@ -392,6 +492,7 @@ public class PaintballView : MonoBehaviour
         var off = cc.transform.position - fire; off.y = 0;
         if (off.magnitude > Radius) { cc.enabled = false; cc.transform.position -= off.normalized * (off.magnitude - Radius); cc.enabled = true; }
         a.pos = cc.transform.position; a.tYaw = yaw; a.tPitch = pitch;
+        UpdateEye();
         // Tir.
         fireCd -= dt; recoil = Mathf.MoveTowards(recoil, 0, dt * 25);
         bool trigger = InputOn && Input.GetMouseButton(0) && Cursor.lockState == CursorLockMode.Locked || AutoFire;
@@ -406,8 +507,10 @@ public class PaintballView : MonoBehaviour
         // Lanceur a l'ecran (en bas a droite), recul.
         var cpose = CamPose;
         viewGun.gameObject.SetActive(!down);
-        viewGun.position = cpose.position + cpose.rotation * new Vector3(0.17f, -0.15f, 0.34f - recoil * 0.015f);
-        viewGun.rotation = cpose.rotation * Quaternion.Euler(-recoil * 2, 0, 0);
+        viewGun.position = cpose.position + cpose.rotation * (GunAt + Vector3.back * recoil * 0.02f);
+        a.vel = cc.velocity;
+        viewGun.rotation = cpose.rotation * Quaternion.Euler(-recoil * 2, -3, 0);
+        PlaceArms(cpose);
         // Retour en jeu apres une touche.
         if (down && downUntil > 0 && Time.time > downUntil) { downUntil = 0; act?.Invoke("spawn|" + me); }
     }
@@ -418,6 +521,8 @@ public class PaintballView : MonoBehaviour
     public float MyYaw { get => yaw; set => yaw = value; }
     public float MyPitch { get => pitch; set => pitch = value; }
     public Vector3 MyPos => cc ? cc.transform.position : fire;
+    public Vector3 AvatarPos(int s) => avs[s].pos;
+    public float AvatarYaw(int s) => avs[s].yaw;
     public IEnumerable<(int seat, Vector3 pos, bool down)> Others => avs.Where(a => a.seat != me).Select(a => (a.seat, a.pos, pb.players[a.seat].down));
 
     // --- Billes ---------------------------------------------------------------------------------------------------
@@ -541,9 +646,8 @@ public class PaintballView : MonoBehaviour
     // --- Autres joueurs : interpolation et animations ---------------------------------------------------------------
     void Animate(Av a, float dt)
     {
-        if (a.seat == me) return;
-        bool down = pb.players[a.seat].down;
-        if (!bots.ContainsKey(a.seat))
+        bool down = pb.players[a.seat].down, mine = a.seat == me && !MeBot;
+        if (!bots.ContainsKey(a.seat) && !mine)
         {
             a.lerp = Mathf.Min(1, a.lerp + dt / 0.05f);
             var target = Vector3.Lerp(a.from, a.to, a.lerp);
@@ -551,12 +655,25 @@ public class PaintballView : MonoBehaviour
             a.pos = target;
         }
         a.t.position = a.pos;
-        a.yaw = Mathf.LerpAngle(a.yaw, a.tYaw, 1 - Mathf.Exp(-dt * 15));
+        a.yaw = a.seat == me ? a.tYaw : Mathf.LerpAngle(a.yaw, a.tYaw, 1 - Mathf.Exp(-dt * 15));
         a.t.rotation = Quaternion.Euler(0, a.yaw, 0);
         var flat = new Vector3(a.vel.x, 0, a.vel.z);
-        string st = down ? "Defeat" : flat.magnitude > 6.5f ? "Run" : flat.magnitude > 0.6f ? "Run" : "Idle";
-        if (st != a.anim) { a.anim = st; a.an.CrossFadeInFixedTime(st, 0.15f); if (a.an.layerCount > 1) a.an.SetLayerWeight(1, down ? 0 : 1); }
-        if (a.tag && Camera.main) { a.tag.transform.rotation = Quaternion.LookRotation(a.tag.transform.position - Camera.main.transform.position); a.tag.gameObject.SetActive(!down); }
+        bool air = Mathf.Abs(a.vel.y) > 2.2f;
+        string st = down ? "Defeat" : air ? "PistolJump" : flat.magnitude > 0.6f ? "PistolRun" : "Idle";
+        if (st != a.anim)
+        {
+            a.anim = st; a.an.CrossFadeInFixedTime(st, 0.15f);
+            if (a.an.layerCount > 1) a.an.SetLayerWeight(1, 0);   // les bras sont poses sur le lanceur par IK
+        }
+        // Lanceur devant le buste, dans l'axe de visee (comme le mien a l'ecran) ; les mains s'y posent.
+        if (a.gun && a.seat != me)
+        {
+            a.gun.gameObject.SetActive(!down);
+            var eye = new Pose(a.pos + Vector3.up * Eye + Quaternion.Euler(0, a.yaw, 0) * Vector3.forward * 0.12f, Quaternion.Euler(Mathf.Clamp(a.tPitch, -60, 60), a.yaw, 0));
+            a.gun.SetPositionAndRotation(eye.position + eye.rotation * GunAt, eye.rotation);
+            Aim(a, eye);
+        }
+        if (a.tag && Camera.main && a.seat != me) { a.tag.transform.rotation = Quaternion.LookRotation(a.tag.transform.position - Camera.main.transform.position); a.tag.gameObject.SetActive(!down); }
     }
 
     // --- Bots ---------------------------------------------------------------------------------------------------
@@ -631,4 +748,25 @@ public class PaintballView : MonoBehaviour
     }
 
     public static string Hex(int team) => "#" + ColorUtility.ToHtmlStringRGB(TeamColor[team]);
+}
+
+// Mains posees sur le lanceur (IK humanoide) et buste tourne vers le point vise : le perso tient vraiment son arme.
+public class FpsHands : MonoBehaviour
+{
+    public Transform right, left;
+    public Vector3 look;
+    public float weight = 1, lookWeight = 1;
+    Animator an;
+    void Awake() { an = GetComponent<Animator>(); }
+    void OnAnimatorIK(int layer)
+    {
+        if (layer != 0 || !right || !an) return;
+        an.SetLookAtWeight(weight * lookWeight, 0.55f, 0.7f, 0f, 0.6f);
+        an.SetLookAtPosition(look);
+        foreach (var (g, t) in new[] { (AvatarIKGoal.RightHand, right), (AvatarIKGoal.LeftHand, left) })
+        {
+            an.SetIKPositionWeight(g, weight); an.SetIKRotationWeight(g, weight * 0.8f);
+            an.SetIKPosition(g, t.position); an.SetIKRotation(g, t.rotation);
+        }
+    }
 }

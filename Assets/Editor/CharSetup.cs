@@ -25,6 +25,7 @@ public static class CharSetup
         ("SitClap", "sit_clap", true), ("Wave", "wave", true), ("Clap", "clap", true), ("Victory", "victory", true),
         ("Dance", "dance", true), ("Defeat", "defeat", false), ("Think", "think", true), ("PickUp", "deal", false),
         ("RecieveHit", "disappointed", false), ("Guitar", "guitar", true),
+        ("PistolRun", "pistol_run", true), ("PistolJump", "pistol_jump", false),   // paintball
     };
 
     public static void Build()
@@ -53,6 +54,7 @@ public static class CharSetup
         string ctrlPath = Res + "CharAnim.controller";
         AssetDatabase.DeleteAsset(ctrlPath);
         var ctrl = AnimatorController.CreateAnimatorControllerAtPath(ctrlPath);
+        var layers = ctrl.layers; layers[0].iKPass = true; ctrl.layers = layers;   // mains posees sur le lanceur (paintball)
         var sm = ctrl.layers[0].stateMachine;
         foreach (var (state, file, _) in States)
         {

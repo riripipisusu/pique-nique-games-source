@@ -19,6 +19,7 @@ public static class SyntySetup
         "SM_Prop_CasinoSculpture_0", "SM_Prop_Casino_Sign_Decor_0", "SM_Prop_Slot_Stand", "SM_Prop_Craps_Table_01", "SM_Prop_Stanchion_01",
         "SM_Prop_Fortune_Wheel_01", "SM_Prop_ScreenWall_01", "SM_Prop_Wall_Fountain_01", "SM_Prop_Win_Sign_01", "SM_Prop_Casino_Dice_Sign_01",
         "SM_Prop_Ceiling_Clock_01", "SM_Item_Casino_Chip_Pile_0",
+        "SM_Prop_Cash_Gun_01",   // lanceur du paintball
     };
 
     [MenuItem("Pique-Nique/Registre Synty")]
@@ -30,6 +31,8 @@ public static class SyntySetup
             .Concat(AssetDatabase.FindAssets("t:Prefab", new[] { "Assets/PolygonCasino/Prefabs" }).Select(AssetDatabase.GUIDToAssetPath)
                 .Where(p => CasinoProps.Any(n => Path.GetFileNameWithoutExtension(p).StartsWith(n)))
                 .Select(AssetDatabase.LoadAssetAtPath<GameObject>))
+            .Append(AssetDatabase.LoadAssetAtPath<GameObject>("Assets/PolygonKids/Prefabs/Weapons/SM_Wep_Paintball_Gun_01.prefab"))   // lanceur du paintball
+            .Where(p => p)
             .ToArray();
         reg.sky = AssetDatabase.LoadAssetAtPath<Material>(Meadow + "Materials/Skybox_Meadows_Mat_01.mat");
         reg.ground = AssetDatabase.LoadAssetAtPath<Material>(Meadow + "Materials/Rock_Grass_Triplanar_Meadow_01.mat");

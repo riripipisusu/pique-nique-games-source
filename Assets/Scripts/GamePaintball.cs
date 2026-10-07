@@ -79,6 +79,19 @@ public partial class Game
             return new Vector3(strafe * 0.6f, 0, to.magnitude > 10 ? 1 : 0);
         };
         yield return new WaitForSeconds(2); yield return shot("b1-debut");
+        // Mon corps en baissant les yeux.
+        pbview.LookDown = 65; yield return new WaitForSeconds(0.5f); yield return shot("b1-corps"); pbview.LookDown = null;
+        // Un joueur vu de pres (lanceur en main, course) : camera de cote, quelques secondes apres le depart.
+        yield return new WaitForSeconds(3);
+        for (int k2 = 0; k2 < 2; k2++)
+        {
+            int s = (MySeatOr0 + 1 + k2) % pb.players.Count;
+            var p = pbview.AvatarPos(s); var f = Quaternion.Euler(0, pbview.AvatarYaw(s), 0);
+            var from = p + f * new Vector3(1.6f, 1.5f, 1.4f);
+            tour = new Pose(from, Quaternion.LookRotation(p + Vector3.up * 1.2f - from));
+            yield return new WaitForSeconds(0.3f); yield return shot($"b1-joueur{k2}");
+        }
+        tour = null;
         float t0 = Time.time; int k = 0;
         while (pb != null && !pb.Finished && Time.time - t0 < 150)
         {
