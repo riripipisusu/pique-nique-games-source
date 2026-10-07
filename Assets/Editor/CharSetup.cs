@@ -43,8 +43,11 @@ public static class CharSetup
             {
                 c.name = file;
                 c.loopTime = loop;
-                c.lockRootRotation = c.lockRootHeightY = c.lockRootPositionXZ = true;
+                c.lockRootRotation = c.lockRootHeightY = true;
                 c.keepOriginalOrientation = c.keepOriginalPositionY = c.keepOriginalPositionXZ = true;
+                // Courses Mixamo telechargees sans "In Place" : le deplacement n'est pas cuit dans la pose (sinon le corps
+                // part en avant puis revient) ; sans root motion, il est simplement ignore et le perso court sur place.
+                c.lockRootPositionXZ = !file.StartsWith("pistol_");
             }
             imp.clipAnimations = clips;
             imp.SaveAndReimport();

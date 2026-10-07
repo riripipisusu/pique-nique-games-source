@@ -145,6 +145,14 @@ public partial class Game
         float g0 = pbview.MyHeight, peak = g0; pbview.AutoJump = true;
         for (float t = 0; t < 1.2f; t += Time.deltaTime) { peak = Mathf.Max(peak, pbview.MyHeight); yield return null; }
         mv.AppendLine($"saut : {peak - g0:0.00} m (CS:GO : 1,09)");
+        // Corps des autres en course : ecart du bassin (doit rester petit).
+        float maxDrift = 0; int samples = 0;
+        for (float t = 0; t < 3; t += Time.deltaTime)
+        {
+            for (int s = 0; s < pb.players.Count; s++) if (s != MySeatOr0 && pbview.AnimOf(s) == "PistolRun") { maxDrift = Mathf.Max(maxDrift, pbview.HipsDrift(s)); samples++; }
+            yield return null;
+        }
+        mv.AppendLine($"ecart bassin en course : {maxDrift:0.00} m ({samples} mesures)");
         System.IO.File.WriteAllText(System.IO.Path.Combine(dir, "mouvement.txt"), mv.ToString());
         pbview.Auto = save;
         // Un joueur vu de pres (lanceur en main, course) : camera de cote, quelques secondes apres le depart.

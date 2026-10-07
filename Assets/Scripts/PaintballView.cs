@@ -625,6 +625,9 @@ public class PaintballView : MonoBehaviour
     public float MyPitch { get => pitch; set => pitch = value; }
     public Vector3 MyPos => cc ? cc.transform.position : fire;
     public Vector3 AvatarPos(int s) => avs[s].pos;
+    // Autotest : ecart horizontal entre le bassin anime et la position du joueur (le corps doit rester sur place).
+    public float HipsDrift(int s) { var h = avs[s].an.GetBoneTransform(HumanBodyBones.Hips); var d = h.position - avs[s].pos; d.y = 0; return d.magnitude; }
+    public string AnimOf(int s) => avs[s].anim;
     public float AvatarYaw(int s) => avs[s].yaw;
     public IEnumerable<(int seat, Vector3 pos, bool down)> Others => avs.Where(a => a.seat != me).Select(a => (a.seat, a.pos, pb.players[a.seat].down));
 
