@@ -435,7 +435,9 @@ public partial class Ui : MonoBehaviour
             : game.gameId == GameId.Pouilleux
             ? new[] { (0, "Classique", "Le valet de pique est le pouilleux : ne le garde pas !") }
             : game.gameId == GameId.Paintball
-            ? new[] { (0, "Partie courte", "Première équipe à 10 points (5 minutes au plus)."), (1, "Partie normale", "Première équipe à 20 points."), (2, "Longue partie", "Première équipe à 30 points.") }
+            ? new[] { (0, "Manches (CS:GO)", "Touché = hors jeu jusqu'à la manche suivante. Première équipe à 13 manches, 12-12 = égalité."),
+                      (4, "Match à mort 50", "On revient à sa base après chaque touche. Première équipe à 50 points (10 min au plus)."),
+                      (5, "Match à mort 100", "Comme au-dessus, première équipe à 100 points.") }
             : game.gameId == GameId.Serpents
             ? new[] { (0, "Classique", "10 échelles, 10 serpents, il faut tomber pile sur 100.") }
             : game.gameId == GameId.Bac
@@ -672,11 +674,13 @@ public partial class Ui : MonoBehaviour
         }
         else if (game.gameId == GameId.Paintball)
         {
-            S("Le but", "Deux équipes, Orange contre Bleu, sur la place du village. Chaque bille qui touche un adversaire rapporte un point à ton équipe. La première équipe au score choisi gagne ; sinon, la meilleure au bout de 5 minutes.");
-            S("Commandes", "Comme dans CS:GO. Souris : viser. Clic gauche : tirer. ZQSD (ou WASD, ou les flèches) : courir. Maj (maintenu) : marcher, silencieux et plus précis. Ctrl ou C (maintenu) : s'accroupir, encore plus précis et plus petite cible. Espace ou molette : sauter (le strafe en l'air et le bunny hop marchent). Échap : pause.");
+            S("Le but", "Deux équipes, Orange contre Bleu, sur la place du village. Deux modes au choix de l'hôte.");
+            S("Manches (comme CS:GO)", "Une bille et tu es hors jeu jusqu'à la manche suivante (tu regardes alors un équipier). L'équipe qui élimine toute l'autre gagne la manche ; au bout de 1 min 55, l'équipe qui a le plus de survivants l'emporte. Chaque manche commence par 4 secondes de gel. Première équipe à 13 manches ; à 12-12, c'est l'égalité.");
+            S("Match à mort en équipe", "Tu reviens à ta base 3,5 secondes après chaque touche. Chaque touche rapporte un point : première équipe à 50 ou 100 points, sinon la meilleure au bout de 10 minutes.");
+            S("Commandes", "Comme dans CS:GO. Souris : viser. Clic gauche : tirer. ZQSD (ou WASD, ou les flèches) : courir. Maj (maintenu) : marcher, silencieux et plus précis. Ctrl ou C (maintenu) : s'accroupir, encore plus précis et plus petite cible. Espace ou molette : sauter (le strafe en l'air et le bunny hop marchent). Tab (maintenu) : tableau des scores. Échap : pause.");
             S("Précision", "Le viseur s'ouvre quand tu bouges : à l'arrêt ou accroupi, les billes partent droit ; en courant elles s'écartent ; en sautant, c'est la loterie. Arrête-toi pour tirer !");
-            S("Touché !", "Une seule bille suffit : tu es éliminé et tu reviens à ta base au bout de 3 secondes et demie. Les billes volent un peu en cloche : vise légèrement au-dessus de loin, et devant une cible qui court.");
-            S("Les équipes", "En ligne, les joueurs sont répartis à tour de rôle entre Orange et Bleu. Hors ligne, des bots complètent les deux équipes.");
+            S("Les billes", "Une seule bille suffit. Elles volent un peu en cloche : vise légèrement au-dessus de loin, et devant une cible qui court.");
+            S("Les équipes", "Au début, chacun choisit son équipe, Orange ou Bleu (5 joueurs au plus par équipe). La partie part quand tout le monde a choisi, ou au bout de 30 secondes (l'hôte peut lancer avant) : les indécis complètent l'équipe la moins nombreuse. Hors ligne, des bots complètent les deux équipes.");
         }
         else if (game.gameId == GameId.Serpents)
         {

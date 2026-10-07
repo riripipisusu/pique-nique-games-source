@@ -7,24 +7,47 @@ public partial class Game
 {
     public Paintball pb;
     public PaintballView pbview;
-    float pbStart;
+    float pbStart, pbRoundEndAt;
     bool pbAuto;   // autotest : je suis pilote automatiquement
     public int MySeatOrZero => MySeatOr0;
+
+    System.Collections.Generic.List<string> pbAvatars;
+    float pbPickAt;
 
     void StartPaintball(System.Collections.Generic.List<string> n, int opt, int seed, System.Collections.Generic.List<string> av)
     {
         pb = new Paintball(n, opt, seed);
+        pbAvatars = av;
+        pbPickAt = Time.time;
+        ui.ShowHud();
+        ui.Refresh();
+    }
+
+    // Equipes faites : le terrain et les joueurs.
+    void PaintballGo()
+    {
         int me = MySeatOr0;
         // Hors ligne : tous les autres sieges sont des bots ; en ligne, chacun pilote le sien.
         // (Autotest : mon siege aussi, pour jouer seul ou en ligne sans personne au clavier.)
-        var isBot = Enumerable.Range(0, n.Count).Select(s => Online ? pbAuto && s == me : s != me).ToArray();
-        pbview.Build(pb, me, av, isBot, a => { if (pb != null && !pb.Finished) { if (Online) net.Act(a); else Apply(a); } }, m => { if (Online) net.SendRT(m); });
+        var isBot = Enumerable.Range(0, pb.players.Count).Select(s => Online ? pbAuto && s == me : s != me).ToArray();
+        pbview.Build(pb, me, pbAvatars, isBot, a => { if (pb != null && !pb.Finished) { if (Online) net.Act(a); else Apply(a); } }, m => { if (Online) net.SendRT(m); });
         pbStart = Time.time;
-        ui.ShowHud();
-        ui.Say($"Équipe {Paintball.TeamName[Paintball.TeamOf(me)]} ! Premiers à {pb.target} points.", 3);
+        pbview.FreezeUntil = pb.deathmatch ? 0 : Time.time + Paintball.FreezeTime;
+        ui.Say(pb.deathmatch ? $"Équipe {Paintball.TeamName[pb.TeamOf(me)]} ! Premiers à {pb.target} points."
+                             : $"Équipe {Paintball.TeamName[pb.TeamOf(me)]} ! Premiers à {Paintball.RoundsToWin} manches.", 3);
     }
 
-    public float PaintballLeft => pb == null ? 0 : Mathf.Max(0, Paintball.Minutes * 60 - (Time.time - pbStart));
+    // Choix d'equipe (bouton de l'ecran de choix).
+    public void PaintballPick(int team) { if (pb != null && pb.picking && !Spectating) Act($"team|{MySeatOr0}|{team}"); }
+    public void PaintballLaunch() { if (pb != null && pb.picking && (!Online || net.IsHost)) { if (Online) net.HostTick("go"); else Apply("go"); } }
+    public bool PaintballCanLaunch => pb != null && pb.picking && (!Online || net.IsHost) && pb.Count(0) > 0 && pb.Count(1) > 0;
+    public bool PaintballTabForced;   // autotest : capture du tableau
+    public float PaintballPickLeft => Mathf.Max(0, 30 - (Time.time - pbPickAt));
+
+    // Temps restant : de la manche (apres le gel du depart), ou de la partie en match a mort.
+    public float PaintballLeft => pb == null ? 0 : pb.deathmatch ? Mathf.Max(0, Paintball.DeathmatchMinutes * 60 - (Time.time - pbStart))
+        : pb.roundOver ? 0 : Mathf.Max(0, Paintball.RoundTime - Mathf.Max(0, Time.time - pbStart - Paintball.FreezeTime));
+    public float PaintballFreeze => pbview ? Mathf.Max(0, pbview.FreezeUntil - Time.time) : 0;
 
     void ApplyPaintball(string[] p)
     {
@@ -32,7 +55,22 @@ public partial class Game
         foreach (var e in pb.events)
         {
             pbview.OnEvent(e);
+            if (e.type == PbEv.Go) { PaintballGo(); continue; }
+            if (e.type == PbEv.Team) { ui.Refresh(); continue; }
             if (e.type == PbEv.Hit) ui.PaintballFeed(e.by, e.seat);
+            if (e.type == PbEv.RoundEnd)
+            {
+                pbRoundEndAt = Time.time;
+                bool mine = e.seat == pb.TeamOf(MySeatOr0);
+                ui.Say(e.seat < 0 ? "Manche nulle !" : $"L'équipe {Paintball.TeamName[e.seat]} remporte la manche !", 3);
+                Sound.I.Play(e.seat < 0 ? "tick" : mine ? "win" : "lose", 0.7f, 0);
+            }
+            if (e.type == PbEv.Round)
+            {
+                pbStart = Time.time;
+                pbview.FreezeUntil = Time.time + Paintball.FreezeTime;
+                ui.Say(pb.score[0] == Paintball.RoundsToWin - 1 && pb.score[1] == Paintball.RoundsToWin - 1 ? "Dernière manche !" : $"Manche {pb.round}", 2);
+            }
             if (e.type == PbEv.Over) StartCoroutine(PaintballEnd());
         }
         ui.Refresh();
@@ -48,12 +86,29 @@ public partial class Game
         if (pb == null) return;
         pbview.InputOn = Focused && !paused && !pb.Finished;
         pbview.Sens = settings.camSens;
-        // Fin du temps : decidee par l'hote (ou hors ligne).
-        if (!pb.Finished && PaintballLeft <= 0 && (!Online || net.IsHost) && Idle) { if (Online) net.HostEnd(); else Apply("end"); }
+        // Fil de la partie, decide par l'hote (ou hors ligne) : fin du temps, manche suivante 5 s apres la fin d'une manche.
+        // Plus aucun focus d'interface : Espace (sauter) n'active plus le dernier bouton clique (le son, par exemple).
+        ui.ClearFocus();
+        if (pb.picking)
+        {
+            pbview.InputOn = false;
+            if (Online && !net.IsHost || !Idle) return;
+            // Hors ligne : une fois mon equipe choisie, les bots se repartissent (equilibre) et la partie part.
+            if (!Online && (pb.TeamOf(MySeatOr0) >= 0 || pbAuto)) { Apply("go"); return; }
+            // En ligne : depart quand tout le monde a choisi, ou au bout de 30 s.
+            if (pb.players.All(x => x.team >= 0) || PaintballPickLeft <= 0) net.HostTick("go");
+            return;
+        }
+        if (pb.Finished || Online && !net.IsHost || !Idle) return;
+        string tick = pb.deathmatch ? (PaintballLeft <= 0 ? "end" : null)
+            : pb.roundOver ? (Time.time > pbRoundEndAt + 5 ? "round" : null)
+            : PaintballLeft <= 0 ? "timeout" : null;
+        if (tick != null) { if (Online) net.HostTick(tick); else Apply(tick); }
     }
 
     void PaintballCamera()
     {
+        if (!pbview.Ready) { ui.UpdatePaintball(); return; }   // choix d'equipe : l'ecran du menu reste derriere
         var pose = pbview.CamPose;
         cam.transform.SetPositionAndRotation(pose.position, pose.rotation);
         cam.fieldOfView = 75;
@@ -69,7 +124,7 @@ public partial class Game
         pbview.Auto = v =>
         {
             var me = v.MyPos;
-            var foes = v.Others.Where(o => Paintball.TeamOf(o.seat) != Paintball.TeamOf(MySeatOr0) && !o.down).OrderBy(o => (o.pos - me).sqrMagnitude).ToList();
+            var foes = v.Others.Where(o => pb.TeamOf(o.seat) != pb.TeamOf(MySeatOr0) && !o.down).OrderBy(o => (o.pos - me).sqrMagnitude).ToList();
             if (Time.time > nextStrafe) { nextStrafe = Time.time + Random.Range(0.6f, 1.5f); strafe = -strafe; }
             if (foes.Count == 0) { v.AutoFire = false; return new Vector3(strafe * 0.3f, 0, 1); }
             var to = foes[0].pos + Vector3.up * 1.1f - (me + Vector3.up * 1.6f);
@@ -103,12 +158,15 @@ public partial class Game
             yield return new WaitForSeconds(0.3f); yield return shot($"b1-joueur{k2}");
         }
         tour = null;
-        float t0 = Time.time; int k = 0;
-        while (pb != null && !pb.Finished && Time.time - t0 < 150)
+        float t0 = Time.time, nextShot = Time.time + 12; int k = 0; bool roundShot = false, specShot = false, freezeShot = false, tabShot = false;
+        while (pb != null && !pb.Finished && Time.time - t0 < 240)
         {
-            yield return new WaitForSeconds(12);
-            yield return shot($"b2-jeu{k++}");
-            if (pbview.Down) { yield return new WaitForSeconds(0.4f); yield return shot($"b3-touche{k}"); }
+            if (Time.time > nextShot) { nextShot = Time.time + 25; yield return shot($"b2-jeu{k++}"); }
+            if (!roundShot && pb.roundOver) { roundShot = true; yield return new WaitForSeconds(0.5f); yield return shot("b5-fin-manche"); }
+            if (!freezeShot && pb.round > 1 && PaintballFreeze > 1) { freezeShot = true; yield return shot("b6-gel"); }
+            if (!specShot && pbview.SpectatingName != null) { specShot = true; yield return shot("b7-spectateur"); }
+            if (k == 3 && !tabShot) { tabShot = true; PaintballTabForced = true; yield return new WaitForSeconds(0.3f); yield return shot("b8-tab"); PaintballTabForced = false; }
+            yield return null;
         }
         if (pb != null && !pb.Finished) Apply("end");
         yield return new WaitForSeconds(4); yield return shot("b4-fin");

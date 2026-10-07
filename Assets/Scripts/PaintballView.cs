@@ -49,6 +49,7 @@ public class PaintballView : MonoBehaviour
     public bool Down => avs.Count > me && pb.players[me].down;
     public float RespawnIn => Mathf.Max(0, downUntil - Time.time);
     public int HitBy { get; private set; } = -1;
+    public string SpectatingName { get; private set; }
     Transform viewGun;
     public bool Ready { get; private set; }
 
@@ -130,7 +131,7 @@ public class PaintballView : MonoBehaviour
         BuildNav();
         for (int s = 0; s < p.players.Count; s++)
         {
-            var a = new Av { seat = s, team = Paintball.TeamOf(s) };
+            var a = new Av { seat = s, team = p.TeamOf(s) };
             a.t = Chars.Spawn(s < avatars.Count ? avatars[s] : Chars.Default, root, Vector3.zero, 0, out a.an, 1.75f);
             a.an.cullingMode = AnimatorCullingMode.AlwaysAnimate;
             if (a.an.layerCount > 1) { a.an.SetLayerWeight(1, 1); a.an.Play("wg_Idle_Aiming_Anim_mixamo_com", 1, 0); }
@@ -379,7 +380,7 @@ public class PaintballView : MonoBehaviour
     Vector3 SpawnPoint(int seat)
     {
         // Chacun sa place a la base (en eventail), jamais sur un equipier.
-        int team = Paintball.TeamOf(seat), k = seat / 2;
+        int team = pb.TeamOf(seat), k = pb.players.Where(x => x.team == team).TakeWhile(x => x.seat != seat).Count();
         var b = bases[team];
         var want = b + new Vector3((team == 0 ? -1 : 1) * (k % 2) * 2.4f, 0, (k - 2) * 2.4f);
         var p = NearestFree(want);
@@ -429,6 +430,17 @@ public class PaintballView : MonoBehaviour
             if (!Ready) return new Pose(fire + Vector3.up * 3, Quaternion.identity);
             var basePos = eyeAt;
             var rot = Quaternion.Euler(pitch - recoil, yaw, 0);
+            if (Down && !pb.Respawn && Time.time > downUntil)
+            {
+                var mate = avs.FirstOrDefault(o => o.seat != me && o.team == avs[me].team && !pb.players[o.seat].down);
+                if (mate != null)
+                {
+                    SpectatingName = pb.players[mate.seat].name;
+                    var eye = mate.pos + Vector3.up * Mathf.Lerp(Eye, CrouchEye, mate.crouch) + Quaternion.Euler(0, mate.yaw, 0) * new Vector3(0, 0.25f, -1.6f);
+                    return new Pose(eye, Quaternion.Euler(Mathf.Clamp(mate.tPitch, -40, 40) + 8, mate.yaw, 0));
+                }
+            }
+            SpectatingName = null;
             if (Down)
             {
                 // Touche : la camera glisse vers le bas et regarde le tireur.
@@ -441,6 +453,8 @@ public class PaintballView : MonoBehaviour
 
     // --- Boucle ---------------------------------------------------------------------------------------------------
     public bool InputOn;   // pas en pause, fenetre active
+    public float FreezeUntil;   // debut de manche : on vise, on ne bouge ni ne tire
+    bool Frozen => Time.time < FreezeUntil;
     public float Sens = 1;
 
     void Update()
@@ -528,7 +542,7 @@ public class PaintballView : MonoBehaviour
         else if (Cursor.lockState != CursorLockMode.None) { Cursor.lockState = CursorLockMode.None; Cursor.visible = true; }
         if (LookDown.HasValue) pitch = LookDown.Value;
         var dir = Vector3.zero;
-        bool live = InputOn && !down;
+        bool live = InputOn && !down && !Frozen;
         if (live)
         {
             if (Input.GetKey(KeyCode.W) || Input.GetKey(KeyCode.Z) || Input.GetKey(KeyCode.UpArrow)) dir.z += 1;
@@ -536,7 +550,7 @@ public class PaintballView : MonoBehaviour
             if (Input.GetKey(KeyCode.A) || Input.GetKey(KeyCode.Q) || Input.GetKey(KeyCode.LeftArrow)) dir.x -= 1;
             if (Input.GetKey(KeyCode.D) || Input.GetKey(KeyCode.RightArrow)) dir.x += 1;
         }
-        if (Auto != null && !down) dir = Auto(this);   // autotest : pilote automatique
+        if (Auto != null && !down && !Frozen) dir = Auto(this);   // autotest : pilote automatique
         var wish = Quaternion.Euler(0, yaw, 0) * Vector3.ClampMagnitude(dir, 1);
         // Accroupi (Ctrl, maintenu) : la capsule et l'oeil descendent ; on ne se releve que s'il y a la place.
         bool wantCrouch = live && (Input.GetKey(KeyCode.LeftControl) || Input.GetKey(KeyCode.C)) || AutoCrouch;
@@ -583,7 +597,7 @@ public class PaintballView : MonoBehaviour
         Spread = Mathf.Lerp(Spread, target, 1 - Mathf.Exp(-dt * 10));
         // Tir.
         fireCd -= dt; recoil = Mathf.MoveTowards(recoil, 0, dt * 25);
-        bool trigger = InputOn && Input.GetMouseButton(0) && Cursor.lockState == CursorLockMode.Locked || AutoFire;
+        bool trigger = (InputOn && Input.GetMouseButton(0) && Cursor.lockState == CursorLockMode.Locked || AutoFire) && !Frozen;
         if (trigger && !down && fireCd <= 0)
         {
             fireCd = FireDelay; recoil = 2.2f;
@@ -600,7 +614,7 @@ public class PaintballView : MonoBehaviour
         viewGun.rotation = cpose.rotation * Quaternion.Euler(-recoil * 2, -3, 0);
         PlaceArms(cpose);
         // Retour en jeu apres une touche.
-        if (down && downUntil > 0 && Time.time > downUntil) { downUntil = 0; act?.Invoke("spawn|" + me); }
+        if (down && pb.Respawn && downUntil > 0 && Time.time > downUntil) { downUntil = 0; act?.Invoke("spawn|" + me); }
     }
 
     // Autotest : direction voulue (repere du joueur) et gachette.
@@ -618,7 +632,7 @@ public class PaintballView : MonoBehaviour
     void Shoot(int seat, Vector3 from, Vector3 dir, bool judge, bool net = true)
     {
         var b = new Ball { p = from, v = dir * BallSpeed, seat = seat, judge = judge };
-        b.go = Prim(PrimitiveType.Sphere, Vector3.zero, Vector3.one * 0.09f, Mat(TeamColor[Paintball.TeamOf(seat)], 1.2f), root).transform;
+        b.go = Prim(PrimitiveType.Sphere, Vector3.zero, Vector3.one * 0.09f, Mat(TeamColor[pb.TeamOf(seat)], 1.2f), root).transform;
         b.go.position = from;
         balls.Add(b);
         Sound.I.Play("hop1", seat == me ? 0.35f : 0.18f, 0.25f);
@@ -636,7 +650,7 @@ public class PaintballView : MonoBehaviour
             b.life += dt;
             bool gone = b.life > 3;
             // Joueurs : seul le tireur (sa machine, ou l'hote pour un bot) decide de la touche.
-            int shooterTeam = Paintball.TeamOf(b.seat);
+            int shooterTeam = pb.TeamOf(b.seat);
             foreach (var a in avs)
             {
                 if (a.seat == b.seat || a.team == shooterTeam || pb.players[a.seat].down) continue;
@@ -715,13 +729,18 @@ public class PaintballView : MonoBehaviour
     public void OnEvent(PbEvent e)
     {
         if (!Ready) return;
-        var a = avs[e.seat < 0 ? 0 : e.seat];
+        var a = e.seat >= 0 && e.seat < avs.Count ? avs[e.seat] : null;   // Hit et Spawn seulement (ailleurs, seat = equipe ou manche)
         switch (e.type)
         {
             case PbEv.Hit:
-                if (e.seat == me) { HitBy = e.by; downUntil = Time.time + 3.5f; Sound.I.Play("lose", 0.6f); }
+                if (e.seat == me) { HitBy = e.by; downUntil = Time.time + (pb.Respawn ? 3.5f : 3f); Sound.I.Play("lose", 0.6f); }
                 else { a.an.CrossFadeInFixedTime("RecieveHit", 0.1f); if (e.by == me) Sound.I.Play("bj_chips", 0.5f); }
                 if (bots.TryGetValue(e.seat, out var bb)) bb.downUntil = Time.time + 3.5f;
+                break;
+            case PbEv.Round:
+                foreach (var p in pb.players) OnEvent(new PbEvent { type = PbEv.Spawn, seat = p.seat });
+                vel = Vector3.zero; downUntil = 0;
+                foreach (var b in bots.Values) b.downUntil = 0;
                 break;
             case PbEv.Spawn:
                 foreach (var g in a.paint) if (g) Destroy(g);
@@ -764,7 +783,7 @@ public class PaintballView : MonoBehaviour
             a.gun.SetPositionAndRotation(eye.position + eye.rotation * GunAt, eye.rotation);
             Aim(a, eye);
         }
-        if (a.tag && Camera.main && a.seat != me) { a.tag.transform.rotation = Quaternion.LookRotation(a.tag.transform.position - Camera.main.transform.position); a.tag.gameObject.SetActive(!down); }
+        if (a.tag && Camera.main && a.seat != me) { a.tag.transform.rotation = Quaternion.LookRotation(a.tag.transform.position - Camera.main.transform.position); a.tag.gameObject.SetActive(!down && (pb.Respawn || a.team == avs[me].team) && pb.players[a.seat].name != SpectatingName); }   // manches : pas le nom des adversaires (comme CS:GO)
     }
 
     // --- Bots ---------------------------------------------------------------------------------------------------
@@ -777,9 +796,10 @@ public class PaintballView : MonoBehaviour
         if (pl.down)
         {
             a.vel = Vector3.zero;
-            if (b.downUntil > 0 && Time.time > b.downUntil) { b.downUntil = 0; act?.Invoke("spawn|" + s); }
+            if (pb.Respawn && b.downUntil > 0 && Time.time > b.downUntil) { b.downUntil = 0; act?.Invoke("spawn|" + s); }
             return;
         }
+        if (Frozen) { a.vel = Vector3.zero; return; }
         var eye = a.pos + Vector3.up * Eye;
         // Cible : l'ennemi visible le plus proche.
         b.think -= dt;

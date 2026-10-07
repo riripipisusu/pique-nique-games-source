@@ -224,7 +224,7 @@ public class Net : MonoBehaviour
     // --- Messages -----------------------------------------------------------------
     // Temps reel (Paintball) : positions et billes, non fiables, jamais enregistrees ni rejouees.
     // "fp|siege|..." / "fs|siege|..." ; l'hote remplace le siege par celui de l'expediteur et relaie aux autres.
-    public void HostEnd() { if (IsHost && InGame) HostAct(new[] { "act", "end" }); }
+    public void HostTick(string a) { if (IsHost && InGame) HostAct(new[] { "act", a }); }
 
     public void SendRT(string s)
     {
@@ -444,8 +444,8 @@ public class Net : MonoBehaviour
             if (p[1] == "chat" && p.Length > 4) p[4] = Clean(p[4]);
         }
         if (shadow is LoupGarou && p.Length > 1 && (p[1] == "next" || p[1] == "timeout" || p[1] == "quit") && seat >= 0) return;   // reserve a l'hote
-        if (shadow is Paintball && p.Length > 2 && (p[1] == "hit" || p[1] == "spawn") && seat >= 0 && p[2] != seat.ToString()) return;   // on ne tire et ne revient que pour soi
-        if (shadow is Paintball && p.Length > 1 && p[1] == "end" && seat >= 0) return;   // reserve a l'hote
+        if (shadow is Paintball && p.Length > 2 && (p[1] == "hit" || p[1] == "spawn" || p[1] == "team") && seat >= 0 && p[2] != seat.ToString()) return;   // on ne tire, ne revient et ne choisit que pour soi
+        if (shadow is Paintball && p.Length > 1 && (p[1] == "end" || p[1] == "round" || p[1] == "timeout" || p[1] == "go") && seat >= 0) return;   // reserve a l'hote
         if (shadow is Limite && p.Length > 2 && p[1] == "play") { if (seat < 0) return; p = new[] { "act", "play", seat.ToString(), p[2] }; }   // on ne joue que pour soi
         if (shadow is Limite && p.Length > 1 && (p[1] == "next" || p[1] == "timeout") && seat >= 0) return;   // reserve a l'hote
         if (shadow is QuiSuisJe && p.Length > 2 && p[1] == "pick") { if (seat < 0) return; p = new[] { "act", "pick", seat.ToString(), Clean(p[2]) }; }   // on ne choisit que pour son voisin

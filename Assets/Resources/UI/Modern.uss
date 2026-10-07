@@ -1280,3 +1280,26 @@ Button.wg-logo:hover { scale: 1.06 1.06; }
 .pb-feed { position: absolute; top: 90px; right: 30px; align-items: flex-end; }
 .pb-feed-line { font-size: 24px; color: #FFFFFF; margin: 2px 0; padding: 2px 12px; background-color: rgba(10, 6, 24, 0.6); border-radius: 6px; -unity-font: url("../Fonts/SairaCondensed-ExtraBold.ttf"); -unity-font-definition: initial; }
 .pb-down { position: absolute; top: 58%; left: 0; right: 0; -unity-text-align: middle-center; font-size: 46px; color: #FFFFFF; white-space: normal; -unity-font: url("../Fonts/Bungee-Regular.ttf"); -unity-font-definition: initial; text-shadow: 0 3px 0 rgba(0, 0, 0, 0.8); }
+.pb-pick { position: absolute; left: 0; right: 0; top: 0; bottom: 0; align-items: center; justify-content: center; background-color: rgba(8, 4, 24, 0.82); }
+.pb-pick-title { font-size: 56px; color: #FFFFFF; margin-bottom: 26px; -unity-font: url("../Fonts/Bungee-Regular.ttf"); -unity-font-definition: initial; }
+.pb-pick-cols { align-items: flex-start; }
+.pb-pick-col { width: 420px; min-height: 380px; margin: 0 24px; padding: 18px 24px; align-items: center; background-color: rgba(30, 16, 60, 0.9); border-top-width: 8px; border-radius: 12px; }
+.pb-pick-team { font-size: 40px; margin-bottom: 14px; -unity-font: url("../Fonts/Bungee-Regular.ttf"); -unity-font-definition: initial; }
+.pb-pick-name { font-size: 28px; color: #FFFFFF; margin: 3px 0; -unity-font: url("../Fonts/SairaCondensed-ExtraBold.ttf"); -unity-font-definition: initial; }
+.pb-pick-col > Button { margin-top: auto; }
+.pb-pick-foot { margin-top: 26px; align-items: center; }
+.pb-pick-hint { font-size: 26px; color: #C9B8F0; margin-right: 20px; -unity-font: url("../Fonts/SairaCondensed-ExtraBold.ttf"); -unity-font-definition: initial; }
+.pb-pick-time { font-size: 26px; color: #FFFFFF; margin-top: 12px; -unity-font: url("../Fonts/SairaCondensed-ExtraBold.ttf"); -unity-font-definition: initial; }
+.pb-tab { position: absolute; left: 50%; top: 110px; width: 1000px; margin-left: -500px; padding: 18px 26px; background-color: rgba(8, 4, 24, 0.86); border-radius: 12px; }
+.pb-tab-title { font-size: 30px; color: #FFFFFF; -unity-font: url("../Fonts/Bungee-Regular.ttf"); -unity-font-definition: initial; }
+.pb-tab-hist { margin: 10px 0 6px 0; }
+.pb-tab-round { width: 26px; height: 14px; margin-right: 4px; border-radius: 4px; background-color: rgba(255, 255, 255, 0.12); }
+.pb-tab-team { margin-top: 14px; border-left-width: 6px; padding-left: 14px; }
+.pb-tab-row { align-items: center; height: 40px; }
+.pb-tab-row.me { background-color: rgba(255, 255, 255, 0.1); }
+.pb-tab-row.out { opacity: 0.45; }
+.pb-tab-th { height: 46px; }
+.pb-tab-name { flex-grow: 1; font-size: 26px; color: #FFFFFF; margin: 0; -unity-font: url("../Fonts/SairaCondensed-ExtraBold.ttf"); -unity-font-definition: initial; }
+.pb-tab-th .pb-tab-name { font-size: 32px; -unity-font: url("../Fonts/Bungee-Regular.ttf"); -unity-font-definition: initial; }
+.pb-tab-num { width: 110px; font-size: 26px; color: #FFFFFF; -unity-text-align: middle-center; margin: 0; -unity-font: url("../Fonts/SairaCondensed-ExtraBold.ttf"); -unity-font-definition: initial; }
+.pb-tab-state { color: #FF8A7A; font-size: 20px; }
