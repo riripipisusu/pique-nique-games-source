@@ -30,7 +30,7 @@ public partial class Game
         // Hors ligne : tous les autres sieges sont des bots ; en ligne, chacun pilote le sien.
         // (Autotest : mon siege aussi, pour jouer seul ou en ligne sans personne au clavier.)
         var isBot = Enumerable.Range(0, pb.players.Count).Select(s => Online ? pbAuto && s == me : s != me).ToArray();
-        pbview.Build(pb, me, pbAvatars, isBot, a => { if (pb != null && !pb.Finished) { if (Online) net.Act(a); else Apply(a); } }, m => { if (Online) net.SendRT(m); });
+        pbview.Build(pb, me, pbAvatars, isBot, a => { if (pb != null && !pb.Finished) { if (Online) net.Act(a); else Apply(a); } }, m => { if (Online) net.SendRT(m); }, Paintball.MapOf(option));
         pbStart = Time.time;
         pbview.FreezeUntil = pb.deathmatch ? 0 : Time.time + Paintball.FreezeTime;
         ui.Say(pb.deathmatch ? $"Équipe {Paintball.TeamName[pb.TeamOf(me)]} ! Premiers à {pb.target} points."
@@ -133,6 +133,19 @@ public partial class Game
             v.AutoFire = to.magnitude < 30 && !Physics.Linecast(me + Vector3.up * 1.6f, foes[0].pos + Vector3.up * 1.1f);
             return new Vector3(strafe * 0.6f, 0, to.magnitude > 10 ? 1 : 0);
         };
+        // Vue aerienne de l'arene (bases, sites, abris), puis a hauteur d'homme pres du site A.
+        RenderSettings.fog = false;
+        tour = new Pose(Clairiere.Center + new Vector3(0, 95, -1), Quaternion.Euler(90, 0, 0));
+        ui.GetComponent<UnityEngine.UIElements.UIDocument>().rootVisualElement.style.display = UnityEngine.UIElements.DisplayStyle.None;
+        yield return new WaitForSeconds(0.5f); yield return shot("b0-arene");
+        System.IO.File.WriteAllText(System.IO.Path.Combine(dir, "arene.txt"), pbview.ArenaLog);
+        tour = new Pose(Clairiere.Center + new Vector3(0, 28, -38), Quaternion.Euler(35, 0, 0));
+        yield return new WaitForSeconds(0.4f); yield return shot("b0-arene-biais");
+        var sa = pbview.siteA; var look = (pbview.siteB - sa).normalized;
+        tour = new Pose(sa - look * 6 + Vector3.up * 3, Quaternion.LookRotation(sa - (sa - look * 6 + Vector3.up * 3)));
+        yield return new WaitForSeconds(0.4f); yield return shot("b0-site-a");
+        tour = null; RenderSettings.fog = true;
+        ui.GetComponent<UnityEngine.UIElements.UIDocument>().rootVisualElement.style.display = UnityEngine.UIElements.DisplayStyle.Flex;
         yield return new WaitForSeconds(2); yield return shot("b1-debut");
         // Mon corps en baissant les yeux.
         pbview.LookDown = 65; yield return new WaitForSeconds(0.5f); yield return shot("b1-corps"); pbview.LookDown = null;

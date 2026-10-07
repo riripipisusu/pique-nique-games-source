@@ -377,7 +377,9 @@ public partial class Ui
     {
         var b = GameTile(parent, g, null, () => OpenGame(g), "game-tile");
         Text(b.Q(className: "m-card-txt"), GameInfo[g].desc, "m-card-desc").pickingMode = PickingMode.Ignore;
+        if (Beta.Contains(g)) Text(b, "BETA", "m-beta").pickingMode = PickingMode.Ignore;
     }
+    static readonly HashSet<GameId> Beta = new HashSet<GameId> { GameId.Paintball };   // jeux encore en test
 
     // --- Preparation d'une partie ---------------------------------------------------------------
     VisualElement setupArt;

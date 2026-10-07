@@ -571,7 +571,9 @@ public partial class Game : MonoBehaviour
         if (Array.IndexOf(Environment.GetCommandLineArgs(), "-paintball") >= 0)   // paintball : moi (pilote auto) + 5 bots, 3 contre 3
         {
             SelectGame(GameId.Paintball);
-            option = Array.IndexOf(Environment.GetCommandLineArgs(), "dm") >= 0 ? 4 : 0;   // -paintball [dm]
+            option = Array.IndexOf(Environment.GetCommandLineArgs(), "dm") >= 0 ? 4 : 0;   // -paintball [dm] [-pbmap n]
+            int pbm = Array.IndexOf(Environment.GetCommandLineArgs(), "-pbmap");
+            if (pbm > 0) option = Paintball.WithMap(option, int.Parse(Environment.GetCommandLineArgs()[pbm + 1]));
             ui.OpenForTest("setup"); yield return new WaitForSeconds(1); yield return Shot("b0-setup");
             quizBots = 5;
             pbAuto = true;   // mon siege est joue par un bot

@@ -241,7 +241,7 @@ public partial class Ui : MonoBehaviour
     // Fiche de chaque jeu : illustration (Resources/UI/Games), famille (0 societe, 1 casino, 2 TV Time), textes.
     static readonly Dictionary<GameId, (string art, int cat, string meta, string desc)> GameInfo = new Dictionary<GameId, (string, int, string, string)>
     {
-        [GameId.Paintball] = ("paintball", 0, "2 à 10 joueurs · FPS en ligne", "Deux équipes, des billes de peinture fluo et la place du village : une bille, et tu es éliminé !"),
+        [GameId.Paintball] = ("paintball", 0, "2 à 10 joueurs · FPS en ligne", "Deux équipes, des billes fluo : une bille et tu es éliminé !"),
         [GameId.Croque] = ("croque", 0, "2 à 4 joueurs · Plateau", "Grimpe la montagne jusqu'au potager... mais gare aux trous quand la carotte tourne !"),
         [GameId.Chevaux] = ("chevaux", 0, "2 à 4 joueurs · Plateau", "Un 6 pour sortir, fais le tour du plateau et grimpe l'escalier jusqu'au centre !"),
         [GameId.BonnePaye] = ("bonnepaye", 0, "2 à 6 joueurs · Plateau", "Factures, affaires, loterie et Jour de paye : le plus riche à la fin du mois gagne !"),
@@ -409,11 +409,28 @@ public partial class Ui : MonoBehaviour
         // Grand quiz : les cartes ne changent que le mode (bit 0), les themes sont gardes.
         if (game.gameId == GameId.Trivia) { int keep = current & ~1; var raw = pick; pick = v => raw(v | keep); current &= 1; }
         if (game.gameId == GameId.LoupGarou) { parent.Clear(); return; }   // tout est dans les roles (ThemeChips)
+        int pbMap = 0; System.Action<int> pbRaw = pick;
+        if (game.gameId == GameId.Paintball) { pbMap = Paintball.MapOf(current); int keep = current & (7 << 4); var raw = pick; pick = v => raw(v | keep); current &= 7; }
         if (game.gameId == GameId.Limite) { int keep = current & ~1; var raw = pick; pick = v => raw(v | keep); current &= 1; }
         if (game.gameId == GameId.QuiSuisJe) { int keep = current & ~1; var raw = pick; pick = v => raw(v | keep); current &= 1; }
         if (game.gameId == GameId.Uno || game.gameId == GameId.Bac) { int keep = current & ~3; var raw = pick; pick = v => raw(v | keep); current &= 3; }   // les regles maison sont gardees
         parent.Clear();
         if (game.gameId == GameId.Rhythm) { SongPicker(parent, current, pick); return; }
+        if (game.gameId == GameId.Paintball)
+        {
+            Text(parent, "Map", "h2");
+            var mrow = Div(parent, "row", "theme-row");
+            for (int m = 0; m < Paintball.Maps.Length; m++)
+            {
+                int mm = m, mode = current;
+                if (!AgrouMap.Available(System.Array.FindIndex(AgrouMap.All, x => x.id == Paintball.Maps[m].id))) continue;
+                var chip = new Button(() => { Sound.I.UI("tick"); pbRaw(Paintball.WithMap(mode, mm)); }) { text = Paintball.Maps[m].name };
+                chip.AddToClassList("theme-chip");
+                chip.EnableInClassList("selected", m == pbMap);
+                mrow.Add(chip);
+            }
+            Text(parent, "Mode", "h2");
+        }
         if (game.gameId == GameId.BonnePaye)   // nombre de mois : 1 a 24
         {
             int months = BonnePaye.Months(current);

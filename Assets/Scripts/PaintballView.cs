@@ -99,14 +99,16 @@ public class PaintballView : MonoBehaviour
         vm.rotation = cam.rotation;
         vm.position = cam.position - cam.rotation * new Vector3(0, 1.6f, -0.06f);
     }
-    public void Build(Paintball p, int mySeat, IList<string> avatars, bool[] isBot, Action<string> onAct, Action<string> onSend)
+    int mapIndex;
+    public void Build(Paintball p, int mySeat, IList<string> avatars, bool[] isBot, Action<string> onAct, Action<string> onSend, int mapIdx = 0)
     {
+        mapIndex = mapIdx;
         Clear();
         pb = p; me = mySeat; act = onAct; send = onSend; botSeat = isBot;
         gameObject.SetActive(true);
         fire = Clairiere.Center + new Vector3(0, 0, 0.5f);
         Clairiere.Show(true); Clairiere.Nature(false); Clairiere.Camp(true); Clairiere.HideFire(true); Clairiere.Day();
-        int map = Array.FindIndex(AgrouMap.All, m => m.id == "PlaceDuVillage");
+        int map = Array.FindIndex(AgrouMap.All, m => m.id == Paintball.Maps[mapIndex].id);
         AgrouMap.Show(map, fire);
         // Plein jour franc (couleurs vives) ; Clairiere.Show(false) remet l'ambiance d'origine en sortant.
         if (RenderSettings.sun) { RenderSettings.sun.intensity = 1.7f; RenderSettings.sun.color = Board.Hex("fff1d8"); }
@@ -119,6 +121,17 @@ public class PaintballView : MonoBehaviour
             if (!mf.sharedMesh || !r || !r.enabled || mf.GetComponent<Collider>() || !mf.sharedMesh.isReadable || r.bounds.SqrDistance(fire) > (Radius + 40) * (Radius + 40)) continue;
             if (r.bounds.size.y > 12) r.shadowCastingMode = UnityEngine.Rendering.ShadowCastingMode.Off;   // arbres geants : leur ombre noyait tout le village
             if (r.bounds.min.y > fire.y + 9) continue;   // cimes des arbres geants : pas d'obstacle
+            // Herbe, fleurs, feuillages au sol : on passe a travers (pas de collision).
+            string rn = r.name.ToLowerInvariant();
+            if (rn.Contains("foliage") || rn.Contains("grass") || rn.Contains("flower") || rn.Contains("plant") || r.sharedMaterials.Any(m => m && (m.name.StartsWith("Herbe") || m.name.ToLowerInvariant().Contains("grass")))) continue;
+            // Eau : un mur invisible (on ne marche pas dessus, on ne s'y noie pas).
+            if (rn.Contains("water") || rn.Contains("ocean") || rn.Contains("sea") || r.sharedMaterials.Any(m => m && (m.name.ToLowerInvariant().Contains("water") || m.name.ToLowerInvariant().Contains("ocean"))))
+            {
+                var bx = mf.gameObject.AddComponent<BoxCollider>();
+                bx.center = mf.sharedMesh.bounds.center + Vector3.up * 2 / Mathf.Max(0.01f, mf.transform.lossyScale.y);
+                bx.size = new Vector3(mf.sharedMesh.bounds.size.x, mf.sharedMesh.bounds.size.y + 4 / Mathf.Max(0.01f, mf.transform.lossyScale.y), mf.sharedMesh.bounds.size.z);
+                continue;
+            }
             mf.gameObject.AddComponent<MeshCollider>().sharedMesh = mf.sharedMesh;
         }
         root = new GameObject("paintball").transform;
@@ -316,15 +329,21 @@ public class PaintballView : MonoBehaviour
 
     float GroundAt(Vector3 p, out bool ok)
     {
-        ok = false; float best = float.MinValue;
+        ok = false; float best = float.MinValue; bool wet = false;
         foreach (var h in Physics.RaycastAll(new Vector3(p.x, fire.y + 12, p.z), Vector3.down, 30))
-            if (h.point.y < fire.y + 8 && h.point.y > best) best = h.point.y;
+            if (h.point.y < fire.y + 8 && h.point.y > best)
+            {
+                best = h.point.y;
+                var mats = h.collider.GetComponent<Renderer>()?.sharedMaterials;
+                wet = mats != null && mats.Any(m => m && (m.name.ToLowerInvariant().Contains("ocean") || m.name.ToLowerInvariant().Contains("water")));
+            }
         if (best == float.MinValue) return fire.y;
-        ok = best < fire.y + 0.7f && best > fire.y - 3;
+        ok = !wet && best < fire.y + 0.7f && best > fire.y - 3;   // pas dans l'eau
         return best;
     }
 
-    void BuildNav()
+    // Grille : sol praticable (pente douce, pas de mur a hauteur de joueur) autour du centre.
+    void ScanGrid()
     {
         gridN = Mathf.CeilToInt(Radius * 2 / Cell) + 1;
         free = new bool[gridN, gridN]; height = new float[gridN, gridN];
@@ -337,10 +356,183 @@ public class PaintballView : MonoBehaviour
                 height[i, j] = h;
                 free[i, j] = ok && !Physics.CheckCapsule(new Vector3(w.x, h + 0.6f, w.z), new Vector3(w.x, h + 1.6f, w.z), 0.45f);
             }
-        // Bases : les zones libres les plus a l'ouest et a l'est de la place (rues opposees).
-        bases[0] = NearestFree(fire + new Vector3(-30, 0, 0));
-        bases[1] = NearestFree(fire + new Vector3(30, 0, 0));
+        reach = null;
     }
+
+    void BuildNav()
+    {
+        ScanGrid();
+        Arena();
+        Physics.SyncTransforms();
+        ScanGrid();   // les abris poses bloquent maintenant le passage des bots
+    }
+
+    // --- Arene de paintball (meme resultat sur toutes les machines : seulement la map et une graine fixe) -------------
+    // Deux bases aux extremites du terrain praticable (plusieurs points d'apparition chacune), un site A et un site B
+    // a mi-chemin, signales au sol, entoures d'abris ; des abris (foin, palettes, pneus, planches, blocs) sur le reste.
+    public readonly List<Vector3>[] spawns = { new List<Vector3>(), new List<Vector3>() };
+    public Vector3 siteA, siteB;
+    static readonly string[] CoverProps =
+    {
+        "SM_Prop_Hay_Bale_Square_01", "SM_Prop_Hay_Bale_Square_02", "SM_Prop_Hay_Bale_Round_01", "SM_Prop_PalletCrate_01", "SM_Prop_Tyre_01",
+        "SM_Prop_Wood_Stack_01", "SM_Prop_Wood_Stack_02", "SM_Env_Park_Concrete_Block_01", "SM_Prop_Toy_Block_01", "SM_Env_SkatePark_Wall_01",
+        "SM_Bld_Wall_Wood_Beams_Half_01", "SM_Prop_Barrel_Stack_01", "SM_Item_Crate_01", "SM_Prop_Fence_Wood_01",
+    };
+
+    int[,] Bfs((int, int) from)
+    {
+        var d = new int[gridN, gridN];
+        for (int i = 0; i < gridN; i++) for (int j = 0; j < gridN; j++) d[i, j] = -1;
+        var q = new Queue<(int, int)>(); d[from.Item1, from.Item2] = 0; q.Enqueue(from);
+        while (q.Count > 0)
+        {
+            var (x, y) = q.Dequeue();
+            for (int dx = -1; dx <= 1; dx++) for (int dy = -1; dy <= 1; dy++)
+            {
+                if (dx != 0 && dy != 0) continue;
+                int nx = x + dx, ny = y + dy;
+                if (nx < 0 || ny < 0 || nx >= gridN || ny >= gridN || d[nx, ny] >= 0 || !free[nx, ny]) continue;
+                d[nx, ny] = d[x, y] + 1; q.Enqueue((nx, ny));
+            }
+        }
+        return d;
+    }
+    // Degagement de chaque case : distance (en cases, a vol d'oiseau approche) au plus proche obstacle.
+    int[,] Clearance()
+    {
+        var d = new int[gridN, gridN];
+        var q = new Queue<(int, int)>();
+        for (int i = 0; i < gridN; i++) for (int j = 0; j < gridN; j++) { if (!free[i, j]) { d[i, j] = 0; q.Enqueue((i, j)); } else d[i, j] = int.MaxValue; }
+        while (q.Count > 0)
+        {
+            var (x, y) = q.Dequeue();
+            for (int dx = -1; dx <= 1; dx++) for (int dy = -1; dy <= 1; dy++)
+            {
+                int nx = x + dx, ny = y + dy;
+                if (nx < 0 || ny < 0 || nx >= gridN || ny >= gridN || d[nx, ny] <= d[x, y] + 1) continue;
+                d[nx, ny] = d[x, y] + 1; q.Enqueue((nx, ny));
+            }
+        }
+        return d;
+    }
+    public string ArenaLog = "";
+    Vector3 W((int i, int j) c) { var p = CellPos(c.i, c.j); p.y = height[c.i, c.j]; return p; }
+
+    void Arena()
+    {
+        var center = CellOf(NearestFree(fire));
+        var cells = new List<(int, int)>();
+        for (int i = 0; i < gridN; i++) for (int j = 0; j < gridN; j++) if (free[i, j] && Region(i, j)) cells.Add((i, j));
+        if (cells.Count < 50) { bases[0] = bases[1] = fire; return; }
+        // Bases : le point le plus loin (a pied) du centre, puis le plus loin de celui-la.
+        var d0 = Bfs(center);
+        var b0 = cells.OrderByDescending(c => d0[c.Item1, c.Item2]).First();
+        var dA = Bfs(b0);
+        var b1 = cells.OrderByDescending(c => dA[c.Item1, c.Item2]).First();
+        var dB = Bfs(b1);
+        bases[0] = W(b0); bases[1] = W(b1);
+        // Points d'apparition : cases proches de la base (a pied), espacees.
+        for (int t = 0; t < 2; t++)
+        {
+            var dd = t == 0 ? dA : dB;
+            foreach (var c in cells.Where(c => dd[c.Item1, c.Item2] <= 7).OrderBy(c => dd[c.Item1, c.Item2]).ThenBy(c => c.Item1 * 1000 + c.Item2))
+                if (spawns[t].All(o => (o - W(c)).sqrMagnitude > 2.4f * 2.4f) && spawns[t].Count < 8) spawns[t].Add(W(c));
+            if (spawns[t].Count == 0) spawns[t].Add(bases[t]);
+        }
+        // Sites : a mi-chemin des deux bases, le plus ecartes possible l'un de l'autre.
+        var clr = Clearance();
+        int C((int i, int j) c) => clr[c.i, c.j];
+        // Sites : dans des zones degagees (4 cases = 6 m au moins), a peu pres a mi-chemin des bases, loin l'un de l'autre.
+        int D = dA[b1.Item1, b1.Item2];
+        var mid = cells.Where(c => dA[c.Item1, c.Item2] > 0 && dB[c.Item1, c.Item2] > 0 && Mathf.Abs(dA[c.Item1, c.Item2] - dB[c.Item1, c.Item2]) <= Mathf.Max(6, D * 0.35f)).ToList();
+        if (mid.Count < 2) mid = cells;
+        int need = Mathf.Min(3, mid.Max(C));
+        var roomy = mid.Where(c => C(c) >= need).ToList();
+        // Les deux cases degagees les plus eloignees l'une de l'autre (A cote base Orange... au hasard de la map).
+        var sa = roomy.OrderByDescending(c => (W(c) - fire).sqrMagnitude).First();
+        var sb = roomy.OrderByDescending(c => (W(c) - W(sa)).sqrMagnitude).First();
+        sa = roomy.OrderByDescending(c => (W(c) - W(sb)).sqrMagnitude).First();
+        siteA = W(sa); siteB = W(sb);
+        Site(siteA, "A"); Site(siteB, "B");
+        for (int t = 0; t < 2; t++) Disc(bases[t], 5f, TeamColor[t], 0.35f);
+        // Abris : autour des sites, au milieu, puis ailleurs ; jamais dans une base, toujours espaces.
+        var rng = new System.Random(4242 + mapIndex);
+        var placed = new List<Vector3>();
+        bool Ok(Vector3 p) => placed.All(o => (o - p).sqrMagnitude > 3.6f * 3.6f) && spawns.All(l => l.All(s => (s - p).sqrMagnitude > 4.5f * 4.5f))
+            && (p - bases[0]).sqrMagnitude > 49 && (p - bases[1]).sqrMagnitude > 49;
+        bool Clear((int i, int j) c) => C(c) >= 2;
+        var open = cells.Where(Clear).ToList();
+        void Around(Vector3 at, float r0, float r1, int n)
+        {
+            var pool = open.Where(c => { float d = (W(c) - at).magnitude; return d > r0 && d < r1; }).OrderBy(_ => rng.Next()).ToList();
+            foreach (var c in pool) { if (n <= 0) break; var p = W(c); if (!Ok(p)) continue; Cover(p, rng); placed.Add(p); n--; }
+        }
+        Around(siteA, 2.5f, 7f, 6); Around(siteB, 2.5f, 7f, 6);
+        foreach (var c in mid.Where(Clear).OrderBy(_ => rng.Next()).Take(60)) { if (placed.Count >= 20) break; var p = W(c); if (Ok(p)) { Cover(p, rng); placed.Add(p); } }
+        Around(fire, 0, Radius, 40 - placed.Count);
+        ArenaLog = $"cases={cells.Count} bases={bases[0] - fire} {bases[1] - fire} sites A={siteA - fire} B={siteB - fire} degagement max={need} apparitions={spawns[0].Count}/{spawns[1].Count} abris={placed.Count}";
+        ArenaLog += "\nsous B : " + string.Join(" ; ", Physics.RaycastAll(siteB + Vector3.up * 30, Vector3.down, 60).OrderBy(h => h.distance).Select(h => $"{h.collider.name} y={h.point.y - fire.y:0.00} [{string.Join(",", h.collider.GetComponent<Renderer>()?.sharedMaterials.Select(m => m ? m.name + "/" + m.shader.name : "-") ?? new string[0])}]"));
+    }
+
+    // Un abri : prop Synty pose au sol, tourne au hasard, avec une collision (bloque billes, joueurs et bots).
+    void Cover(Vector3 at, System.Random rng)
+    {
+        var name = CoverProps[rng.Next(CoverProps.Length)];
+        var prefab = Synty.Get(name);
+        if (!prefab) return;
+        var g = Instantiate(prefab, at, Quaternion.Euler(0, rng.Next(24) * 15, 0), root);
+        float k = name.Contains("Toy_Block") ? 2.2f : name.Contains("Tyre") ? 1.6f : 1;
+        g.transform.localScale *= k;
+        foreach (var r in g.GetComponentsInChildren<Renderer>())
+        {
+            r.sharedMaterials = r.sharedMaterials.Select(UrpMat).ToArray();
+            if (!r.GetComponent<Collider>() && r.TryGetComponent<MeshFilter>(out var mf) && mf.sharedMesh && mf.sharedMesh.isReadable) r.gameObject.AddComponent<MeshCollider>().sharedMesh = mf.sharedMesh;
+            else if (!r.GetComponent<Collider>()) r.gameObject.AddComponent<BoxCollider>();
+        }
+    }
+    // Materiaux des packs en shader Standard (roses en URP) : equivalent Lit avec leur texture et leur couleur.
+    static readonly Dictionary<Material, Material> urp = new Dictionary<Material, Material>();
+    Material UrpMat(Material m)
+    {
+        if (!m || m.shader.name.StartsWith("Universal")) return m;
+        if (urp.TryGetValue(m, out var u)) return u;
+        u = new Material(lit) { color = m.HasProperty("_Color") ? m.color : Color.white, name = m.name };
+        if (m.mainTexture) u.SetTexture("_BaseMap", m.mainTexture);
+        u.SetFloat("_Smoothness", 0.2f);
+        return urp[m] = u;
+    }
+
+    void Disc(Vector3 at, float r, Color c, float alpha)
+    {
+        var g = Prim(PrimitiveType.Cylinder, Vector3.zero, new Vector3(r * 2, 0.01f, r * 2), Mat(new Color(c.r, c.g, c.b), 0.25f), root);
+        g.transform.position = at + Vector3.up * 0.03f;
+    }
+
+    // Site : anneau peint au sol et grande lettre (vue de loin), comme les sites de CS:GO.
+    void Site(Vector3 at, string letter)
+    {
+        var ring = Prim(PrimitiveType.Cylinder, Vector3.zero, new Vector3(9, 0.01f, 9), Mat(Board.Hex("ffd23a"), 0.3f), root);
+        ring.transform.position = at + Vector3.up * 0.02f;
+        var inner = Prim(PrimitiveType.Cylinder, Vector3.zero, new Vector3(8.2f, 0.012f, 8.2f), Mat(Board.Hex("3a2a1c")), root);
+        inner.transform.position = at + Vector3.up * 0.025f;
+        var t = new GameObject("site " + letter).AddComponent<TextMesh>();
+        t.transform.SetParent(root, false);
+        t.font = font; t.GetComponent<MeshRenderer>().sharedMaterial = textMat;
+        t.text = letter; t.color = Board.Hex("ffd23a"); t.fontSize = 120; t.characterSize = 0.12f; t.anchor = TextAnchor.MiddleCenter; t.fontStyle = FontStyle.Bold;
+        t.transform.position = at + Vector3.up * 0.05f;
+        t.transform.rotation = Quaternion.Euler(90, 0, 0);
+        // Panneau sur un poteau, lisible de loin.
+        var pole = Prim(PrimitiveType.Cylinder, Vector3.zero, new Vector3(0.12f, 1.6f, 0.12f), Mat(Board.Hex("2a2a33")), root);
+        pole.transform.position = at + Vector3.up * 1.6f;
+        var sign = new GameObject("panneau " + letter).AddComponent<TextMesh>();
+        sign.transform.SetParent(root, false);
+        sign.font = font; sign.GetComponent<MeshRenderer>().sharedMaterial = textMat;
+        sign.text = letter; sign.color = Board.Hex("ffd23a"); sign.fontSize = 120; sign.characterSize = 0.05f; sign.anchor = TextAnchor.MiddleCenter; sign.fontStyle = FontStyle.Bold;
+        sign.transform.position = at + Vector3.up * 3.6f;
+        signs.Add(sign.transform);
+    }
+    readonly List<Transform> signs = new List<Transform>();
+
     Vector3 CellPos(int i, int j) => fire + new Vector3((i - gridN / 2) * Cell, 0, (j - gridN / 2) * Cell);
     (int, int) CellOf(Vector3 w) => (Mathf.Clamp(Mathf.RoundToInt((w.x - fire.x) / Cell) + gridN / 2, 0, gridN - 1), Mathf.Clamp(Mathf.RoundToInt((w.z - fire.z) / Cell) + gridN / 2, 0, gridN - 1));
     Vector3 NearestFree(Vector3 w)
@@ -379,14 +571,13 @@ public class PaintballView : MonoBehaviour
 
     Vector3 SpawnPoint(int seat)
     {
-        // Chacun sa place a la base (en eventail), jamais sur un equipier.
         int team = pb.TeamOf(seat), k = pb.players.Where(x => x.team == team).TakeWhile(x => x.seat != seat).Count();
-        var b = bases[team];
-        var want = b + new Vector3((team == 0 ? -1 : 1) * (k % 2) * 2.4f, 0, (k - 2) * 2.4f);
-        var p = NearestFree(want);
-        for (int tries = 0; tries < 8 && avs.Any(o => o.seat != seat && o.team == team && (o.pos - p).sqrMagnitude < 1.5f * 1.5f); tries++)
-            p = NearestFree(want + new Vector3(UnityEngine.Random.Range(-4f, 4f), 0, UnityEngine.Random.Range(-4f, 4f)));
-        return p;
+        var list = spawns[team];
+        if (list.Count == 0) return NearestFree(bases[team]);
+        if (!pb.Respawn || avs.Count < pb.players.Count) return list[k % list.Count];   // manches : chacun sa place
+        // Match a mort : le point de la base le plus loin des adversaires en jeu.
+        var foes = avs.Where(o => o.team != team && !pb.players[o.seat].down).Select(o => o.pos).ToList();
+        return foes.Count == 0 ? list[UnityEngine.Random.Range(0, list.Count)] : list.OrderByDescending(p => foes.Min(f => (f - p).sqrMagnitude)).First();
     }
 
     // Chemin le plus court sur la grille (A*, 8 voisins).
@@ -464,6 +655,7 @@ public class PaintballView : MonoBehaviour
         MoveMe(dt);
         foreach (var kv in bots) BotThink(kv.Key, kv.Value, dt);
         foreach (var a in avs) Animate(a, dt);
+        if (Camera.main) foreach (var sg in signs) { var d = sg.position - Camera.main.transform.position; d.y = 0; if (d.sqrMagnitude > 0.01f) sg.rotation = Quaternion.LookRotation(d); }
         Balls(dt);
         if (Time.time > sendAt)
         {
@@ -821,8 +1013,9 @@ public class PaintballView : MonoBehaviour
             {
                 // Personne en vue : vers un ennemi (ou un coin de la place) par les rues.
                 var foes = avs.Where(o => o.team != a.team && !pb.players[o.seat].down).ToList();
-                var goal = foes.Count > 0 && UnityEngine.Random.value < 0.7f ? (foes[UnityEngine.Random.Range(0, foes.Count)].pos)
-                    : fire + new Vector3(UnityEngine.Random.Range(-25f, 25f), 0, UnityEngine.Random.Range(-25f, 25f));
+                float roll = UnityEngine.Random.value;
+                var goal = foes.Count > 0 && roll < 0.5f ? foes[UnityEngine.Random.Range(0, foes.Count)].pos
+                    : roll < 0.75f ? siteA : roll < 0.95f ? siteB : fire;
                 b.path = Path(a.pos, goal);
             }
             if (UnityEngine.Random.value < 0.15f) b.strafe = UnityEngine.Random.Range(-1f, 1f);

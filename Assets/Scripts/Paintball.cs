@@ -23,6 +23,10 @@ public class Paintball : IMatch
     public const float RoundTime = 115, FreezeTime = 4, DeathmatchMinutes = 10;
     public static readonly int[] DmTargets = { 50, 100 };
     public static bool IsDeathmatch(int option) => (option & 4) != 0;
+    // Maps (decors d'Agrou, amenages en arene : bits 4-6 de l'option).
+    public static readonly (string id, string name)[] Maps = { ("PlaceDuVillage", "Place du village"), ("MapIlePirate", "Île pirate"), ("Cimetiere", "Cimetière") };
+    public static int MapOf(int option) => Math.Min((option >> 4) & 7, Maps.Length - 1);
+    public static int WithMap(int option, int map) => (option & ~(7 << 4)) | (map << 4);
     public static int Target(int option) => IsDeathmatch(option) ? DmTargets[Math.Min(option & 3, DmTargets.Length - 1)] : RoundsToWin;
     public static readonly string[] TeamName = { "Orange", "Bleu" };
 

@@ -1,3 +1,4 @@
+using System.Collections.Generic;
 using System.IO;
 using System.Linq;
 using UnityEditor;
@@ -22,9 +23,39 @@ public static class SyntySetup
         "SM_Prop_Cash_Gun_01",   // lanceur du paintball
     };
 
+    static readonly string[] PaintballCover =
+    {
+        "Assets/PolygonFarm/Prefabs/Props/SM_Prop_Hay_Bale_Square_01", "Assets/PolygonFarm/Prefabs/Props/SM_Prop_Hay_Bale_Square_02",
+        "Assets/PolygonFarm/Prefabs/Props/SM_Prop_Hay_Bale_Round_01", "Assets/PolygonFarm/Prefabs/Props/SM_Prop_PalletCrate_01",
+        "Assets/PolygonFarm/Prefabs/Props/SM_Prop_Tyre_01", "Assets/PolygonFarm/Prefabs/Props/SM_Prop_Wood_Stack_01",
+        "Assets/PolygonFarm/Prefabs/Props/SM_Prop_Wood_Stack_02", "Assets/PolygonFarm/Prefabs/Props/SM_Prop_Fence_Wood_01",
+        "Assets/PolygonKids/Prefabs/Environment/SM_Env_Park_Concrete_Block_01", "Assets/PolygonKids/Prefabs/Props/SM_Prop_Toy_Block_01",
+        "Assets/PolygonKids/Prefabs/Environment/SM_Env_SkatePark_Wall_01", "Assets/PolygonFantasyKingdom/Prefabs/Castle/SM_Bld_Wall_Wood_Beams_Half_01",
+        "Assets/PolygonFantasyKingdom/Prefabs/Props/SM_Prop_Barrel_Stack_01", "Assets/PolygonFantasyKingdom/Prefabs/Items/SM_Item_Crate_01",
+    };
+
+    // Materiaux des packs Farm / Kids en shader Standard (retire de la build URP : texture perdue) : passes en URP Lit.
+    static void UpgradeMaterials(IEnumerable<GameObject> prefabs)
+    {
+        var lit = Shader.Find("Universal Render Pipeline/Lit");
+        foreach (var m in prefabs.Where(p => p).SelectMany(p => p.GetComponentsInChildren<Renderer>(true)).SelectMany(r => r.sharedMaterials).Where(m => m).Distinct())
+        {
+            if (m.shader == lit) continue;
+            var tex = m.HasProperty("_MainTex") ? m.GetTexture("_MainTex") : null;
+            var col = m.HasProperty("_Color") ? m.GetColor("_Color") : Color.white;
+            m.shader = lit;
+            if (tex) m.SetTexture("_BaseMap", tex);
+            m.SetColor("_BaseColor", col);
+            m.SetFloat("_Smoothness", 0.2f);
+            EditorUtility.SetDirty(m);
+        }
+    }
+
     [MenuItem("Pique-Nique/Registre Synty")]
     public static void Run()
     {
+        UpgradeMaterials(PaintballCover.Select(p => AssetDatabase.LoadAssetAtPath<GameObject>(p + ".prefab"))
+            .Append(AssetDatabase.LoadAssetAtPath<GameObject>("Assets/PolygonKids/Prefabs/Weapons/SM_Wep_Paintball_Gun_01.prefab")));
         var reg = ScriptableObject.CreateInstance<Synty>();
         reg.prefabs = AssetDatabase.FindAssets("t:Prefab", new[] { Meadow + "Prefabs", Meadow + "FX/FX_Prefabs", "Assets/PolygonNatureBiomes/PNB_Core/Prefabs" })
             .Select(g => AssetDatabase.LoadAssetAtPath<GameObject>(AssetDatabase.GUIDToAssetPath(g)))
@@ -32,6 +63,7 @@ public static class SyntySetup
                 .Where(p => CasinoProps.Any(n => Path.GetFileNameWithoutExtension(p).StartsWith(n)))
                 .Select(AssetDatabase.LoadAssetAtPath<GameObject>))
             .Append(AssetDatabase.LoadAssetAtPath<GameObject>("Assets/PolygonKids/Prefabs/Weapons/SM_Wep_Paintball_Gun_01.prefab"))   // lanceur du paintball
+            .Concat(PaintballCover.Select(p => AssetDatabase.LoadAssetAtPath<GameObject>(p + ".prefab")))   // abris des arenes
             .Where(p => p)
             .ToArray();
         reg.sky = AssetDatabase.LoadAssetAtPath<Material>(Meadow + "Materials/Skybox_Meadows_Mat_01.mat");

@@ -1303,3 +1303,4 @@ Button.wg-logo:hover { scale: 1.06 1.06; }
 .pb-tab-th .pb-tab-name { font-size: 32px; -unity-font: url("../Fonts/Bungee-Regular.ttf"); -unity-font-definition: initial; }
 .pb-tab-num { width: 110px; font-size: 26px; color: #FFFFFF; -unity-text-align: middle-center; margin: 0; -unity-font: url("../Fonts/SairaCondensed-ExtraBold.ttf"); -unity-font-definition: initial; }
 .pb-tab-state { color: #FF8A7A; font-size: 20px; }
+.m-beta { position: absolute; top: 8px; left: 8px; padding: 2px 10px; font-size: 16px; color: #1A0A2E; background-color: #FFD23A; border-radius: 6px; -unity-font: url("../Fonts/Bungee-Regular.ttf"); -unity-font-definition: initial; }
