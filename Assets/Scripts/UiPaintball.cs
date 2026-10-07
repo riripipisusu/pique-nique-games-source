@@ -45,6 +45,10 @@ public partial class Ui
         var v = game.pbview;
         bool down = v.Down && !game.pb.Finished;
         pbCross.style.display = down || game.pb.Finished ? DisplayStyle.None : DisplayStyle.Flex;
+        // Viseur dynamique (CS:GO) : s'ouvre quand on court ou saute, se resserre a l'arret et accroupi.
+        float cs = 16 + v.Spread * 1400;
+        pbCross.style.width = pbCross.style.height = cs; pbCross.style.marginLeft = pbCross.style.marginTop = -cs / 2;
+        pbCross.style.borderTopLeftRadius = pbCross.style.borderTopRightRadius = pbCross.style.borderBottomLeftRadius = pbCross.style.borderBottomRightRadius = cs / 2;
         pbDown.style.display = down ? DisplayStyle.Flex : DisplayStyle.None;
         if (down)
         {

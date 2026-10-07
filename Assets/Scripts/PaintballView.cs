@@ -9,7 +9,12 @@ using UnityEngine;
 public class PaintballView : MonoBehaviour
 {
     public static readonly Color[] TeamColor = { Board.Hex("ff7a1a"), Board.Hex("1ab4ff") };
-    const float Radius = 43, Eye = 1.6f, Speed = 5.6f, Sprint = 8f, BallSpeed = 42, FireDelay = 0.17f, HitR = 0.42f;
+    const float Radius = 43, Eye = 1.6f, Speed = 4.8f, BallSpeed = 42, FireDelay = 0.17f, HitR = 0.42f;
+    // Deplacement facon CS:GO (moteur Source, 1 unite = 1,905 cm) : course 250 u/s, marche x0,52, accroupi x0,34,
+    // acceleration 5,5, frottement 5,2, gravite 800 u/s2, saut de 57 u, en l'air vitesse "voulue" plafonnee a 30 u/s
+    // (d'ou le strafe en l'air et le bunny hop).
+    const float U = 0.01905f, WalkK = 0.52f, CrouchK = 0.34f, Accel = 5.5f, AirAccel = 12f, Friction = 5.2f, StopSpeed = 80 * U,
+        Gravity = 800 * U, JumpV = 301 * U, AirCap = 30 * U, StandH = 1.75f, CrouchH = 1.25f, CrouchEye = 1.12f;
 
     Paintball pb;
     Action<string> act, send;   // action fiable (hit, spawn) ; message temps reel
@@ -32,6 +37,7 @@ public class PaintballView : MonoBehaviour
         public Vector3 pos, from, to, vel;
         public float yaw, pitch, tYaw, tPitch, lerp = 1, lastRx;
         public bool down, jumping;
+        public float crouch;   // 0 debout, 1 accroupi (recu du reseau)
         public string anim;
         public readonly List<GameObject> paint = new List<GameObject>();
     }
@@ -160,11 +166,39 @@ public class PaintballView : MonoBehaviour
         Destroy(avs[me].an.GetComponent<FpsHands>());
         var vh = vmAn.gameObject.AddComponent<FpsHands>();
         vh.right = viewGun.Find("main droite"); vh.left = viewGun.Find("main gauche"); vh.lookWeight = 0;
+        ViewModelCamera();
         Ready = true;
     }
 
+    // Comme dans CS:GO, les bras et le lanceur sont dessines par-dessus le decor (jamais dans un mur) : calque a part,
+    // rendu par une camera superposee a la camera principale (pile URP).
+    const int ViewLayer = 31;
+    Camera vmCam;
+    void ViewModelCamera()
+    {
+        var main = Camera.main;
+        if (!main) return;
+        foreach (var t in vm.GetComponentsInChildren<Transform>(true).Concat(viewGun.GetComponentsInChildren<Transform>(true))) t.gameObject.layer = ViewLayer;
+        main.cullingMask &= ~(1 << ViewLayer);
+        vmCam = new GameObject("camera des bras").AddComponent<Camera>();
+        vmCam.transform.SetParent(main.transform, false);
+        vmCam.cullingMask = 1 << ViewLayer;
+        vmCam.nearClipPlane = 0.01f; vmCam.farClipPlane = 5;
+        var d = vmCam.gameObject.AddComponent<UnityEngine.Rendering.Universal.UniversalAdditionalCameraData>();
+        d.renderType = UnityEngine.Rendering.Universal.CameraRenderType.Overlay;
+        var md = main.GetComponent<UnityEngine.Rendering.Universal.UniversalAdditionalCameraData>() ?? main.gameObject.AddComponent<UnityEngine.Rendering.Universal.UniversalAdditionalCameraData>();
+        md.cameraStack.Add(vmCam);
+    }
+    void LateUpdateViewCam() { if (vmCam && Camera.main) vmCam.fieldOfView = 68; }
+
     public void Clear()
     {
+        if (vmCam)
+        {
+            var main = Camera.main;
+            if (main) { main.cullingMask |= 1 << ViewLayer; main.GetComponent<UnityEngine.Rendering.Universal.UniversalAdditionalCameraData>()?.cameraStack.Remove(vmCam); }
+            Destroy(vmCam.gameObject);
+        }
         Ready = false;
         if (root) Destroy(root.gameObject);
         avs.Clear(); bots.Clear(); balls.Clear(); splats.Clear();
@@ -230,6 +264,7 @@ public class PaintballView : MonoBehaviour
         var h = a.an ? a.an.GetComponent<FpsHands>() : null;
         if (!h) return;
         h.look = eye.position + eye.rotation * Vector3.forward * 10;
+        h.crouch = a.seat == me ? 0 : a.crouch;
         h.weight = pb.players[a.seat].down ? 0 : 1;
     }
     void Hold(Av a)
@@ -419,7 +454,7 @@ public class PaintballView : MonoBehaviour
         if (Time.time > sendAt)
         {
             sendAt = Time.time + 0.05f;
-            if (!MeBot) Send(me, cc.transform.position, yaw, pitch);
+            if (!MeBot) Send(me, cc.transform.position, yaw, pitch, crouchK);
             foreach (var kv in bots) Send(kv.Key, avs[kv.Key].pos, avs[kv.Key].tYaw, avs[kv.Key].tPitch);
         }
     }
@@ -430,6 +465,7 @@ public class PaintballView : MonoBehaviour
     void LateUpdate()
     {
         if (!Ready || avs.Count <= me) return;
+        LateUpdateViewCam();
         var a = avs[me];
         // Tete et bras caches (les bras du perso ne tiennent pas le lanceur affiche a l'ecran) ; torse et jambes visibles.
         foreach (var bone in new[] { HumanBodyBones.Head })
@@ -441,14 +477,30 @@ public class PaintballView : MonoBehaviour
     void UpdateEye()
     {
         var body = MeBot ? avs[me].pos : cc.transform.position;
-        eyeAt = body + Vector3.up * Eye + Quaternion.Euler(0, yaw, 0) * Vector3.forward * 0.15f;
+        eyeAt = body + Vector3.up * Mathf.Lerp(Eye, CrouchEye, crouchK) + Quaternion.Euler(0, yaw, 0) * Vector3.forward * 0.15f;
     }
 
     // Autotest : force le regard vers le bas (voir son corps).
     public float? LookDown;
 
-    void Send(int seat, Vector3 p, float y, float pi) =>
-        send?.Invoke(string.Format(System.Globalization.CultureInfo.InvariantCulture, "fp|{0}|{1:0.00}|{2:0.00}|{3:0.00}|{4:0}|{5:0}", seat, p.x - fire.x, p.y - fire.y, p.z - fire.z, y, pi));
+    void Send(int seat, Vector3 p, float y, float pi, float cr = 0) =>
+        send?.Invoke(string.Format(System.Globalization.CultureInfo.InvariantCulture, "fp|{0}|{1:0.00}|{2:0.00}|{3:0.00}|{4:0}|{5:0}|{6:0.0}", seat, p.x - fire.x, p.y - fire.y, p.z - fire.z, y, pi, cr));
+
+    Vector3 vel;
+    bool crouched, walking;
+    float crouchK, stepT;
+    public float Spread { get; private set; }   // imprecision actuelle (viseur), comme dans CS:GO
+    public bool AutoCrouch, AutoJump;          // autotest
+
+    // Acceleration Source : on ajoute de la vitesse dans la direction voulue, sans depasser wishSpeed dans cette direction.
+    static Vector3 Accelerate(Vector3 v, Vector3 wishDir, float wishSpeed, float accel, float dt)
+    {
+        if (wishDir.sqrMagnitude < 1e-4f) return v;
+        wishDir.Normalize();
+        float add = wishSpeed - Vector3.Dot(v, wishDir);
+        if (add <= 0) return v;
+        return v + wishDir * Mathf.Min(accel * dt, add);
+    }
 
     void MoveMe(float dt)
     {
@@ -474,8 +526,10 @@ public class PaintballView : MonoBehaviour
             pitch = Mathf.Clamp(pitch - Input.GetAxisRaw("Mouse Y") * 2.2f * Sens, -80, 80);
         }
         else if (Cursor.lockState != CursorLockMode.None) { Cursor.lockState = CursorLockMode.None; Cursor.visible = true; }
+        if (LookDown.HasValue) pitch = LookDown.Value;
         var dir = Vector3.zero;
-        if (InputOn && !down)
+        bool live = InputOn && !down;
+        if (live)
         {
             if (Input.GetKey(KeyCode.W) || Input.GetKey(KeyCode.Z) || Input.GetKey(KeyCode.UpArrow)) dir.z += 1;
             if (Input.GetKey(KeyCode.S) || Input.GetKey(KeyCode.DownArrow)) dir.z -= 1;
@@ -483,16 +537,50 @@ public class PaintballView : MonoBehaviour
             if (Input.GetKey(KeyCode.D) || Input.GetKey(KeyCode.RightArrow)) dir.x += 1;
         }
         if (Auto != null && !down) dir = Auto(this);   // autotest : pilote automatique
-        dir = Quaternion.Euler(0, yaw, 0) * Vector3.ClampMagnitude(dir, 1);
-        float sp = InputOn && Input.GetKey(KeyCode.LeftShift) ? Sprint : Speed;
-        if (cc.isGrounded) { vy = -2; if (InputOn && !down && Input.GetKeyDown(KeyCode.Space)) vy = 5.2f; }
-        else vy -= 14 * dt;
-        cc.Move((dir * sp + Vector3.up * vy) * dt);
+        var wish = Quaternion.Euler(0, yaw, 0) * Vector3.ClampMagnitude(dir, 1);
+        // Accroupi (Ctrl, maintenu) : la capsule et l'oeil descendent ; on ne se releve que s'il y a la place.
+        bool wantCrouch = live && (Input.GetKey(KeyCode.LeftControl) || Input.GetKey(KeyCode.C)) || AutoCrouch;
+        if (!wantCrouch && crouched && Physics.SphereCast(cc.transform.position + Vector3.up * (CrouchH - 0.35f), 0.33f, Vector3.up, out _, StandH - CrouchH + 0.05f)) wantCrouch = true;
+        crouched = wantCrouch;
+        crouchK = Mathf.MoveTowards(crouchK, crouched ? 1 : 0, dt * 8);
+        float h = Mathf.Lerp(StandH, CrouchH, crouchK);
+        cc.height = h; cc.center = Vector3.up * h / 2;
+        // Marche (Maj : silencieuse et precise) / course / accroupi.
+        walking = live && Input.GetKey(KeyCode.LeftShift);
+        float maxSp = Speed * (crouched ? CrouchK : walking ? WalkK : 1);
+        bool ground = cc.isGrounded;
+        var hv = new Vector3(vel.x, 0, vel.z);
+        if (ground)
+        {
+            // Frottement, puis acceleration vers la vitesse voulue (sv_friction 5.2, sv_accelerate 5.5).
+            float spd = hv.magnitude;
+            if (spd > 0.01f) { float drop = Mathf.Max(spd, StopSpeed) * Friction * dt; hv *= Mathf.Max(0, spd - drop) / spd; }
+            hv = Accelerate(hv, wish, wish.sqrMagnitude > 0 ? maxSp : 0, Accel * maxSp, dt);
+            vel.y = -2;
+            // Saut (Espace ou molette, comme beaucoup de joueurs de CS).
+            if (live && (Input.GetKeyDown(KeyCode.Space) || Mathf.Abs(Input.mouseScrollDelta.y) > 0.1f) || AutoJump) { AutoJump = false; vel.y = JumpV; ground = false; Sound.I.Play("hop2", 0.25f, 0.1f); }
+        }
+        else
+        {
+            hv = Accelerate(hv, wish, Mathf.Min(maxSp, AirCap), AirAccel * maxSp, dt);   // strafe en l'air
+            vel.y -= Gravity * dt;
+        }
+        vel.x = hv.x; vel.z = hv.z;
+        var before = cc.transform.position;
+        var flags = cc.Move(vel * dt);
+        if ((flags & CollisionFlags.Above) != 0 && vel.y > 0) vel.y = 0;
+        if (!ground) { var real = (cc.transform.position - before) / Mathf.Max(dt, 1e-4f); vel.x = real.x; vel.z = real.z; }   // on glisse le long des murs
+        // Pas de course (la marche et l'accroupi sont silencieux).
+        if (cc.isGrounded && !walking && !crouched && hv.magnitude > 3) { stepT -= dt * hv.magnitude; if (stepT <= 0) { stepT = 2.2f; Sound.I.Play("tick", 0.12f, 0.3f); } }
         // Limite de l'arene.
         var off = cc.transform.position - fire; off.y = 0;
         if (off.magnitude > Radius) { cc.enabled = false; cc.transform.position -= off.normalized * (off.magnitude - Radius); cc.enabled = true; }
         a.pos = cc.transform.position; a.tYaw = yaw; a.tPitch = pitch;
         UpdateEye();
+        // Imprecision : a l'arret la meilleure (accroupi encore mieux), en courant plus large, en l'air enorme.
+        float hs = new Vector3(vel.x, 0, vel.z).magnitude;
+        float target = (crouched ? 0.006f : 0.01f) + Mathf.InverseLerp(Speed * WalkK, Speed, hs) * 0.07f + (cc.isGrounded ? 0 : 0.14f);
+        Spread = Mathf.Lerp(Spread, target, 1 - Mathf.Exp(-dt * 10));
         // Tir.
         fireCd -= dt; recoil = Mathf.MoveTowards(recoil, 0, dt * 25);
         bool trigger = InputOn && Input.GetMouseButton(0) && Cursor.lockState == CursorLockMode.Locked || AutoFire;
@@ -500,7 +588,7 @@ public class PaintballView : MonoBehaviour
         {
             fireCd = FireDelay; recoil = 2.2f;
             var cp = CamPose;
-            var spread = UnityEngine.Random.insideUnitCircle * 0.012f;
+            var spread = UnityEngine.Random.insideUnitCircle * Spread;
             var d = (cp.rotation * new Vector3(spread.x, spread.y, 1)).normalized;
             Shoot(me, cp.position + d * 0.6f - cp.rotation * Vector3.up * 0.12f, d, true);
         }
@@ -519,6 +607,7 @@ public class PaintballView : MonoBehaviour
     public Func<PaintballView, Vector3> Auto;
     public bool AutoFire;
     public float MyYaw { get => yaw; set => yaw = value; }
+    public float MyHeight => cc ? cc.transform.position.y : 0;
     public float MyPitch { get => pitch; set => pitch = value; }
     public Vector3 MyPos => cc ? cc.transform.position : fire;
     public Vector3 AvatarPos(int s) => avs[s].pos;
@@ -552,7 +641,8 @@ public class PaintballView : MonoBehaviour
             {
                 if (a.seat == b.seat || a.team == shooterTeam || pb.players[a.seat].down) continue;
                 var body = a.seat == me && !MeBot ? cc.transform.position : a.pos;
-                if (SegCapsule(b.p, next, body + Vector3.up * 0.35f, body + Vector3.up * 1.55f) < HitR)
+                float top = Mathf.Lerp(1.55f, 1.05f, a.seat == me && !MeBot ? crouchK : a.crouch);
+                if (SegCapsule(b.p, next, body + Vector3.up * 0.3f, body + Vector3.up * top) < HitR)
                 {
                     Splat(next, (b.p - next).normalized, a.team == 0 ? 1 : 0, a.seat == me ? null : a);
                     if (b.judge) act?.Invoke($"hit|{b.seat}|{a.seat}");
@@ -615,6 +705,7 @@ public class PaintballView : MonoBehaviour
             var a = avs[s];
             a.from = a.pos; a.to = fire + new Vector3(F(2), F(3), F(4)); a.lerp = 0;
             a.tYaw = F(5); a.tPitch = F(6);
+            a.crouch = p.Length >= 8 ? F(7) : 0;
             a.lastRx = Time.time;
         }
         else if (p[0] == "fs" && p.Length >= 8) Shoot(s, fire + new Vector3(F(2), F(3), F(4)), new Vector3(F(5), F(6), F(7)).normalized, false, false);
@@ -669,7 +760,7 @@ public class PaintballView : MonoBehaviour
         if (a.gun && a.seat != me)
         {
             a.gun.gameObject.SetActive(!down);
-            var eye = new Pose(a.pos + Vector3.up * Eye + Quaternion.Euler(0, a.yaw, 0) * Vector3.forward * 0.12f, Quaternion.Euler(Mathf.Clamp(a.tPitch, -60, 60), a.yaw, 0));
+            var eye = new Pose(a.pos + Vector3.up * Mathf.Lerp(Eye, CrouchEye, a.crouch) + Quaternion.Euler(0, a.yaw, 0) * Vector3.forward * 0.12f, Quaternion.Euler(Mathf.Clamp(a.tPitch, -60, 60), a.yaw, 0));
             a.gun.SetPositionAndRotation(eye.position + eye.rotation * GunAt, eye.rotation);
             Aim(a, eye);
         }
@@ -755,12 +846,20 @@ public class FpsHands : MonoBehaviour
 {
     public Transform right, left;
     public Vector3 look;
-    public float weight = 1, lookWeight = 1;
+    public float weight = 1, lookWeight = 1, crouch;
     Animator an;
     void Awake() { an = GetComponent<Animator>(); }
     void OnAnimatorIK(int layer)
     {
-        if (layer != 0 || !right || !an) return;
+        if (layer != 0 || !an) return;
+        if (crouch > 0.01f)
+        {
+            // Accroupi : le bassin descend, les pieds restent ou ils sont (genoux plies par l'IK).
+            var lf = an.GetIKPosition(AvatarIKGoal.LeftFoot); var rf = an.GetIKPosition(AvatarIKGoal.RightFoot);
+            an.bodyPosition -= Vector3.up * 0.42f * crouch + transform.forward * 0.08f * crouch;
+            foreach (var (g, p) in new[] { (AvatarIKGoal.LeftFoot, lf), (AvatarIKGoal.RightFoot, rf) }) { an.SetIKPositionWeight(g, crouch); an.SetIKPosition(g, p); }
+        }
+        if (!right) return;
         an.SetLookAtWeight(weight * lookWeight, 0.55f, 0.7f, 0f, 0.6f);
         an.SetLookAtPosition(look);
         foreach (var (g, t) in new[] { (AvatarIKGoal.RightHand, right), (AvatarIKGoal.LeftHand, left) })

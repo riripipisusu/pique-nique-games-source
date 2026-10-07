@@ -17,7 +17,7 @@ public partial class Game
         int me = MySeatOr0;
         // Hors ligne : tous les autres sieges sont des bots ; en ligne, chacun pilote le sien.
         // (Autotest : mon siege aussi, pour jouer seul ou en ligne sans personne au clavier.)
-        var isBot = Enumerable.Range(0, n.Count).Select(s => Online ? pbAuto && s == me : s != me || pbAuto).ToArray();
+        var isBot = Enumerable.Range(0, n.Count).Select(s => Online ? pbAuto && s == me : s != me).ToArray();
         pbview.Build(pb, me, av, isBot, a => { if (pb != null && !pb.Finished) { if (Online) net.Act(a); else Apply(a); } }, m => { if (Online) net.SendRT(m); });
         pbStart = Time.time;
         ui.ShowHud();
@@ -81,6 +81,17 @@ public partial class Game
         yield return new WaitForSeconds(2); yield return shot("b1-debut");
         // Mon corps en baissant les yeux.
         pbview.LookDown = 65; yield return new WaitForSeconds(0.5f); yield return shot("b1-corps"); pbview.LookDown = null;
+        // Accroupi et saut (mon joueur, pilote) : hauteur de l'oeil et du saut.
+        var mv = new System.Text.StringBuilder();
+        var save = pbview.Auto; pbview.Auto = v => Vector3.zero;
+        float y0 = pbview.CamPose.position.y;
+        pbview.AutoCrouch = true; yield return new WaitForSeconds(0.6f); mv.AppendLine($"oeil debout->accroupi : {pbview.CamPose.position.y - y0:0.00} m"); yield return shot("b1-accroupi");
+        pbview.AutoCrouch = false; yield return new WaitForSeconds(0.6f);
+        float g0 = pbview.MyHeight, peak = g0; pbview.AutoJump = true;
+        for (float t = 0; t < 1.2f; t += Time.deltaTime) { peak = Mathf.Max(peak, pbview.MyHeight); yield return null; }
+        mv.AppendLine($"saut : {peak - g0:0.00} m (CS:GO : 1,09)");
+        System.IO.File.WriteAllText(System.IO.Path.Combine(dir, "mouvement.txt"), mv.ToString());
+        pbview.Auto = save;
         // Un joueur vu de pres (lanceur en main, course) : camera de cote, quelques secondes apres le depart.
         yield return new WaitForSeconds(3);
         for (int k2 = 0; k2 < 2; k2++)

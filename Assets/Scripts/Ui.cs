@@ -673,7 +673,8 @@ public partial class Ui : MonoBehaviour
         else if (game.gameId == GameId.Paintball)
         {
             S("Le but", "Deux équipes, Orange contre Bleu, sur la place du village. Chaque bille qui touche un adversaire rapporte un point à ton équipe. La première équipe au score choisi gagne ; sinon, la meilleure au bout de 5 minutes.");
-            S("Commandes", "Souris : viser. Clic gauche : tirer. ZQSD (ou WASD, ou les flèches) : se déplacer. Maj : courir. Espace : sauter. Échap : pause.");
+            S("Commandes", "Comme dans CS:GO. Souris : viser. Clic gauche : tirer. ZQSD (ou WASD, ou les flèches) : courir. Maj (maintenu) : marcher, silencieux et plus précis. Ctrl ou C (maintenu) : s'accroupir, encore plus précis et plus petite cible. Espace ou molette : sauter (le strafe en l'air et le bunny hop marchent). Échap : pause.");
+            S("Précision", "Le viseur s'ouvre quand tu bouges : à l'arrêt ou accroupi, les billes partent droit ; en courant elles s'écartent ; en sautant, c'est la loterie. Arrête-toi pour tirer !");
             S("Touché !", "Une seule bille suffit : tu es éliminé et tu reviens à ta base au bout de 3 secondes et demie. Les billes volent un peu en cloche : vise légèrement au-dessus de loin, et devant une cible qui court.");
             S("Les équipes", "En ligne, les joueurs sont répartis à tour de rôle entre Orange et Bleu. Hors ligne, des bots complètent les deux équipes.");
         }
